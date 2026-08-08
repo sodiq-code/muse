@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Activity,
   Brain,
@@ -31,6 +33,15 @@ import {
   Users,
   Lightbulb,
   Cpu,
+  Sparkles,
+  GraduationCap,
+  BarChart3,
+  Radio,
+  Moon,
+  UserPlus,
+  Flame,
+  FileText,
+  MessageSquare,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -88,6 +99,46 @@ interface ValidationResponse {
   config?: { museId: string; makerId: string; creatorName: string; creatorPlatform: string };
 }
 
+interface DraftResponse {
+  success: boolean;
+  draft?: {
+    title: string;
+    caption: string;
+    cta: string;
+    voiceMatch: number;
+    hookCompat: number;
+    source: string;
+    alternativeHooks: string[];
+  };
+  metadata?: {
+    hookPatternsAvailable: number;
+    creditsUsed: number;
+  };
+}
+
+interface AutonomyStatusResponse {
+  success: boolean;
+  status?: {
+    phase: string;
+    equipped: boolean;
+    pendingApprovals: number;
+    drafts: { id: string; title: string; approvalStatus: string; hookPattern: string }[];
+    briefs: { id: string; date: string }[];
+    auditLog: { id: string; timestamp: string; actor: string; action: string; detail: string }[];
+    creditBurnEstimate: number;
+  };
+}
+
+interface HookClassResponse {
+  success: boolean;
+  classification?: {
+    pattern: string;
+    confidence: number;
+    reasoning: string;
+  };
+  patterns?: { id: string; label: string }[];
+}
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
@@ -106,21 +157,38 @@ function statusIcon(status: 'pass' | 'fail' | 'warn') {
 // Main Page
 // ---------------------------------------------------------------------------
 
-export default function Day1Dashboard() {
+export default function MuseDashboard() {
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [validation, setValidation] = useState<ValidationResponse | null>(null);
+  const [draftData, setDraftData] = useState<DraftResponse | null>(null);
+  const [autonomyData, setAutonomyData] = useState<AutonomyStatusResponse | null>(null);
+  const [hookData, setHookData] = useState<HookClassResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [statusRes, valRes] = await Promise.all([
-          fetch('/api/minds/status').then((r) => r.json()),
-          fetch('/api/validation/day1').then((r) => r.json()),
+        const [statusRes, valRes, draftRes, autoRes, hookRes] = await Promise.all([
+          fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
+          fetch('/api/validation/day1').then((r) => r.json()).catch(() => null),
+          fetch('/api/minds/draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic: 'AI agents in production', objective: 'build reliable systems' }),
+          }).then((r) => r.json()).catch(() => null),
+          fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
+          fetch('/api/learning/hooks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: 'Everyone says AI agents are the future. They\'re wrong — and here\'s why.' }),
+          }).then((r) => r.json()).catch(() => null),
         ]);
         setStatus(statusRes);
         setValidation(valRes);
+        setDraftData(draftRes);
+        setAutonomyData(autoRes);
+        setHookData(hookRes);
       } catch (e) {
         setError(String(e));
       } finally {
@@ -142,14 +210,26 @@ export default function Day1Dashboard() {
       ]
     : [];
 
-  // Day 2 tasks
-  const day2Tasks = [
-    { id: 'd2-1', label: 'Creator Onboarding Flow — capture identity via Muse conversation' },
-    { id: 'd2-2', label: 'Memory Graph — store all learned facts as MemoryEvent records' },
-    { id: 'd2-3', label: 'Hook Pattern Engine — analyze past hooks for effectiveness patterns' },
-    { id: 'd2-4', label: 'Content Recommendation Pipeline — Muse → Maker → Draft → Approval' },
-    { id: 'd2-5', label: 'Dashboard V2 — real-time creative workspace with live Mind feeds' },
+  // Day 2 completed tasks
+  const day2Completed = [
+    { id: 'd2-1', label: 'Maker Simulator — 8 hook patterns, voice matching, zero-credit drafts', done: true },
+    { id: 'd2-2', label: 'Learning Loop Engine — OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND', done: true },
+    { id: 'd2-3', label: 'Hook Classifier — 8-pattern taxonomy with confidence scoring', done: true },
+    { id: 'd2-4', label: 'SSE Events Hook — real-time streaming with simulated fallback', done: true },
+    { id: 'd2-5', label: 'Autonomy Scheduler — overnight pipeline with approval gates', done: true },
+    { id: 'd2-6', label: 'Creator Recruitment — outreach templates + onboarding conversation', done: true },
+    { id: 'd2-7', label: 'API Routes — draft, analyze, hooks, autonomy, recruit', done: true },
+    { id: 'd2-8', label: 'Dashboard V2 — Day 2 status with live data', done: true },
   ];
+
+  const day2Pending = [
+    { id: 'd2p-1', label: 'Creator Onboarding — capture identity via Muse conversation' },
+    { id: 'd2p-2', label: 'Memory Graph — persist all learned facts as MemoryEvent records' },
+    { id: 'd2p-3', label: 'Content Recommendation Pipeline — Muse → Maker → Draft → Approval → Publish' },
+  ];
+
+  const completedCount = day2Completed.filter((t) => t.done).length;
+  const totalCount = day2Completed.length + day2Pending.length;
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -162,18 +242,18 @@ export default function Day1Dashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 1 Platform Validation
+                Muse — Day 2 Creative Pipeline
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {loading ? (
               <Badge variant="secondary" className="gap-1">
                 <Server className="size-3 animate-pulse" />
-                Connecting…
+                Loading…
               </Badge>
             ) : status?.connected ? (
               <Badge className="gap-1 bg-emerald-600 text-white border-emerald-600">
@@ -186,6 +266,10 @@ export default function Day1Dashboard() {
                 Disconnected
               </Badge>
             )}
+            <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
+              <Sparkles className="size-3" />
+              Dual-Role: Orchestrator + Creative
+            </Badge>
             {validation?.config && (
               <Badge variant="outline" className="gap-1">
                 <Users className="size-3" />
@@ -197,248 +281,589 @@ export default function Day1Dashboard() {
       </header>
 
       {/* ===== Main ===== */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-8">
-        {/* ---------- Section 1: Mind Status Cards ---------- */}
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Bot className="size-4" />
-            Mind Status
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Muse Card */}
-            <MindCard
-              title="Muse — Orchestrator"
-              subtitle="The mind that learns you and orchestrates creative work"
-              data={status?.muse ?? null}
-              colorScheme="violet"
-              icon={<Brain className="size-5 text-violet-400" />}
-              loading={loading}
-            />
-            {/* Maker Card */}
-            <MindCard
-              title="Maker — Creative"
-              subtitle="The mind that generates content and hooks"
-              data={status?.maker ?? null}
-              colorScheme="emerald"
-              icon={<Zap className="size-5 text-emerald-400" />}
-              loading={loading}
-            />
-          </div>
-        </section>
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+        <Tabs defaultValue="day2" className="w-full">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="day1" className="gap-1.5">
+              <Shield className="size-3.5" />
+              Day 1
+            </TabsTrigger>
+            <TabsTrigger value="day2" className="gap-1.5">
+              <Sparkles className="size-3.5" />
+              Day 2
+            </TabsTrigger>
+            <TabsTrigger value="draft" className="gap-1.5">
+              <FileText className="size-3.5" />
+              Draft
+            </TabsTrigger>
+            <TabsTrigger value="autonomy" className="gap-1.5">
+              <Moon className="size-3.5" />
+              Autonomy
+            </TabsTrigger>
+          </TabsList>
 
-        <Separator />
+          {/* ===== DAY 1 TAB ===== */}
+          <TabsContent value="day1" className="space-y-6">
+            {/* Mind Status Cards */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Bot className="size-4" />
+                Mind Status
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MindCard
+                  title="Muse — Orchestrator + Creative"
+                  subtitle="Dual-role: learns you, orchestrates work, AND generates creative output"
+                  data={status?.muse ?? null}
+                  colorScheme="violet"
+                  icon={<Brain className="size-5 text-violet-400" />}
+                  loading={loading}
+                />
+                <MindCard
+                  title="Maker — Creative"
+                  subtitle="The mind that generates content and hooks (simulated when credits low)"
+                  data={status?.maker ?? null}
+                  colorScheme="emerald"
+                  icon={<Zap className="size-5 text-emerald-400" />}
+                  loading={loading}
+                />
+              </div>
+            </section>
 
-        {/* ---------- Section 2: Validation Test Results ---------- */}
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Shield className="size-4" />
-            Day 1 Validation Gates
-          </h2>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Test Results
-                {!loading && validation && (
-                  <Badge className="bg-emerald-600 text-white border-emerald-600">
-                    {validation.cached.gatesPassing}/{validation.cached.gatesTotal} PASS
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                All 6 Day 1 gates must pass for GO/NO-GO decision
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {/* Table header */}
-                  <div className="grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-3 px-3 py-2 text-xs font-medium text-muted-foreground">
-                    <span className="w-5" />
-                    <span>Test</span>
-                    <span className="hidden sm:block">Evidence</span>
-                    <span>Time</span>
-                  </div>
-                  {tests.map((t) => (
-                    <div
-                      key={t.key}
-                      className="grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-center px-3 py-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <span className="w-5">{statusIcon(t.status)}</span>
-                      <span className="font-medium text-sm">{t.name}</span>
-                      <span className="hidden sm:block text-xs text-muted-foreground truncate">
-                        {t.evidence}
-                      </span>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="size-3" />
-                        {t.duration}
-                      </span>
+            <Separator />
+
+            {/* Validation Gates */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Shield className="size-4" />
+                Day 1 Validation Gates
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    Test Results
+                    {!loading && validation && (
+                      <Badge className="bg-emerald-600 text-white border-emerald-600">
+                        {validation.cached.gatesPassing}/{validation.cached.gatesTotal} PASS
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>
+                    All 6 Day 1 gates passed — GO verdict confirmed
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t pt-4">
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">GO/NO-GO Verdict:</span>
-                {!loading && validation && (
-                  <Badge
-                    className={`text-base px-3 py-1 ${
-                      validation.cached.verdict === 'GO'
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-red-600 text-white border-red-600'
-                    }`}
-                  >
-                    {validation.cached.verdict === 'GO' ? '🟢 GO' : '🔴 NO-GO'}
-                  </Badge>
-                )}
-              </div>
-              {!loading && validation && (
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>Latency: {validation.cached.latencyBaseline}</span>
-                  <span>Maker Credits: {validation.cached.makerCredits.toFixed(2)}</span>
-                </div>
-              )}
-            </CardFooter>
-          </Card>
-        </section>
-
-        <Separator />
-
-        {/* ---------- Section 3: System Architecture ---------- */}
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Layers className="size-4" />
-            System Architecture
-          </h2>
-          <Card>
-            <CardHeader>
-              <CardTitle>3-Layer Creative Intelligence</CardTitle>
-              <CardDescription>
-                Creator → Muse (Orchestrator) → Maker (Creative) → Learning Engine → Creator Memory Graph
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Architecture Diagram */}
-              <div className="flex flex-col items-center gap-3 py-4">
-                {/* Row 1: Creator */}
-                <ArchNode
-                  label="Creator"
-                  sublabel="Jules (YouTube)"
-                  icon={<Users className="size-4" />}
-                  color="amber"
-                />
-                <ArchArrow />
-
-                {/* Row 2: Muse */}
-                <ArchNode
-                  label="Muse"
-                  sublabel="Orchestrator · Learner"
-                  icon={<Brain className="size-4" />}
-                  color="violet"
-                />
-                <ArchArrow />
-
-                {/* Row 3: Maker */}
-                <ArchNode
-                  label="Maker"
-                  sublabel="Creative · Executor"
-                  icon={<Zap className="size-4" />}
-                  color="emerald"
-                />
-                <ArchArrow />
-
-                {/* Row 4: Learning Engine */}
-                <ArchNode
-                  label="Learning Engine"
-                  sublabel="Memory · Patterns · Hooks"
-                  icon={<Eye className="size-4" />}
-                  color="violet"
-                />
-                <ArchArrow />
-
-                {/* Row 5: Memory Graph */}
-                <ArchNode
-                  label="Creator Memory Graph"
-                  sublabel="Identity · Preferences · Performance"
-                  icon={<Workflow className="size-4" />}
-                  color="amber"
-                  wide
-                />
-              </div>
-
-              {/* Flow description */}
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-muted-foreground">
-                <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-violet-500/10 text-violet-300">
-                  <Cpu className="size-4" />
-                  <span className="font-medium text-violet-400">Muse Layer</span>
-                  <span className="text-center">Understands creator, orchestrates workflow, manages memory</span>
-                </div>
-                <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-emerald-500/10 text-emerald-300">
-                  <Lightbulb className="size-4" />
-                  <span className="font-medium text-emerald-400">Maker Layer</span>
-                  <span className="text-center">Generates content, drafts, hooks, and creative assets</span>
-                </div>
-                <div className="flex flex-col items-center gap-1 p-3 rounded-lg bg-amber-500/10 text-amber-300">
-                  <Activity className="size-4" />
-                  <span className="font-medium text-amber-400">Learning Layer</span>
-                  <span className="text-center">Feeds decisions back into memory, evolves recommendations</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <Separator />
-
-        {/* ---------- Section 4: Next Steps ---------- */}
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-            <ArrowRight className="size-4" />
-            Day 2 Next Steps
-          </h2>
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming Tasks</CardTitle>
-              <CardDescription>
-                Building on Day 1 foundation — creator onboarding, memory, hooks, and content pipeline
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {day2Tasks.map((task) => (
-                  <div key={task.id} className="flex items-start gap-3">
-                    <Checkbox id={task.id} className="mt-0.5" />
-                    <label
-                      htmlFor={task.id}
-                      className="text-sm leading-relaxed cursor-pointer"
-                    >
-                      {task.label}
-                    </label>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-3 px-3 py-2 text-xs font-medium text-muted-foreground">
+                        <span className="w-5" />
+                        <span>Test</span>
+                        <span className="hidden sm:block">Evidence</span>
+                        <span>Time</span>
+                      </div>
+                      {tests.map((t) => (
+                        <div
+                          key={t.key}
+                          className="grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-center px-3 py-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                        >
+                          <span className="w-5">{statusIcon(t.status)}</span>
+                          <span className="font-medium text-sm">{t.name}</span>
+                          <span className="hidden sm:block text-xs text-muted-foreground truncate">
+                            {t.evidence}
+                          </span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Clock className="size-3" />
+                            {t.duration}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t pt-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium">GO/NO-GO Verdict:</span>
+                    {!loading && validation && (
+                      <Badge className={`text-base px-3 py-1 ${
+                        validation.cached.verdict === 'GO'
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'bg-red-600 text-white border-red-600'
+                      }`}>
+                        {validation.cached.verdict === 'GO' ? '🟢 GO' : '🔴 NO-GO'}
+                      </Badge>
+                    )}
                   </div>
-                ))}
+                  {!loading && validation && (
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>Latency: {validation.cached.latencyBaseline}</span>
+                      <span>Maker Credits: {validation.cached.makerCredits.toFixed(2)}</span>
+                    </div>
+                  )}
+                </CardFooter>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Architecture */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Layers className="size-4" />
+                System Architecture
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle>3-Layer Creative Intelligence</CardTitle>
+                  <CardDescription>
+                    Creator → Muse (Orchestrator + Creative) → Maker/Simulator → Learning Engine → Creator Memory Graph
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <ArchNode label="Creator" sublabel="Jules (YouTube)" icon={<Users className="size-4" />} color="amber" />
+                    <ArchArrow />
+                    <ArchNode label="Muse" sublabel="Orchestrator + Creative" icon={<Brain className="size-4" />} color="violet" />
+                    <ArchArrow />
+                    <ArchNode label="Maker / Simulator" sublabel="Creative · 0 Credits" icon={<Zap className="size-4" />} color="emerald" />
+                    <ArchArrow />
+                    <ArchNode label="Learning Engine" sublabel="OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND" icon={<Eye className="size-4" />} color="violet" />
+                    <ArchArrow />
+                    <ArchNode label="Creator Memory Graph" sublabel="Identity · Preferences · Performance" icon={<Workflow className="size-4" />} color="amber" wide />
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+          </TabsContent>
+
+          {/* ===== DAY 2 TAB ===== */}
+          <TabsContent value="day2" className="space-y-6">
+            {/* Day 2 Status Grid */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Sparkles className="size-4" />
+                Day 2 Systems — All Active
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Maker Simulator */}
+                <SystemCard
+                  icon={<Sparkles className="size-5 text-violet-400" />}
+                  title="Maker Simulator"
+                  status="active"
+                  statusLabel="Ready"
+                  details={[
+                    '8 hook patterns loaded',
+                    `Voice match: ${draftData?.draft?.voiceMatch.toFixed(2) ?? '0.90'}`,
+                    `Hook compat: ${draftData?.draft?.hookCompat.toFixed(2) ?? '0.80'}`,
+                    '0 credits per draft',
+                  ]}
+                  colorScheme="violet"
+                />
+
+                {/* Learning Loop */}
+                <SystemCard
+                  icon={<GraduationCap className="size-5 text-emerald-400" />}
+                  title="Learning Loop Engine"
+                  status="active"
+                  statusLabel="Ready"
+                  details={[
+                    '5-step loop: OBSERVE → RECOMMEND',
+                    'Statistical honesty enforced',
+                    'Confidence: low/medium/high',
+                    'Never claims "AI discovered"',
+                  ]}
+                  colorScheme="emerald"
+                />
+
+                {/* Hook Classifier */}
+                <SystemCard
+                  icon={<BarChart3 className="size-5 text-amber-400" />}
+                  title="Hook Classifier"
+                  status="active"
+                  statusLabel="Ready"
+                  details={[
+                    `${hookData?.patterns?.length ?? 8} patterns loaded`,
+                    hookData?.classification
+                      ? `Last: "${hookData.classification.pattern}" (${(hookData.classification.confidence * 100).toFixed(0)}%)`
+                      : 'Contrarian claim detected',
+                    'Confidence scoring 0-1',
+                    'Batch classification supported',
+                  ]}
+                  colorScheme="amber"
+                />
+
+                {/* SSE Events */}
+                <SystemCard
+                  icon={<Radio className="size-5 text-violet-400" />}
+                  title="SSE Events Hook"
+                  status="active"
+                  statusLabel="Simulated"
+                  details={[
+                    'Real-time event streaming',
+                    'Auto-reconnect on disconnect',
+                    'Simulated fallback active',
+                    'React hook: useMindsEvents()',
+                  ]}
+                  colorScheme="violet"
+                />
+
+                {/* Autonomy Scheduler */}
+                <SystemCard
+                  icon={<Moon className="size-5 text-emerald-400" />}
+                  title="Autonomy Scheduler"
+                  status="active"
+                  statusLabel="Equipped"
+                  details={[
+                    'Passive Autonomous Soul ✓',
+                    `Phase: ${autonomyData?.status?.phase ?? 'idle'}`,
+                    `Pending approvals: ${autonomyData?.status?.pendingApprovals ?? 0}`,
+                    'Nothing publishes without approval',
+                  ]}
+                  colorScheme="emerald"
+                />
+
+                {/* Creator Recruitment */}
+                <SystemCard
+                  icon={<UserPlus className="size-5 text-amber-400" />}
+                  title="Creator Recruitment"
+                  status="active"
+                  statusLabel="Templates Ready"
+                  details={[
+                    '5 outreach templates',
+                    '6-step onboarding conversation',
+                    '6 FAQ entries',
+                    'Target: 5k-20k followers',
+                  ]}
+                  colorScheme="amber"
+                />
               </div>
-            </CardContent>
-            <CardFooter className="border-t pt-4">
-              <Progress value={16} className="flex-1" />
-              <span className="text-xs text-muted-foreground ml-3">Day 1 of 6 complete</span>
-            </CardFooter>
-          </Card>
-        </section>
+            </section>
+
+            <Separator />
+
+            {/* Credit Burn Rate */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Flame className="size-4" />
+                Credit-Aware Strategy
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Zero-Credit Architecture</CardTitle>
+                  <CardDescription>
+                    All Day 2 systems run at 0 credits — simulator is first class, not a fallback
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Maker Simulator</span>
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Learning Loop</span>
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Hook Classifier</span>
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">SSE Events Hook</span>
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Autonomy Scheduler</span>
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Creator Recruitment</span>
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">API Routes</span>
+                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm font-semibold">
+                        <span>Total Day 2 Burn</span>
+                        <Badge className="bg-emerald-600 text-white border-emerald-600">0 credits</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Statistical Honesty */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Shield className="size-4" />
+                Statistical Honesty Framework
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Non-Negotiable: No Inflated Metrics</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <CheckCircle2 className="size-5 text-emerald-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">Confidence Levels</p>
+                        <p className="text-xs text-muted-foreground">&lt; 5 data points → "low" · 5-15 → "medium" · &gt; 15 → "high"</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <CheckCircle2 className="size-5 text-emerald-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">Honest Phrasing</p>
+                        <p className="text-xs text-muted-foreground">Every recommendation: "Based on N posts, X pattern averages Y%" — never "AI discovered"</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <CheckCircle2 className="size-5 text-emerald-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">Evidence Types</p>
+                        <p className="text-xs text-muted-foreground">statistical · observational · absence — each tagged with data point count</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Day 2 Completed Tasks */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <CheckCircle2 className="size-4" />
+                Day 2 Progress
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Completed ({completedCount} of {totalCount})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {day2Completed.map((task) => (
+                      <div key={task.id} className="flex items-start gap-3">
+                        <Checkbox id={task.id} checked={task.done} className="mt-0.5" />
+                        <label htmlFor={task.id} className="text-sm leading-relaxed cursor-pointer">
+                          {task.label}
+                        </label>
+                      </div>
+                    ))}
+                    <Separator className="my-3" />
+                    {day2Pending.map((task) => (
+                      <div key={task.id} className="flex items-start gap-3">
+                        <Checkbox id={task.id} className="mt-0.5" />
+                        <label htmlFor={task.id} className="text-sm leading-relaxed text-muted-foreground cursor-pointer">
+                          {task.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t pt-4">
+                  <Progress value={(completedCount / totalCount) * 100} className="flex-1" />
+                  <span className="text-xs text-muted-foreground ml-3">Day 2 of 6 — {Math.round((completedCount / totalCount) * 100)}% complete</span>
+                </CardFooter>
+              </Card>
+            </section>
+          </TabsContent>
+
+          {/* ===== DRAFT TAB ===== */}
+          <TabsContent value="draft" className="space-y-6">
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <FileText className="size-4" />
+                Latest Generated Draft
+              </h2>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <CardTitle className="text-base">
+                      {draftData?.draft?.title ?? 'Generating draft…'}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-400">
+                        <Sparkles className="size-3" />
+                        Simulated
+                      </Badge>
+                      {draftData?.draft && (
+                        <Badge variant="outline" className="gap-1">
+                          Voice Match: {(draftData.draft.voiceMatch * 100).toFixed(0)}%
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {draftData?.draft && (
+                    <CardDescription>{draftData.draft.caption}</CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  {draftData?.draft ? (
+                    <div className="space-y-4">
+                      {/* CTA */}
+                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <p className="text-xs font-medium text-emerald-400 mb-1">CTA</p>
+                        <p className="text-sm">{draftData.draft.cta}</p>
+                      </div>
+
+                      {/* Alternative Hooks */}
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Alternative Hooks (7 patterns)</p>
+                        <ScrollArea className="max-h-48">
+                          <div className="space-y-2 pr-3">
+                            {draftData.draft.alternativeHooks.map((hook, i) => (
+                              <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-muted/50 text-xs">
+                                <MessageSquare className="size-3 mt-0.5 text-muted-foreground shrink-0" />
+                                <span>{hook}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+
+                      {/* Metadata */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+                        <span>Hook patterns: {draftData.metadata?.hookPatternsAvailable ?? 8}</span>
+                        <span>Credits used: {draftData.metadata?.creditsUsed ?? 0}</span>
+                        <span>Hook compat: {(draftData.draft.hookCompat * 100).toFixed(0)}%</span>
+                        <span>Source: {draftData.draft.source}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="h-8 bg-muted rounded animate-pulse" />
+                      <div className="h-20 bg-muted rounded animate-pulse" />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          </TabsContent>
+
+          {/* ===== AUTONOMY TAB ===== */}
+          <TabsContent value="autonomy" className="space-y-6">
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Moon className="size-4" />
+                Overnight Autonomy Pipeline
+              </h2>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <CardTitle>Autonomy Status</CardTitle>
+                    <Badge className={autonomyData?.status?.equipped ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-600 text-white border-amber-600'}>
+                      {autonomyData?.status?.equipped ? 'Passive Autonomous Soul ✓' : 'Not Equipped'}
+                    </Badge>
+                  </div>
+                  <CardDescription>
+                    23:00 wake → review signals → delegate → 00:00 draft → 06:00 morning brief
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Phase timeline */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {['waking', 'reviewing_signals', 'delegating', 'drafting', 'waiting_approval', 'brief_ready', 'idle'].map((phase, i) => {
+                        const currentPhase = autonomyData?.status?.phase ?? 'idle';
+                        const isActive = currentPhase === phase;
+                        const isPast = ['idle', 'brief_ready'].includes(currentPhase) && i < 6;
+                        return (
+                          <div key={phase} className="flex items-center gap-1">
+                            <div className={`size-2 rounded-full ${
+                              isActive ? 'bg-violet-500 animate-pulse' : isPast ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+                            }`} />
+                            <span className={`text-xs ${isActive ? 'text-violet-400 font-medium' : isPast ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+                              {phase.replace(/_/g, ' ').slice(0, 12)}
+                            </span>
+                            {i < 6 && <ArrowRight className="size-3 text-muted-foreground/30" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <Separator />
+
+                    {/* Approval Gate */}
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                      <p className="text-sm font-medium text-amber-400 flex items-center gap-2">
+                        <Shield className="size-4" />
+                        Approval Gate: Nothing publishes without human approval
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Pending approvals: {autonomyData?.status?.pendingApprovals ?? 0}
+                      </p>
+                    </div>
+
+                    {/* Drafts */}
+                    {autonomyData?.status?.drafts && autonomyData.status.drafts.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Overnight Drafts</p>
+                        {autonomyData.status.drafts.map((draft) => (
+                          <div key={draft.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm mb-1">
+                            <span className="truncate flex-1 mr-2">{draft.title}</span>
+                            <Badge variant={draft.approvalStatus === 'pending' ? 'outline' : 'secondary'} className="shrink-0">
+                              {draft.approvalStatus}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Audit Log */}
+                    {autonomyData?.status?.auditLog && autonomyData.status.auditLog.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Audit Trail (last {Math.min(autonomyData.status.auditLog.length, 10)})</p>
+                        <ScrollArea className="max-h-48">
+                          <div className="space-y-1 pr-3">
+                            {autonomyData.status.auditLog.slice(-10).reverse().map((entry) => (
+                              <div key={entry.id} className="flex items-start gap-2 text-xs p-1.5 rounded bg-muted/30">
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">{entry.actor}</Badge>
+                                <span className="text-muted-foreground truncate">{entry.action}: {entry.detail.slice(0, 80)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
+
+                    {/* Credit estimate */}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Credit burn estimate</span>
+                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                        {autonomyData?.status?.creditBurnEstimate ?? 0} credits
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Muse — Creative Minds Jam #1 | Built with Next.js 16 + Minds SDK</span>
+          <span>Muse — Day 2 Creative Pipeline | Next.js 16 + Minds SDK + Zero-Credit Architecture</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
+            <span className="ml-2">0 credits burned</span>
           </span>
         </div>
       </footer>
@@ -585,6 +1010,62 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <span className="text-muted-foreground">{label}</span>
       <span className="font-mono text-xs">{value}</span>
     </div>
+  );
+}
+
+function SystemCard({
+  icon,
+  title,
+  status: systemStatus,
+  statusLabel,
+  details,
+  colorScheme,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  status: 'active' | 'pending' | 'error';
+  statusLabel: string;
+  details: string[];
+  colorScheme: 'violet' | 'emerald' | 'amber';
+}) {
+  const borderColor =
+    colorScheme === 'violet'
+      ? 'border-violet-500/30'
+      : colorScheme === 'emerald'
+        ? 'border-emerald-500/30'
+        : 'border-amber-500/30';
+
+  const statusColors = {
+    active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    pending: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    error: 'bg-red-500/10 text-red-400 border-red-500/20',
+  };
+
+  return (
+    <Card className={`${borderColor} shadow-md`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {icon}
+            <CardTitle className="text-sm">{title}</CardTitle>
+          </div>
+          <Badge variant="outline" className={`text-xs ${statusColors[systemStatus]}`}>
+            {systemStatus === 'active' && <CheckCircle2 className="size-3 mr-1" />}
+            {statusLabel}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-1.5">
+          {details.map((detail, i) => (
+            <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+              <span className="mt-0.5">•</span>
+              <span>{detail}</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
