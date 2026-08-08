@@ -424,3 +424,31 @@ Stage Summary:
 - Dashboard: "Muse — Day 5 Memory" header, Decisions default tab, all sections rendering
 - All 10+ API routes returning 200
 - Lint: 0 errors
+
+---
+Task ID: 5
+Agent: main
+Task: Day 5 — Creator Decisions Domain, Content Ingestion Pipeline, Schema Freeze
+
+Work Log:
+- Verified existing Day 5 backend code (decision-service.ts, ingestion-pipeline.ts, decisions API route, ingest API route)
+- Fixed seeding: added seedExtraContent + seedDecisions calls to /api/content/ingest GET route → 26 items seeded (meetsMinimum: true)
+- Fixed decisions API performance: added seedCompleted flag to skip re-seeding, made seedPerformanceData and seedExtraContent idempotency robust (check specific titles, skip existing items)
+- Dashboard already had Decisions tab with all sections: Summary cards, Learnings, Recent Decisions feed, Submit Decision form, Ingest Status
+- Updated header to "Muse — Day 5 Memory" with "❄️ Schema Frozen" badge
+- Verified all API routes return 200: /api/creator/decisions, /api/content/ingest, /api/content, /api/content/performance, /api/creator, /api/creator/voice, /api/creator/memory, /api/creator/audit
+- Decisions data: 11 decisions, 73% acceptance rate, 27% modification rate, timing most rejected category, 3 learnings
+- Ingest data: 26 items, 26 hooks, 175 metrics, 100% hook pattern coverage
+- SCHEMA_FROZEN.md: 12 models documented with freeze date and change policy
+- Browser verified: All 8 tabs render correctly (Day 1, Day 2, Draft, Autonomy, Memory, Voice, Performance, Decisions)
+- Lint: 0 errors, 0 warnings
+- Pushed to GitHub: commit bc0379d at sodiq-code/muse
+
+Stage Summary:
+- Day 5 complete: All 3 blueprint tasks done (Decisions domain, Ingestion pipeline, Schema freeze)
+- Creator Decisions Domain: 11 decisions with full audit trail + memory events + learning insights
+- Content Ingestion Pipeline: 26 items ingested (exceeds 20-50 requirement), meetsMinimum=true
+- Schema Frozen: 12 models, no more schema changes without explicit approval
+- All 4 memory domains active: Identity (Day 3), Voice (Day 4), Performance (Day 4), Decisions (Day 5)
+- Total credit burn: 0 (all local computation, no Minds API calls)
+- Commit pushed: bc0379d at https://github.com/sodiq-code/muse
