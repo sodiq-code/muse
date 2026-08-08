@@ -19,6 +19,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Activity,
   Brain,
   Bot,
@@ -52,6 +59,12 @@ import {
   X,
   Save,
   Database,
+  Mic,
+  TrendingUp,
+  Award,
+  PieChart,
+  Plus,
+  Upload,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -218,6 +231,81 @@ interface AuditResponse {
   count: number;
 }
 
+// Voice Domain Types
+interface VoiceProfileResponse {
+  success: boolean;
+  profile?: Record<string, number>;
+  dimensions?: string[];
+}
+
+interface VoiceAnalysisResult {
+  dimension: string;
+  score: number;
+  indicator: string;
+  reasoning: string;
+}
+
+interface VoiceMatchResult {
+  overallMatch: number;
+  dimensionMatches: { dimension: string; profileScore: number; contentScore: number; match: number; isMismatch: boolean }[];
+  mismatchCount: number;
+}
+
+interface VoiceAnalyzeResponse {
+  success: boolean;
+  analysis?: VoiceAnalysisResult[];
+  match?: VoiceMatchResult;
+  error?: string;
+}
+
+// Performance Domain Types
+interface ContentItem {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+  hookPattern: string | null;
+  hookText: string | null;
+  metricsCount: number;
+  publishedAt: string | null;
+  createdAt: string;
+}
+
+interface ContentListResponse {
+  success: boolean;
+  items: ContentItem[];
+  count: number;
+}
+
+interface HookPatternStat {
+  pattern: string;
+  count: number;
+  avgEffectiveness: number;
+  sampleSize: number;
+}
+
+interface PerformanceInsight {
+  title: string;
+  detail: string;
+  confidence: 'low' | 'medium' | 'high';
+  dataPoints: number;
+  evidenceType: string;
+}
+
+interface PerformanceResponse {
+  success: boolean;
+  hookPatterns: HookPatternStat[];
+  insights: PerformanceInsight[];
+  bestPattern: string | null;
+  worstPattern: string | null;
+}
+
+interface ContentMetricsResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
@@ -230,6 +318,37 @@ function statusIcon(status: 'pass' | 'fail' | 'warn') {
   if (status === 'pass') return <CheckCircle2 className="size-4 text-emerald-500" />;
   if (status === 'fail') return <AlertTriangle className="size-4 text-red-500" />;
   return <CircleDashed className="size-4 text-amber-500" />;
+}
+
+function voiceBarColor(value: number): string {
+  if (value >= 70) return 'bg-emerald-500';
+  if (value >= 40) return 'bg-amber-500';
+  return 'bg-rose-400';
+}
+
+function voiceBadgeColor(value: number): string {
+  if (value >= 70) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+  if (value >= 40) return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+  return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+}
+
+function statusBadgeStyle(status: string): string {
+  switch (status) {
+    case 'published': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+    case 'drafting': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+    case 'idea': return 'bg-violet-500/10 text-violet-400 border-violet-500/20';
+    case 'archived': return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+    default: return '';
+  }
+}
+
+function confidenceBadgeStyle(confidence: string): string {
+  switch (confidence) {
+    case 'high': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+    case 'medium': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+    case 'low': return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+    default: return '';
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -251,6 +370,25 @@ export default function MuseDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Voice Domain State
+  const [voiceProfile, setVoiceProfile] = useState<VoiceProfileResponse | null>(null);
+  const [voiceLoading, setVoiceLoading] = useState(true);
+  const [analyzeText, setAnalyzeText] = useState('');
+  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+  const [analyzeResult, setAnalyzeResult] = useState<VoiceAnalyzeResponse | null>(null);
+  const [updateProfileToggle, setUpdateProfileToggle] = useState(true);
+
+  // Performance Domain State
+  const [contentItems, setContentItems] = useState<ContentListResponse | null>(null);
+  const [perfData, setPerfData] = useState<PerformanceResponse | null>(null);
+  const [perfLoading, setPerfLoading] = useState(true);
+  const [showAddContent, setShowAddContent] = useState(false);
+  const [showIngestMetrics, setShowIngestMetrics] = useState(false);
+  const [newContent, setNewContent] = useState({ title: '', type: 'short_form', hookText: '' });
+  const [newMetrics, setNewMetrics] = useState({ contentId: '', views: '', likes: '', shares: '', comments: '' });
+  const [addingContent, setAddingContent] = useState(false);
+  const [addingMetrics, setAddingMetrics] = useState(false);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -264,6 +402,36 @@ export default function MuseDashboard() {
       if (auditRes) setAuditData(auditRes);
     } catch {
       // silently fail
+    }
+  }, []);
+
+  // Fetch voice profile
+  const fetchVoiceProfile = useCallback(async () => {
+    setVoiceLoading(true);
+    try {
+      const res = await fetch('/api/creator/voice').then((r) => r.json()).catch(() => null);
+      if (res) setVoiceProfile(res);
+    } catch {
+      // silently fail
+    } finally {
+      setVoiceLoading(false);
+    }
+  }, []);
+
+  // Fetch performance data
+  const fetchPerformanceData = useCallback(async () => {
+    setPerfLoading(true);
+    try {
+      const [contentRes, perfRes] = await Promise.all([
+        fetch('/api/content').then((r) => r.json()).catch(() => null),
+        fetch('/api/content/performance').then((r) => r.json()).catch(() => null),
+      ]);
+      if (contentRes) setContentItems(contentRes);
+      if (perfRes) setPerfData(perfRes);
+    } catch {
+      // silently fail
+    } finally {
+      setPerfLoading(false);
     }
   }, []);
 
@@ -303,7 +471,9 @@ export default function MuseDashboard() {
       }
     }
     fetchAll();
-  }, []);
+    fetchVoiceProfile();
+    fetchPerformanceData();
+  }, [fetchVoiceProfile, fetchPerformanceData]);
 
   // Build test rows from validation data
   const tests: ValidationTest[] = validation
@@ -338,6 +508,19 @@ export default function MuseDashboard() {
   const completedCount = day2Completed.filter((t) => t.done).length;
   const totalCount = day2Completed.length + day2Pending.length;
 
+  // Voice profile dimensions for display (sorted descending)
+  const voiceProfileEntries = voiceProfile?.profile
+    ? Object.entries(voiceProfile.profile).sort(([, a], [, b]) => b - a)
+    : creatorData?.creator?.voiceProfile
+      ? Object.entries(creatorData.creator.voiceProfile).sort(([, a], [, b]) => b - a)
+      : [];
+
+  // Performance overview computed values
+  const totalContentItems = contentItems?.count ?? 0;
+  const totalHooksTracked = perfData?.hookPatterns?.reduce((sum, p) => sum + p.count, 0) ?? 0;
+  const bestPatternEntry = perfData?.hookPatterns?.find((p) => p.pattern === perfData.bestPattern);
+  const worstPatternEntry = perfData?.hookPatterns?.find((p) => p.pattern === perfData.worstPattern);
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* ===== Header ===== */}
@@ -349,7 +532,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 3 Memory
+                Muse — Day 4 Memory
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -389,7 +572,7 @@ export default function MuseDashboard() {
 
       {/* ===== Main ===== */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
-        <Tabs defaultValue="memory" className="w-full">
+        <Tabs defaultValue="voice" className="w-full">
           <TabsList className="w-full sm:w-auto flex-wrap">
             <TabsTrigger value="day1" className="gap-1.5">
               <Shield className="size-3.5" />
@@ -410,6 +593,14 @@ export default function MuseDashboard() {
             <TabsTrigger value="memory" className="gap-1.5">
               <Database className="size-3.5" />
               Memory
+            </TabsTrigger>
+            <TabsTrigger value="voice" className="gap-1.5">
+              <Mic className="size-3.5" />
+              Voice
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="gap-1.5">
+              <TrendingUp className="size-3.5" />
+              Performance
             </TabsTrigger>
           </TabsList>
 
@@ -1146,7 +1337,7 @@ export default function MuseDashboard() {
 
             <Separator />
 
-            {/* Voice Profile */}
+            {/* Voice Profile (Memory tab - existing) */}
             <section>
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Activity className="size-4" />
@@ -1344,13 +1535,767 @@ export default function MuseDashboard() {
               </Card>
             </section>
           </TabsContent>
+
+          {/* ===== VOICE TAB ===== */}
+          <TabsContent value="voice" className="space-y-6">
+            {/* Voice Profile Card */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Mic className="size-4" />
+                Voice Profile Domain
+              </h2>
+              <Card className="border-violet-500/30 shadow-md">
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="size-8 rounded-lg bg-gradient-to-br from-violet-500 to-rose-500 flex items-center justify-center">
+                        <Mic className="size-4 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">Voice Profile Analysis</CardTitle>
+                        <CardDescription>7 dimensions defining your unique creator voice</CardDescription>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
+                      <Activity className="size-3" />
+                      {voiceProfileEntries.length} dimensions
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {voiceLoading ? (
+                      <div className="space-y-2">
+                        {['Directness', 'Technical Depth', 'Storytelling', 'Humor', 'CTA Intensity', 'Sentence Length', 'Hype'].map((label) => (
+                          <div key={label} className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+                            <div className="flex-1 h-6 bg-muted rounded-md animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : voiceProfileEntries.length > 0 ? (
+                      voiceProfileEntries.map(([key, value]) => {
+                        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+                        const pct = Math.round(value);
+                        return (
+                          <div key={key} className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+                            <div className="flex-1 h-6 bg-muted rounded-md overflow-hidden relative">
+                              <div
+                                className={`h-full rounded-md ${voiceBarColor(pct)} transition-all duration-500`}
+                                style={{ width: `${pct}%` }}
+                              />
+                              <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">
+                                {pct}%
+                              </span>
+                            </div>
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${voiceBadgeColor(pct)}`}>
+                              {pct >= 70 ? 'High' : pct >= 40 ? 'Med' : 'Low'}
+                            </Badge>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-sm text-muted-foreground text-center py-6">
+                        No voice profile data yet. Analyze content below to build your profile.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Voice Analysis Tool */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <BarChart3 className="size-4" />
+                Voice Analysis Tool
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Analyze Content Voice</CardTitle>
+                  <CardDescription>Paste any content to measure its voice profile against your stored dimensions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Textarea
+                      placeholder="Paste your content here to analyze its voice profile..."
+                      value={analyzeText}
+                      onChange={(e) => setAnalyzeText(e.target.value)}
+                      rows={6}
+                      className="resize-none"
+                    />
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div className="flex items-center gap-3">
+                        <Button
+                          className="gap-1.5 bg-violet-600 text-white hover:bg-violet-700"
+                          disabled={!analyzeText.trim() || analyzeLoading}
+                          onClick={async () => {
+                            setAnalyzeLoading(true);
+                            setAnalyzeResult(null);
+                            try {
+                              const res = await fetch('/api/creator/voice/analyze', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ text: analyzeText, updateProfile: updateProfileToggle }),
+                              });
+                              const data = await res.json();
+                              setAnalyzeResult(data);
+                              if (updateProfileToggle && data.success) {
+                                await fetchVoiceProfile();
+                              }
+                            } catch {
+                              setAnalyzeResult({ success: false, error: 'Failed to analyze voice' });
+                            } finally {
+                              setAnalyzeLoading(false);
+                            }
+                          }}
+                        >
+                          <Mic className="size-3.5" />
+                          {analyzeLoading ? 'Analyzing…' : 'Analyze Voice'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={updateProfileToggle ? 'border-emerald-500/40 text-emerald-400' : ''}
+                          onClick={() => setUpdateProfileToggle(!updateProfileToggle)}
+                        >
+                          {updateProfileToggle ? (
+                            <>
+                              <CheckCircle2 className="size-3.5" />
+                              Update Profile
+                            </>
+                          ) : (
+                            <>
+                              <X className="size-3.5" />
+                              Read-Only
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {analyzeText.length} characters
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            {/* Analysis Results */}
+            {analyzeResult && (
+              <section>
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Sparkles className="size-4" />
+                  Analysis Results
+                </h2>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Voice Dimension Scores</CardTitle>
+                    <CardDescription>
+                      {analyzeResult.success ? 'Each dimension measured with indicators and reasoning' : 'Analysis failed'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {analyzeResult.success && analyzeResult.analysis ? (
+                      <div className="space-y-4">
+                        {/* Dimension Scores */}
+                        <div className="space-y-3">
+                          {analyzeResult.analysis.map((dim) => {
+                            const pct = Math.round(dim.score);
+                            return (
+                              <div key={dim.dimension} className="p-3 rounded-lg bg-muted/50">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-sm font-medium">{dim.dimension}</span>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${voiceBadgeColor(pct)}`}>
+                                      {dim.indicator}
+                                    </Badge>
+                                    <span className="text-sm font-mono font-semibold">{pct}%</span>
+                                  </div>
+                                </div>
+                                <div className="h-3 bg-muted rounded-md overflow-hidden mb-2">
+                                  <div
+                                    className={`h-full rounded-md ${voiceBarColor(pct)} transition-all duration-500`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <p className="text-xs text-muted-foreground">{dim.reasoning}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Voice Match Display */}
+                        {analyzeResult.match && (
+                          <>
+                            <Separator />
+                            <div>
+                              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                <Award className="size-4 text-violet-400" />
+                                Voice Match Score
+                              </h3>
+                              {/* Overall Match */}
+                              <div className="flex items-center gap-4 mb-4">
+                                <div className="text-3xl font-bold">
+                                  {Math.round(analyzeResult.match.overallMatch * 100)}%
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    analyzeResult.match.overallMatch >= 0.8
+                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                      : analyzeResult.match.overallMatch >= 0.5
+                                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                        : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                                  }
+                                >
+                                  {analyzeResult.match.overallMatch >= 0.8
+                                    ? 'Strong Match'
+                                    : analyzeResult.match.overallMatch >= 0.5
+                                      ? 'Partial Match'
+                                      : 'Weak Match'}
+                                </Badge>
+                              </div>
+
+                              {/* Per-dimension Matches */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
+                                {analyzeResult.match.dimensionMatches.map((dm) => (
+                                  <div
+                                    key={dm.dimension}
+                                    className={`p-2 rounded-lg text-xs ${
+                                      dm.isMismatch
+                                        ? 'bg-rose-500/10 border border-rose-500/20'
+                                        : 'bg-muted/50'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className={`font-medium ${dm.isMismatch ? 'text-rose-400' : ''}`}>
+                                        {dm.dimension}
+                                      </span>
+                                      <span className="font-mono">{Math.round(dm.match * 100)}%</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-muted-foreground">
+                                      <span>Profile: {Math.round(dm.profileScore * 100)}%</span>
+                                      <span>→</span>
+                                      <span>Content: {Math.round(dm.contentScore * 100)}%</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Mismatch Warnings */}
+                              {analyzeResult.match.mismatchCount > 0 && (
+                                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                                  <p className="text-sm font-medium text-rose-400 flex items-center gap-2">
+                                    <AlertTriangle className="size-4" />
+                                    {analyzeResult.match.mismatchCount} dimension{analyzeResult.match.mismatchCount > 1 ? 's' : ''} mismatched
+                                  </p>
+                                  <div className="mt-2 space-y-1">
+                                    {analyzeResult.match.dimensionMatches
+                                      .filter((dm) => dm.isMismatch)
+                                      .map((dm) => (
+                                        <p key={dm.dimension} className="text-xs text-rose-300">
+                                          • {dm.dimension}: profile {Math.round(dm.profileScore * 100)}% vs content {Math.round(dm.contentScore * 100)}%
+                                        </p>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                        <p className="text-sm text-rose-400">
+                          {analyzeResult.error ?? 'Analysis failed. Please try again.'}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+          </TabsContent>
+
+          {/* ===== PERFORMANCE TAB ===== */}
+          <TabsContent value="performance" className="space-y-6">
+            {/* Performance Overview Cards */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <TrendingUp className="size-4" />
+                Performance Overview
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Card className="border-emerald-500/30 shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <FileText className="size-4 text-emerald-400" />
+                      <CardTitle className="text-sm">Total Content Items</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">{totalContentItems}</div>
+                    <p className="text-xs text-muted-foreground mt-1">across all statuses</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-amber-500/30 shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="size-4 text-amber-400" />
+                      <CardTitle className="text-sm">Total Hooks Tracked</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">{totalHooksTracked}</div>
+                    <p className="text-xs text-muted-foreground mt-1">hook pattern observations</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-violet-500/30 shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <Award className="size-4 text-violet-400" />
+                      <CardTitle className="text-sm">Best Hook Pattern</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-lg font-bold">{bestPatternEntry?.pattern ?? perfData?.bestPattern ?? '—'}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      avg {bestPatternEntry ? `${Math.round(bestPatternEntry.avgEffectiveness * 100)}% effectiveness` : 'no data'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* Content Items List */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <FileText className="size-4" />
+                Content Items
+                {contentItems && (
+                  <Badge variant="secondary" className="ml-1">{contentItems.count}</Badge>
+                )}
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">All Content</CardTitle>
+                  <CardDescription>Your content items with hook patterns and performance metrics</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="max-h-96">
+                    <div className="space-y-2 pr-3">
+                      {perfLoading ? (
+                        <div className="space-y-2">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+                          ))}
+                        </div>
+                      ) : contentItems?.items && contentItems.items.length > 0 ? (
+                        contentItems.items.map((item) => (
+                          <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <span className="text-sm font-medium truncate">{item.title}</span>
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                                  {item.type}
+                                </Badge>
+                                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${statusBadgeStyle(item.status)}`}>
+                                  {item.status}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                                {item.hookPattern && (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                    {item.hookPattern}
+                                  </Badge>
+                                )}
+                                <span className="flex items-center gap-0.5">
+                                  <BarChart3 className="size-2.5" />
+                                  {item.metricsCount} metrics
+                                </span>
+                                {item.publishedAt && (
+                                  <span className="flex items-center gap-0.5">
+                                    <Clock className="size-2.5" />
+                                    {new Date(item.publishedAt).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-sm text-muted-foreground text-center py-6">
+                          No content items yet. Use &quot;Add Content&quot; below to create one.
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Hook Pattern Performance */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <PieChart className="size-4" />
+                Hook Pattern Performance
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Pattern Effectiveness</CardTitle>
+                  <CardDescription>Statistical comparison of hook patterns with honest sample sizes</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {perfLoading ? (
+                      <div className="space-y-2">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+                        ))}
+                      </div>
+                    ) : perfData?.hookPatterns && perfData.hookPatterns.length > 0 ? (
+                      perfData.hookPatterns.map((pattern) => {
+                        const isBest = pattern.pattern === perfData.bestPattern;
+                        const isWorst = pattern.pattern === perfData.worstPattern;
+                        const pct = Math.round(pattern.avgEffectiveness * 100);
+                        return (
+                          <div
+                            key={pattern.pattern}
+                            className={`p-3 rounded-lg ${
+                              isBest
+                                ? 'bg-emerald-500/10 border border-emerald-500/20'
+                                : isWorst
+                                  ? 'bg-rose-500/10 border border-rose-500/20'
+                                  : 'bg-muted/50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{pattern.pattern}</span>
+                                {isBest && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                    Best
+                                  </Badge>
+                                )}
+                                {isWorst && (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-rose-500/10 text-rose-400 border-rose-500/20">
+                                    Worst
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-mono font-semibold">{pct}%</span>
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                  {pattern.count} uses
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="h-2 bg-muted rounded-md overflow-hidden mb-1">
+                              <div
+                                className={`h-full rounded-md ${
+                                  isBest ? 'bg-emerald-500' : isWorst ? 'bg-rose-400' : voiceBarColor(pct)
+                                } transition-all duration-500`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">
+                              Based on {pattern.sampleSize} sample{pattern.sampleSize !== 1 ? 's' : ''} — avg effectiveness {pct}%
+                            </p>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-sm text-muted-foreground text-center py-6">
+                        No hook pattern data yet. Add content and metrics to build performance stats.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Performance Insights */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Lightbulb className="size-4" />
+                Performance Insights
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">AI-Generated Insights</CardTitle>
+                  <CardDescription>Statistically honest recommendations based on your content data</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {perfLoading ? (
+                      <div className="space-y-2">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
+                        ))}
+                      </div>
+                    ) : perfData?.insights && perfData.insights.length > 0 ? (
+                      perfData.insights.map((insight, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-muted/50">
+                          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                            <span className="text-sm font-medium">{insight.title}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${confidenceBadgeStyle(insight.confidence)}`}>
+                                {insight.confidence} confidence
+                              </Badge>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                {insight.evidenceType}
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground mb-1">{insight.detail}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            Based on {insight.dataPoints} data point{insight.dataPoints !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-muted-foreground text-center py-6">
+                        No insights yet. Add more content and metrics to generate insights.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Quick Actions */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Zap className="size-4" />
+                Quick Actions
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Add Content */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Plus className="size-4 text-violet-400" />
+                        <CardTitle className="text-sm">Add Content</CardTitle>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1 text-xs"
+                        onClick={() => { setShowAddContent(!showAddContent); setShowIngestMetrics(false); }}
+                      >
+                        {showAddContent ? <X className="size-3" /> : <Plus className="size-3" />}
+                        {showAddContent ? 'Cancel' : 'New'}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  {showAddContent && (
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground block mb-1">Title</label>
+                          <Input
+                            placeholder="Content title..."
+                            value={newContent.title}
+                            onChange={(e) => setNewContent({ ...newContent, title: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground block mb-1">Type</label>
+                          <Select
+                            value={newContent.type}
+                            onValueChange={(val) => setNewContent({ ...newContent, type: val })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="short_form">Short Form</SelectItem>
+                              <SelectItem value="long_form">Long Form</SelectItem>
+                              <SelectItem value="carousel">Carousel</SelectItem>
+                              <SelectItem value="video">Video</SelectItem>
+                              <SelectItem value="thread">Thread</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground block mb-1">Hook Text</label>
+                          <Textarea
+                            placeholder="Opening hook text..."
+                            value={newContent.hookText}
+                            onChange={(e) => setNewContent({ ...newContent, hookText: e.target.value })}
+                            rows={2}
+                          />
+                        </div>
+                        <Button
+                          className="w-full gap-1.5 bg-violet-600 text-white hover:bg-violet-700"
+                          disabled={!newContent.title.trim() || addingContent}
+                          onClick={async () => {
+                            setAddingContent(true);
+                            try {
+                              const res = await fetch('/api/content', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(newContent),
+                              });
+                              if (res.ok) {
+                                setNewContent({ title: '', type: 'short_form', hookText: '' });
+                                setShowAddContent(false);
+                                await fetchPerformanceData();
+                              }
+                            } catch {
+                              // error
+                            } finally {
+                              setAddingContent(false);
+                            }
+                          }}
+                        >
+                          <Plus className="size-3.5" />
+                          {addingContent ? 'Adding…' : 'Add Content'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+
+                {/* Ingest Metrics */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Upload className="size-4 text-emerald-400" />
+                        <CardTitle className="text-sm">Ingest Metrics</CardTitle>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1 text-xs"
+                        onClick={() => { setShowIngestMetrics(!showIngestMetrics); setShowAddContent(false); }}
+                      >
+                        {showIngestMetrics ? <X className="size-3" /> : <Upload className="size-3" />}
+                        {showIngestMetrics ? 'Cancel' : 'Add'}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  {showIngestMetrics && (
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground block mb-1">Content Item</label>
+                          <Select
+                            value={newMetrics.contentId}
+                            onValueChange={(val) => setNewMetrics({ ...newMetrics, contentId: val })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select content..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {contentItems?.items?.map((item) => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.title.slice(0, 40)}{item.title.length > 40 ? '…' : ''}
+                                </SelectItem>
+                              )) ?? (
+                                <SelectItem value="none" disabled>No content items</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground block mb-1">Views</label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={newMetrics.views}
+                              onChange={(e) => setNewMetrics({ ...newMetrics, views: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground block mb-1">Likes</label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={newMetrics.likes}
+                              onChange={(e) => setNewMetrics({ ...newMetrics, likes: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground block mb-1">Shares</label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={newMetrics.shares}
+                              onChange={(e) => setNewMetrics({ ...newMetrics, shares: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground block mb-1">Comments</label>
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={newMetrics.comments}
+                              onChange={(e) => setNewMetrics({ ...newMetrics, comments: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
+                          disabled={!newMetrics.contentId || addingMetrics}
+                          onClick={async () => {
+                            setAddingMetrics(true);
+                            try {
+                              const res = await fetch('/api/content/metrics', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  contentId: newMetrics.contentId,
+                                  views: parseInt(newMetrics.views) || 0,
+                                  likes: parseInt(newMetrics.likes) || 0,
+                                  shares: parseInt(newMetrics.shares) || 0,
+                                  comments: parseInt(newMetrics.comments) || 0,
+                                }),
+                              });
+                              if (res.ok) {
+                                setNewMetrics({ contentId: '', views: '', likes: '', shares: '', comments: '' });
+                                setShowIngestMetrics(false);
+                                await fetchPerformanceData();
+                              }
+                            } catch {
+                              // error
+                            } finally {
+                              setAddingMetrics(false);
+                            }
+                          }}
+                        >
+                          <Upload className="size-3.5" />
+                          {addingMetrics ? 'Ingesting…' : 'Ingest Metrics'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              </div>
+            </section>
+          </TabsContent>
         </Tabs>
       </main>
 
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Muse — Day 3 Memory | Creator Identity + Memory Graph + Audit Trail | 0 credits</span>
+          <span>Muse — Day 4 Memory | Voice + Performance domains active</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
