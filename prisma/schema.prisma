@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,20 +7,206 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ============================================================================
+// MUSE Database Schema — Day 1
+// The AI Creative Team That Learns You
+// ============================================================================
+
+/// The human creator — the person whose creative identity Muse learns and amplifies.
+model Creator {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String
+  platform        String   @default("youtube")
+  niche           String?
+  audience        String?
+  /// JSON: voice profile descriptor { tone, pace, vocabulary, etc. }
+  voiceProfile    String?
+  /// JSON: tone preferences array
+  tone            String?
+  /// JSON: things to avoid array
+  avoid           String?
+  mindsHumanId    String?
+  mindsMuseId     String?
+  mindsMakerId    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  contentItems    ContentItem[]
+  decisions       CreatorDecision[]
+  memories        MemoryEvent[]
+  recommendations Recommendation[]
+  drafts          Draft[]
+  approvals       Approval[]
+  auditEvents     AuditEvent[]
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+/// A piece of content (video, post, thread, etc.) created or planned.
+model ContentItem {
+  id              String   @id @default(cuid())
+  creatorId       String
+  type            String   // "youtube_video", "twitter_thread", "instagram_post", etc.
+  title           String?
+  status          String   @default("idea") // idea, drafting, ready, published, archived
+  /// JSON: full content body / script
+  body            String?
+  platformMeta    String?  // JSON: platform-specific metadata
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  creator         Creator           @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  metrics         ContentMetric[]
+  hooks           Hook[]
+  decisions       CreatorDecision[]
+  drafts          Draft[]
+  autonomousRuns  AutonomousRun[]
+}
+
+/// Performance metrics for a content item.
+model ContentMetric {
+  id              String   @id @default(cuid())
+  contentItemId   String
+  metricKey       String   // "views", "likes", "shares", "comments", "watchTime", etc.
+  metricValue     Float
+  capturedAt      DateTime @default(now())
+
+  contentItem     ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+}
+
+/// A hook — the opening pattern for content.
+model Hook {
+  id              String   @id @default(cuid())
+  contentItemId   String
+  text            String
+  hookType        String   @default("opening") // opening, transition, callback, cta
+  effectiveness   Float?   // 0-1 score after measurement
+  createdAt       DateTime @default(now())
+
+  contentItem     ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  patterns        HookPattern[]
+}
+
+/// Learned patterns about what hooks work for this creator.
+model HookPattern {
+  id              String   @id @default(cuid())
+  hookId          String
+  patternName     String   // "question", "bold_claim", "story", "counter_intuitive", etc.
+  confidence      Float    @default(0.5)
+  sampleSize      Int      @default(0)
+  avgEffectiveness Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  hook            Hook @relation(fields: [hookId], references: [id], onDelete: Cascade)
+}
+
+/// Creator's decision on a recommendation — accept, modify, reject, ignore.
+model CreatorDecision {
+  id              String   @id @default(cuid())
+  creatorId       String
+  contentItemId   String?
+  recommendationId String?
+  decision        String   // "accepted", "modified", "rejected", "ignored"
+  /// JSON: what the creator changed (for learning)
+  modifications   String?
+  reason          String?  // Why they decided this way
+  createdAt       DateTime @default(now())
+
+  creator         Creator      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  contentItem     ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+}
+
+/// Long-term memory events — the "learning" engine's store.
+model MemoryEvent {
+  id              String   @id @default(cuid())
+  creatorId       String
+  category        String   // "identity", "preference", "performance", "pattern", "feedback", "context"
+  key             String   // e.g. "tone", "niche", "audience", "avoid_topic_X"
+  value           String   // The learned value (JSON string for complex values)
+  confidence      Float    @default(1.0)
+  source          String   @default("creator") // "creator", "analytics", "muse_inference", "maker_feedback"
+  sessionId       String?  // Which conversation/session this was learned in
+  createdAt       DateTime @default(now())
+
+  creator         Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+}
+
+/// A recommendation from Muse/Maker to the creator.
+model Recommendation {
+  id              String   @id @default(cuid())
+  creatorId       String
+  type            String   // "content_idea", "hook", "timing", "format", "improvement"
+  title           String
+  rationale       String?  // Why this recommendation
+  /// JSON: the recommendation payload (varies by type)
+  payload         String?
+  priority        Int      @default(5) // 1-10
+  status          String   @default("pending") // pending, shown, accepted, rejected, expired
+  fromMind        String?  // "muse" or "maker"
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  creator         Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+}
+
+/// A draft content item — working version before publishing.
+model Draft {
+  id              String   @id @default(cuid())
+  creatorId       String
+  contentItemId   String?
+  version         Int      @default(1)
+  /// JSON: the draft content
+  content         String
+  changeLog       String?  // What changed in this version
+  generatedBy     String?  // "maker", "muse", "creator", "hybrid"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  creator         Creator      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  contentItem     ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+}
+
+/// An autonomous run — when Muse decides to act without explicit prompt.
+model AutonomousRun {
+  id              String   @id @default(cuid())
+  contentItemId   String?
+  trigger         String   // "scheduled", "event_driven", "proactive", "follow_up"
+  taskType        String   // "research", "draft", "analyze", "optimize"
+  status          String   @default("running") // running, completed, failed, cancelled
+  result          String?  // JSON: the output of the run
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  contentItem     ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+}
+
+/// Approval gate — creator must approve before action is taken.
+model Approval {
+  id              String   @id @default(cuid())
+  creatorId       String
+  itemType        String   // "draft", "autonomous_run", "recommendation", "publish_action"
+  itemId          String?
+  action          String   // "publish", "schedule", "edit", "delete"
+  status          String   @default("pending") // pending, approved, rejected, expired
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  creator         Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+}
+
+/// Audit trail — every significant action logged.
+model AuditEvent {
+  id              String   @id @default(cuid())
+  creatorId       String
+  actor           String   // "creator", "muse", "maker", "system"
+  action          String   // "create", "update", "delete", "approve", "reject", "publish", "learn"
+  targetType      String   // "content_item", "draft", "recommendation", "memory", etc.
+  targetId        String?
+  /// JSON: snapshot of the change
+  delta           String?
+  createdAt       DateTime @default(now())
+
+  creator         Creator @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 }
