@@ -452,3 +452,48 @@ Stage Summary:
 - All 4 memory domains active: Identity (Day 3), Voice (Day 4), Performance (Day 4), Decisions (Day 5)
 - Total credit burn: 0 (all local computation, no Minds API calls)
 - Commit pushed: bc0379d at https://github.com/sodiq-code/muse
+
+---
+Task ID: 6
+Agent: full-stack-developer
+Task: Day 6 — Hook Comparison Engine + Enhanced Hook Classifier
+
+Work Log:
+- Read worklog and existing codebase (hook-classifier.ts, learning-engine.ts, performance-service.ts, seed.ts, schema.prisma, page.tsx)
+- Built Hook Comparison Engine (src/lib/hook-comparison.ts) with 4 core functions:
+  - compareHookVsHistory(creatorId, hookText) — classifies hook text, compares pattern's historical performance against creator's overall average, returns creator-specific insights with evidence chain
+  - comparePatternVsPattern(creatorId, patternA, patternB) — head-to-head pattern comparison with winner/margin/confidence/evidence
+  - getHookRankings(creatorId) — ranks all 8 patterns by effectiveness with confidence badges, marks untested patterns
+  - predictHookPerformance(creatorId, hookText) — classifies hook, finds historical pattern data, returns prediction with confidence and similar hooks
+- All comparison functions enforce: creator-specific data, statistical honesty (confidence levels based on sample sizes), evidence chains (sample size, date range, hook texts), zero credits (all local computation)
+- Created 3 new API routes:
+  - GET /api/learning/comparison — Hook comparison endpoint (query param: hookText)
+  - GET /api/learning/rankings — Hook pattern rankings (auto-fetches on Learning tab load)
+  - POST /api/learning/predict — Predict hook performance (body: { hookText })
+- Updated Dashboard (page.tsx) with Learning tab:
+  - Section 1: Hook Classifier Tool — textarea input, Classify button, pattern badge, confidence, reasoning, all 8 pattern scores as mini bars
+  - Section 2: Hook Comparison — uses hook text from Section 1, Compare button, pattern vs overall bars, creator-specific insights (rank, better/worse patterns), evidence badge
+  - Section 3: Hook Pattern Rankings — all 8 patterns ranked by effectiveness, rank numbers, effectiveness bars, confidence badges, "No data" for untested patterns, overall confidence
+  - Section 4: Performance Prediction — separate textarea, Predict button, predicted effectiveness bar, message, similar hooks list
+- Changed header to "Muse — Day 6 Learning"
+- Changed default tab to "learning"
+- Updated footer to include "Learning engine active"
+- All existing tabs preserved and working
+- Verified all API endpoints return 200:
+  - GET /api/learning/comparison?hookText=Most+AI+agents+arent+really+agents → 200
+  - GET /api/learning/rankings → 200 with all 8 patterns ranked
+  - POST /api/learning/predict with { hookText: "..." } → 200 with prediction
+  - POST /api/learning/hooks → 200 (existing, still works)
+  - POST /api/learning/analyze → 200 (existing, still works)
+  - GET /api/content/performance → 200 (existing, still works)
+- bun run lint passes with no errors
+
+Stage Summary:
+- Hook Comparison Engine fully built with 4 core functions (compareHookVsHistory, comparePatternVsPattern, getHookRankings, predictHookPerformance)
+- 3 new API routes created (comparison, rankings, predict)
+- Learning tab with 4 interactive sections added to dashboard
+- All endpoints verified working with real database data
+- Statistical honesty enforced throughout (confidence levels, sample sizes, evidence types)
+- Creator-specific comparisons (not global averages)
+- Zero credits used (all local computation)
+- Schema frozen (no changes)
