@@ -392,3 +392,35 @@ Stage Summary:
 - Statistical honesty enforced: confidence levels (low/medium/high), evidence types (observed/statistical/correlation)
 - Total credit burn: 0 (all local computation)
 - Commit pushed: 41bb8ae at https://github.com/sodiq-code/muse
+
+---
+Task ID: 5
+Agent: full-stack-developer
+Task: Day 5 — Creator Decisions Domain, Content Ingestion Pipeline, Schema Freeze
+
+Work Log:
+- Read worklog from Days 1-4 to understand project state
+- Verified existing Day 5 code: decision-service.ts, ingestion-pipeline.ts, seed.ts with extra content and decisions
+- Fixed Issue 1: Added seedExtraContent + seedDecisions to /api/content/ingest GET route so extra content seeds during initial page load chain
+- Fixed Issue 2: Added module-level seedCompleted flag to /api/creator/decisions to skip re-seeding after first successful seed
+- Fixed Issue 2 (deeper): Made seedPerformanceData and seedExtraContent idempotency guards robust against race conditions — now checks specific titles instead of just count, and skips individual items that already exist by title
+- Fixed Issue 3: Updated header from "Muse — Day 5 — Memory Complete" to "Muse — Day 5 Memory"
+- Verified dashboard already has: Decision summary cards (Total, Acceptance Rate, Most Rejected Category, Modification Rate), Decision Learnings with confidence badges, Recent Decisions feed with type/category badges, Submit Decision form, Ingest Status card with meetsMinimum badge
+- Verified "decisions" is already the default tab (defaultValue="decisions")
+- Created SCHEMA_FROZEN.md documenting frozen schema with freeze date, all 12 models, relationships, and change policy
+- Cleared duplicate data from database (race condition had caused 15 extra items to be seeded twice)
+- Re-seeded cleanly: 25 content items + 1 test item = 26 total, meetsMinimum: true
+- Tested all API routes: GET /api/creator/decisions (200), POST /api/creator/decisions (201 with valid ID), GET /api/content/ingest (200, meetsMinimum: true), POST /api/content/ingest (201), GET /api/content (200), GET /api/content/performance (200), GET /api/creator (200), GET /api/creator/voice (200), GET /api/creator/memory (200), GET /api/creator/audit (200)
+- Ran bun run lint: 0 errors, 0 warnings
+- Dev server running without crashes
+
+Stage Summary:
+- All 4 Day 5 issues fixed and verified
+- Content ingestion: 26 items (25 seeded + 1 via POST test), meetsMinimum: true, 100% hook pattern coverage
+- Decision domain: 11 decisions, 73% acceptance rate, 3 learnings with confidence levels
+- Idempotency guards: Robust per-title checks prevent race condition duplicates
+- Decisions API: Module-level flag skips re-seeding after first successful call
+- Schema frozen: SCHEMA_FROZEN.md created with 12 models documented
+- Dashboard: "Muse — Day 5 Memory" header, Decisions default tab, all sections rendering
+- All 10+ API routes returning 200
+- Lint: 0 errors

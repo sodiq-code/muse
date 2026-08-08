@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bulkIngestContent, getIngestStatus, type IngestItem } from '@/lib/ingestion-pipeline';
-import { seedCreator, seedPerformanceData } from '@/lib/seed';
+import { seedCreator, seedPerformanceData, seedExtraContent, seedDecisions } from '@/lib/seed';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const creatorId = searchParams.get('creatorId') ?? (await seedCreator());
     await seedPerformanceData(creatorId);
+    await seedExtraContent(creatorId);
+    await seedDecisions(creatorId);
 
     const status = await getIngestStatus(creatorId);
 

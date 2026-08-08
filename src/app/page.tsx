@@ -605,7 +605,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 5 — Memory Complete
+                Muse — Day 5 Memory
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
