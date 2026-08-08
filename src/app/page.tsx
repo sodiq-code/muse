@@ -69,6 +69,9 @@ import {
   ThumbsUp,
   ThumbsDown,
   GitBranch,
+  Target,
+  LineChart,
+  Wand2,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -162,6 +165,7 @@ interface HookClassResponse {
     pattern: string;
     confidence: number;
     reasoning: string;
+    allScores?: Record<string, number>;
   };
   patterns?: { id: string; label: string }[];
 }
@@ -354,6 +358,64 @@ interface IngestStatusResponse {
   lastIngestAt: string | null;
 }
 
+// Learning Domain Types
+interface HookClassificationResult {
+  pattern: string;
+  confidence: number;
+  reasoning: string;
+  allScores?: Record<string, number>;
+}
+
+interface HookComparisonResponse {
+  success: boolean;
+  hookClassification: HookClassificationResult;
+  historicalComparison: {
+    patternAvg: number;
+    creatorOverallAvg: number;
+    diff: number;
+    diffPercent: number;
+    message: string;
+    confidence: 'low' | 'medium' | 'high';
+    evidenceType: string;
+    sampleSize: number;
+  };
+  creatorSpecific: {
+    patternRank: number;
+    totalPatterns: number;
+    betterPatterns: string[];
+    worsePatterns: string[];
+  };
+}
+
+interface PatternRankingItem {
+  pattern: string;
+  label: string;
+  avgEffectiveness: number;
+  sampleSize: number;
+  rank: number;
+  confidence: 'low' | 'medium' | 'high';
+  status: 'tested' | 'untested';
+}
+
+interface HookRankingsResponse {
+  success: boolean;
+  rankings: PatternRankingItem[];
+  overallConfidence: 'low' | 'medium' | 'high';
+  totalSamples: number;
+}
+
+interface PredictionResponse {
+  success: boolean;
+  pattern: string;
+  patternLabel: string;
+  predictedEffectiveness: number;
+  confidence: 'low' | 'medium' | 'high';
+  historicalSampleSize: number;
+  similarHooks: { text: string; effectiveness: number }[];
+  message: string;
+  evidenceType: string;
+}
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
@@ -444,6 +506,18 @@ export default function MuseDashboard() {
   const [decisionForm, setDecisionForm] = useState({ contentItemId: '', decisionType: 'accepted', category: '', reason: '' });
   const [submittingDecision, setSubmittingDecision] = useState(false);
 
+  // Learning Domain State
+  const [learningHookText, setLearningHookText] = useState('');
+  const [learningClassResult, setLearningClassResult] = useState<HookClassResponse | null>(null);
+  const [learningClassLoading, setLearningClassLoading] = useState(false);
+  const [learningCompResult, setLearningCompResult] = useState<HookComparisonResponse | null>(null);
+  const [learningCompLoading, setLearningCompLoading] = useState(false);
+  const [learningRankings, setLearningRankings] = useState<HookRankingsResponse | null>(null);
+  const [learningRankingsLoading, setLearningRankingsLoading] = useState(true);
+  const [learningPredText, setLearningPredText] = useState('');
+  const [learningPredResult, setLearningPredResult] = useState<PredictionResponse | null>(null);
+  const [learningPredLoading, setLearningPredLoading] = useState(false);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -507,6 +581,19 @@ export default function MuseDashboard() {
     }
   }, []);
 
+  // Fetch hook rankings for Learning tab
+  const fetchRankings = useCallback(async () => {
+    setLearningRankingsLoading(true);
+    try {
+      const res = await fetch('/api/learning/rankings').then((r) => r.json()).catch(() => null);
+      if (res) setLearningRankings(res);
+    } catch {
+      // silently fail
+    } finally {
+      setLearningRankingsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     async function fetchAll() {
       try {
@@ -546,7 +633,8 @@ export default function MuseDashboard() {
     fetchVoiceProfile();
     fetchPerformanceData();
     fetchDecisionsData();
-  }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData]);
+    fetchRankings();
+  }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData, fetchRankings]);
 
   // Build test rows from validation data
   const tests: ValidationTest[] = validation
@@ -605,7 +693,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 5 Memory
+                Muse — Day 6 Learning
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -648,7 +736,7 @@ export default function MuseDashboard() {
 
       {/* ===== Main ===== */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
-        <Tabs defaultValue="decisions" className="w-full">
+        <Tabs defaultValue="learning" className="w-full">
           <TabsList className="w-full sm:w-auto flex-wrap">
             <TabsTrigger value="day1" className="gap-1.5">
               <Shield className="size-3.5" />
@@ -677,6 +765,10 @@ export default function MuseDashboard() {
             <TabsTrigger value="performance" className="gap-1.5">
               <TrendingUp className="size-3.5" />
               Performance
+            </TabsTrigger>
+            <TabsTrigger value="learning" className="gap-1.5">
+              <GraduationCap className="size-3.5" />
+              Learning
             </TabsTrigger>
             <TabsTrigger value="decisions" className="gap-1.5">
               <Scale className="size-3.5" />
@@ -2370,6 +2462,422 @@ export default function MuseDashboard() {
             </section>
           </TabsContent>
 
+          {/* ===== LEARNING TAB ===== */}
+          <TabsContent value="learning" className="space-y-6">
+            {/* Section 1: Hook Classifier Tool */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Sparkles className="size-4" />
+                Hook Classifier
+              </h2>
+              <Card className="border-violet-500/30 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-base">Classify Hook Text</CardTitle>
+                  <CardDescription>Enter hook text to classify it into one of 8 pattern types</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="e.g. Most AI agents aren't really agents"
+                      value={learningHookText}
+                      onChange={(e) => setLearningHookText(e.target.value)}
+                      className="flex-1"
+                      rows={2}
+                    />
+                    <Button
+                      onClick={async () => {
+                        if (!learningHookText.trim()) return;
+                        setLearningClassLoading(true);
+                        setLearningClassResult(null);
+                        try {
+                          const res = await fetch('/api/learning/hooks', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text: learningHookText }),
+                          }).then((r) => r.json());
+                          setLearningClassResult(res);
+                        } catch {
+                          // fail silently
+                        } finally {
+                          setLearningClassLoading(false);
+                        }
+                      }}
+                      disabled={learningClassLoading || !learningHookText.trim()}
+                      className="self-end"
+                    >
+                      {learningClassLoading ? 'Classifying…' : 'Classify'}
+                    </Button>
+                  </div>
+
+                  {learningClassResult?.success && learningClassResult.classification && (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className="bg-violet-600 text-white border-violet-600">
+                          {learningClassResult.classification.pattern}
+                        </Badge>
+                        <Badge variant="outline" className={confidenceBadgeStyle(
+                          learningClassResult.classification.confidence > 0.5 ? 'high' : learningClassResult.classification.confidence > 0.25 ? 'medium' : 'low'
+                        )}>
+                          {Math.round(learningClassResult.classification.confidence * 100)}% confidence
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{learningClassResult.classification.reasoning}</p>
+
+                      {/* All 8 pattern scores as mini bars */}
+                      {learningClassResult.classification.allScores && (
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-muted-foreground">Pattern Scores</p>
+                          {Object.entries(learningClassResult.classification.allScores)
+                            .sort(([, a], [, b]) => (b as number) - (a as number))
+                            .map(([pattern, score]) => (
+                              <div key={pattern} className="flex items-center gap-2">
+                                <span className="text-xs w-28 shrink-0 truncate">{pattern}</span>
+                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-violet-500"
+                                    style={{ width: `${Math.round((score as number) * 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs w-8 text-right">{Math.round((score as number) * 100)}%</span>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Section 2: Hook Comparison */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <LineChart className="size-4" />
+                Hook Comparison vs History
+              </h2>
+              <Card className="border-emerald-500/30 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-base">Compare Against Your History</CardTitle>
+                  <CardDescription>See how this hook pattern performs compared to your creator-specific averages</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Hook text to compare against your history…"
+                      value={learningHookText}
+                      onChange={(e) => setLearningHookText(e.target.value)}
+                      className="flex-1"
+                      rows={2}
+                    />
+                    <Button
+                      onClick={async () => {
+                        if (!learningHookText.trim()) return;
+                        setLearningCompLoading(true);
+                        setLearningCompResult(null);
+                        try {
+                          const res = await fetch(`/api/learning/comparison?hookText=${encodeURIComponent(learningHookText)}`).then((r) => r.json());
+                          setLearningCompResult(res);
+                        } catch {
+                          // fail silently
+                        } finally {
+                          setLearningCompLoading(false);
+                        }
+                      }}
+                      disabled={learningCompLoading || !learningHookText.trim()}
+                      className="self-end"
+                    >
+                      {learningCompLoading ? 'Comparing…' : 'Compare'}
+                    </Button>
+                  </div>
+
+                  {learningCompResult?.success && (
+                    <div className="space-y-3 pt-2">
+                      {/* Classification */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className="bg-violet-600 text-white border-violet-600">
+                          {learningCompResult.hookClassification.pattern}
+                        </Badge>
+                        <Badge variant="outline" className={confidenceBadgeStyle(learningCompResult.historicalComparison.confidence)}>
+                          {learningCompResult.historicalComparison.confidence} confidence
+                        </Badge>
+                        <Badge variant="outline">
+                          {learningCompResult.historicalComparison.sampleSize} samples
+                        </Badge>
+                      </div>
+
+                      {/* Comparison message */}
+                      <Card className="bg-muted/50">
+                        <CardContent className="p-3">
+                          <p className="text-sm font-medium">{learningCompResult.historicalComparison.message}</p>
+                        </CardContent>
+                      </Card>
+
+                      {/* Pattern vs overall comparison bars */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs w-28 shrink-0">Pattern avg</span>
+                          <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-violet-500"
+                              style={{ width: `${Math.round(learningCompResult.historicalComparison.patternAvg * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs w-12 text-right">{Math.round(learningCompResult.historicalComparison.patternAvg * 100)}%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs w-28 shrink-0">Your avg</span>
+                          <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-emerald-500"
+                              style={{ width: `${Math.round(learningCompResult.historicalComparison.creatorOverallAvg * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs w-12 text-right">{Math.round(learningCompResult.historicalComparison.creatorOverallAvg * 100)}%</span>
+                        </div>
+                      </div>
+
+                      {/* Creator-specific insights */}
+                      {learningCompResult.creatorSpecific.totalPatterns > 0 && (
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>Rank: #{learningCompResult.creatorSpecific.patternRank} of {learningCompResult.creatorSpecific.totalPatterns} patterns</p>
+                          {learningCompResult.creatorSpecific.betterPatterns.length > 0 && (
+                            <p>Outperformed by: {learningCompResult.creatorSpecific.betterPatterns.join(', ')}</p>
+                          )}
+                          {learningCompResult.creatorSpecific.worsePatterns.length > 0 && (
+                            <p>Outperforms: {learningCompResult.creatorSpecific.worsePatterns.join(', ')}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Evidence type */}
+                      <Badge variant="secondary" className="text-[10px]">
+                        Evidence: {learningCompResult.historicalComparison.evidenceType}
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Section 3: Hook Pattern Rankings */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Award className="size-4" />
+                Hook Pattern Rankings
+              </h2>
+              <Card className="border-amber-500/30 shadow-md">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base">Your Hook Pattern Effectiveness</CardTitle>
+                      <CardDescription>Ranked by historical effectiveness — creator-specific data</CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fetchRankings()}
+                      disabled={learningRankingsLoading}
+                    >
+                      {learningRankingsLoading ? 'Loading…' : 'Refresh'}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {learningRankingsLoading ? (
+                      <div className="space-y-2">
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                          <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+                        ))}
+                      </div>
+                    ) : learningRankings?.success && learningRankings.rankings ? (
+                      <>
+                        {learningRankings.rankings.map((r) => {
+                          const pct = Math.round(r.avgEffectiveness * 100);
+                          const isTested = r.status === 'tested';
+                          return (
+                            <div key={r.pattern} className={`flex items-center gap-3 p-3 rounded-lg ${isTested ? 'bg-muted/50 hover:bg-muted' : 'bg-muted/20'} transition-colors`}>
+                              {/* Rank */}
+                              <div className="w-8 text-center">
+                                {isTested ? (
+                                  <span className="text-lg font-bold text-violet-400">#{r.rank}</span>
+                                ) : (
+                                  <span className="text-lg text-muted-foreground">—</span>
+                                )}
+                              </div>
+
+                              {/* Pattern name + bar */}
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">{r.label}</span>
+                                  <Badge variant="outline" className={confidenceBadgeStyle(r.confidence)}>
+                                    {r.confidence}
+                                  </Badge>
+                                  {!isTested && (
+                                    <Badge variant="secondary" className="text-[10px]">No data</Badge>
+                                  )}
+                                </div>
+                                {isTested && (
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${
+                                          r.rank === 1 ? 'bg-emerald-500' : r.rank <= 3 ? 'bg-violet-500' : 'bg-amber-500'
+                                        }`}
+                                        style={{ width: `${pct}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-xs w-10 text-right">{pct}%</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Sample size */}
+                              <div className="text-xs text-muted-foreground w-16 text-right shrink-0">
+                                {isTested ? `${r.sampleSize} samples` : '—'}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Overall confidence */}
+                        <div className="pt-3 border-t flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            {learningRankings.totalSamples} total samples across all patterns
+                          </span>
+                          <Badge variant="outline" className={confidenceBadgeStyle(learningRankings.overallConfidence)}>
+                            Overall: {learningRankings.overallConfidence} confidence
+                          </Badge>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-sm text-muted-foreground text-center py-6">
+                        No ranking data available
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Section 4: Performance Prediction */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Target className="size-4" />
+                Performance Prediction
+              </h2>
+              <Card className="border-sky-500/30 shadow-md">
+                <CardHeader>
+                  <CardTitle className="text-base">Predict Hook Performance</CardTitle>
+                  <CardDescription>Estimate how a new hook might perform based on your historical pattern data</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Enter new hook text to predict performance…"
+                      value={learningPredText}
+                      onChange={(e) => setLearningPredText(e.target.value)}
+                      className="flex-1"
+                      rows={2}
+                    />
+                    <Button
+                      onClick={async () => {
+                        if (!learningPredText.trim()) return;
+                        setLearningPredLoading(true);
+                        setLearningPredResult(null);
+                        try {
+                          const res = await fetch('/api/learning/predict', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ hookText: learningPredText }),
+                          }).then((r) => r.json());
+                          setLearningPredResult(res);
+                        } catch {
+                          // fail silently
+                        } finally {
+                          setLearningPredLoading(false);
+                        }
+                      }}
+                      disabled={learningPredLoading || !learningPredText.trim()}
+                      className="self-end"
+                    >
+                      {learningPredLoading ? 'Predicting…' : 'Predict'}
+                    </Button>
+                  </div>
+
+                  {learningPredResult?.success && (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className="bg-violet-600 text-white border-violet-600">
+                          {learningPredResult.patternLabel}
+                        </Badge>
+                        <Badge variant="outline" className={confidenceBadgeStyle(learningPredResult.confidence)}>
+                          {learningPredResult.confidence} confidence
+                        </Badge>
+                        <Badge variant="outline">
+                          {learningPredResult.historicalSampleSize} historical samples
+                        </Badge>
+                      </div>
+
+                      {/* Predicted effectiveness bar */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs w-28 shrink-0">Predicted</span>
+                          <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-sky-500"
+                              style={{ width: `${Math.round(learningPredResult.predictedEffectiveness * 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs w-12 text-right font-medium">
+                            {Math.round(learningPredResult.predictedEffectiveness * 100)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Message */}
+                      <Card className="bg-muted/50">
+                        <CardContent className="p-3">
+                          <p className="text-sm font-medium">{learningPredResult.message}</p>
+                        </CardContent>
+                      </Card>
+
+                      {/* Evidence */}
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px]">
+                          Evidence: {learningPredResult.evidenceType}
+                        </Badge>
+                      </div>
+
+                      {/* Similar hooks */}
+                      {learningPredResult.similarHooks.length > 0 && (
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-muted-foreground">Similar hooks from your history</p>
+                          <ScrollArea className="max-h-32">
+                            <div className="space-y-1 pr-3">
+                              {learningPredResult.similarHooks.map((h, i) => (
+                                <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground p-1.5 rounded bg-muted/30">
+                                  <span className="flex-1 truncate">{h.text}</span>
+                                  <span className="shrink-0">{Math.round(h.effectiveness * 100)}%</span>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          </TabsContent>
+
           {/* ===== DECISIONS TAB ===== */}
           <TabsContent value="decisions" className="space-y-6">
             {/* Decision Summary Cards */}
@@ -2729,7 +3237,7 @@ export default function MuseDashboard() {
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>All 4 memory domains active • Schema frozen ❄️ • 0 credits burned</span>
+          <span>All 4 memory domains active • Learning engine active • Schema frozen ❄️ • 0 credits burned</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
