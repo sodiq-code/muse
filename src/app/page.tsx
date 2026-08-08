@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -15,6 +15,9 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Activity,
   Brain,
@@ -42,6 +45,13 @@ import {
   Flame,
   FileText,
   MessageSquare,
+  User,
+  Fingerprint,
+  History,
+  Pencil,
+  X,
+  Save,
+  Database,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -139,6 +149,75 @@ interface HookClassResponse {
   patterns?: { id: string; label: string }[];
 }
 
+interface CreatorResponse {
+  success: boolean;
+  creator?: {
+    id: string;
+    email: string;
+    name: string;
+    niche: string | null;
+    audience: string | null;
+    tone: string[];
+    avoid: string[];
+    platform: string;
+    voiceProfile: Record<string, number>;
+    mindsHumanId: string | null;
+    mindsMuseId: string | null;
+    mindsMakerId: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
+  identityDomain?: {
+    name: string;
+    niche: string | null;
+    audience: string | null;
+    tone: string[];
+    avoid: string[];
+    platform: string;
+    email: string;
+  };
+  stats?: {
+    memoryEvents: number;
+    auditEvents: number;
+  };
+}
+
+interface MemoryEventItem {
+  id: string;
+  creatorId: string;
+  category: string;
+  key: string;
+  value: string;
+  confidence: number;
+  source: string;
+  sessionId: string | null;
+  createdAt: string;
+}
+
+interface AuditEventItem {
+  id: string;
+  creatorId: string;
+  actor: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  delta: string | null;
+  createdAt: string;
+}
+
+interface MemoryResponse {
+  success: boolean;
+  events: MemoryEventItem[];
+  count: number;
+  category: string;
+}
+
+interface AuditResponse {
+  success: boolean;
+  events: AuditEventItem[];
+  count: number;
+}
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
@@ -163,13 +242,35 @@ export default function MuseDashboard() {
   const [draftData, setDraftData] = useState<DraftResponse | null>(null);
   const [autonomyData, setAutonomyData] = useState<AutonomyStatusResponse | null>(null);
   const [hookData, setHookData] = useState<HookClassResponse | null>(null);
+  const [creatorData, setCreatorData] = useState<CreatorResponse | null>(null);
+  const [memoryData, setMemoryData] = useState<MemoryResponse | null>(null);
+  const [auditData, setAuditData] = useState<AuditResponse | null>(null);
+  const [editingIdentity, setEditingIdentity] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', niche: '', audience: '', tone: '', avoid: '' });
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch creator/memory/audit data
+  const fetchCreatorData = useCallback(async () => {
+    try {
+      const [creatorRes, memRes, auditRes] = await Promise.all([
+        fetch('/api/creator').then((r) => r.json()).catch(() => null),
+        fetch('/api/creator/memory').then((r) => r.json()).catch(() => null),
+        fetch('/api/creator/audit').then((r) => r.json()).catch(() => null),
+      ]);
+      if (creatorRes) setCreatorData(creatorRes);
+      if (memRes) setMemoryData(memRes);
+      if (auditRes) setAuditData(auditRes);
+    } catch {
+      // silently fail
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [statusRes, valRes, draftRes, autoRes, hookRes] = await Promise.all([
+        const [statusRes, valRes, draftRes, autoRes, hookRes, creatorRes, memRes, auditRes] = await Promise.all([
           fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
           fetch('/api/validation/day1').then((r) => r.json()).catch(() => null),
           fetch('/api/minds/draft', {
@@ -183,12 +284,18 @@ export default function MuseDashboard() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: 'Everyone says AI agents are the future. They\'re wrong — and here\'s why.' }),
           }).then((r) => r.json()).catch(() => null),
+          fetch('/api/creator').then((r) => r.json()).catch(() => null),
+          fetch('/api/creator/memory').then((r) => r.json()).catch(() => null),
+          fetch('/api/creator/audit').then((r) => r.json()).catch(() => null),
         ]);
         setStatus(statusRes);
         setValidation(valRes);
         setDraftData(draftRes);
         setAutonomyData(autoRes);
         setHookData(hookRes);
+        if (creatorRes) setCreatorData(creatorRes);
+        if (memRes) setMemoryData(memRes);
+        if (auditRes) setAuditData(auditRes);
       } catch (e) {
         setError(String(e));
       } finally {
@@ -242,7 +349,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 2 Creative Pipeline
+                Muse — Day 3 Memory
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -282,8 +389,8 @@ export default function MuseDashboard() {
 
       {/* ===== Main ===== */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
-        <Tabs defaultValue="day2" className="w-full">
-          <TabsList className="w-full sm:w-auto">
+        <Tabs defaultValue="memory" className="w-full">
+          <TabsList className="w-full sm:w-auto flex-wrap">
             <TabsTrigger value="day1" className="gap-1.5">
               <Shield className="size-3.5" />
               Day 1
@@ -299,6 +406,10 @@ export default function MuseDashboard() {
             <TabsTrigger value="autonomy" className="gap-1.5">
               <Moon className="size-3.5" />
               Autonomy
+            </TabsTrigger>
+            <TabsTrigger value="memory" className="gap-1.5">
+              <Database className="size-3.5" />
+              Memory
             </TabsTrigger>
           </TabsList>
 
@@ -853,13 +964,393 @@ export default function MuseDashboard() {
               </Card>
             </section>
           </TabsContent>
+
+          {/* ===== MEMORY TAB ===== */}
+          <TabsContent value="memory" className="space-y-6">
+            {/* Identity Card */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Fingerprint className="size-4" />
+                Creator Identity Domain
+              </h2>
+              <Card className="border-violet-500/30 shadow-md">
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="size-10 rounded-full bg-gradient-to-br from-violet-500 to-emerald-500 flex items-center justify-center">
+                        <User className="size-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{creatorData?.creator?.name ?? 'Loading…'}</CardTitle>
+                        <CardDescription>{creatorData?.creator?.niche ?? '—'}</CardDescription>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-400">
+                        {creatorData?.creator?.platform === 'youtube' ? 'YouTube' : creatorData?.creator?.platform ?? '—'}
+                      </Badge>
+                      {creatorData?.stats && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Database className="size-3" />
+                          {creatorData.stats.memoryEvents} memories
+                        </Badge>
+                      )}
+                      {!editingIdentity ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => {
+                            const c = creatorData?.creator;
+                            setEditForm({
+                              name: c?.name ?? '',
+                              niche: c?.niche ?? '',
+                              audience: c?.audience ?? '',
+                              tone: c?.tone?.join(', ') ?? '',
+                              avoid: c?.avoid?.join(', ') ?? '',
+                            });
+                            setEditingIdentity(true);
+                          }}
+                        >
+                          <Pencil className="size-3" />
+                          Edit
+                        </Button>
+                      ) : (
+                        <div className="flex gap-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            onClick={() => setEditingIdentity(false)}
+                          >
+                            <X className="size-3" />
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="gap-1 bg-violet-600 text-white hover:bg-violet-700"
+                            disabled={saving}
+                            onClick={async () => {
+                              setSaving(true);
+                              try {
+                                const res = await fetch('/api/creator', {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    name: editForm.name,
+                                    niche: editForm.niche,
+                                    audience: editForm.audience,
+                                    tone: editForm.tone.split(',').map((s) => s.trim()).filter(Boolean),
+                                    avoid: editForm.avoid.split(',').map((s) => s.trim()).filter(Boolean),
+                                  }),
+                                });
+                                if (res.ok) {
+                                  setEditingIdentity(false);
+                                  await fetchCreatorData();
+                                }
+                              } catch {
+                                // error
+                              } finally {
+                                setSaving(false);
+                              }
+                            }}
+                          >
+                            <Save className="size-3" />
+                            {saving ? 'Saving…' : 'Save'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {editingIdentity ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">Name</label>
+                        <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">Niche</label>
+                        <Input value={editForm.niche} onChange={(e) => setEditForm({ ...editForm, niche: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">Audience</label>
+                        <Input value={editForm.audience} onChange={(e) => setEditForm({ ...editForm, audience: e.target.value })} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">Tone (comma-separated)</label>
+                        <Textarea value={editForm.tone} onChange={(e) => setEditForm({ ...editForm, tone: e.target.value })} rows={2} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">Avoid (comma-separated)</label>
+                        <Textarea value={editForm.avoid} onChange={(e) => setEditForm({ ...editForm, avoid: e.target.value })} rows={2} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Audience</p>
+                          <p className="text-sm">{creatorData?.creator?.audience ?? '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Email</p>
+                          <p className="text-sm font-mono text-xs">{creatorData?.creator?.email ?? '—'}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Tone</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(creatorData?.creator?.tone ?? []).map((t) => (
+                            <Badge key={t} variant="outline" className="border-violet-500/40 text-violet-400">{t}</Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Avoid</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(creatorData?.creator?.avoid ?? []).map((a) => (
+                            <Badge key={a} variant="outline" className="border-rose-500/40 text-rose-400">{a}</Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Minds IDs */}
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Minds IDs</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+                          <div className="p-2 rounded bg-muted/50">
+                            <span className="text-muted-foreground">Human: </span>
+                            <span>{truncateId(creatorData?.creator?.mindsHumanId ?? '', 12)}</span>
+                          </div>
+                          <div className="p-2 rounded bg-muted/50">
+                            <span className="text-muted-foreground">Muse: </span>
+                            <span>{truncateId(creatorData?.creator?.mindsMuseId ?? '', 12)}</span>
+                          </div>
+                          <div className="p-2 rounded bg-muted/50">
+                            <span className="text-muted-foreground">Maker: </span>
+                            <span>{truncateId(creatorData?.creator?.mindsMakerId ?? '', 12)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Voice Profile */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Activity className="size-4" />
+                Voice Profile
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Voice Dimensions</CardTitle>
+                  <CardDescription>Quantified creator voice characteristics from identity analysis</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {creatorData?.creator?.voiceProfile && Object.entries(creatorData.creator.voiceProfile)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([key, value]) => {
+                        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+                        const pct = Math.round(value);
+                        const barColor = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-rose-500';
+                        return (
+                          <div key={key} className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+                            <div className="flex-1 h-6 bg-muted rounded-md overflow-hidden relative">
+                              <div
+                                className={`h-full rounded-md ${barColor} transition-all duration-500`}
+                                style={{ width: `${pct}%` }}
+                              />
+                              <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">
+                                {pct}%
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    {!creatorData?.creator?.voiceProfile && (
+                      <div className="space-y-2">
+                        {['Directness', 'Technical Depth', 'Storytelling', 'Humor', 'CTA Intensity', 'Hype'].map((label) => (
+                          <div key={label} className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+                            <div className="flex-1 h-6 bg-muted rounded-md animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Memory Events Feed */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Brain className="size-4" />
+                Memory Events Feed
+                {memoryData && (
+                  <Badge variant="secondary" className="ml-1">{memoryData.count}</Badge>
+                )}
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Learning Memory</CardTitle>
+                  <CardDescription>
+                    Every identity update, preference signal, and performance observation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="max-h-96">
+                    <div className="space-y-2 pr-3">
+                      {memoryData?.events && memoryData.events.length > 0 ? (
+                        memoryData.events.map((evt) => {
+                          const categoryColors: Record<string, string> = {
+                            identity: 'border-violet-500/40 text-violet-400',
+                            preference: 'border-emerald-500/40 text-emerald-400',
+                            performance: 'border-amber-500/40 text-amber-400',
+                            pattern: 'border-rose-500/40 text-rose-400',
+                            feedback: 'border-violet-500/40 text-violet-400',
+                          };
+                          const sourceColors: Record<string, string> = {
+                            creator: 'bg-violet-500/10 text-violet-400',
+                            analytics: 'bg-emerald-500/10 text-emerald-400',
+                            muse_inference: 'bg-amber-500/10 text-amber-400',
+                            maker_feedback: 'bg-rose-500/10 text-rose-400',
+                          };
+                          const confidenceLabel = evt.confidence >= 0.8 ? 'high' : evt.confidence >= 0.4 ? 'medium' : 'low';
+                          const confidenceColor = confidenceLabel === 'high' ? 'text-emerald-400' : confidenceLabel === 'medium' ? 'text-amber-400' : 'text-rose-400';
+                          const valueDisplay = evt.value.length > 60 ? evt.value.slice(0, 60) + '…' : evt.value;
+
+                          return (
+                            <div key={evt.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                              <div className="flex flex-col gap-1 shrink-0">
+                                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${categoryColors[evt.category] ?? ''}`}>
+                                  {evt.category}
+                                </Badge>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-medium">{evt.key}</span>
+                                  <span className="text-xs text-muted-foreground truncate">{valueDisplay}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${sourceColors[evt.source] ?? ''}`}>
+                                    {evt.source}
+                                  </Badge>
+                                  <span className={`text-[10px] font-medium ${confidenceColor}`}>
+                                    {confidenceLabel} confidence
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                    <Clock className="size-2.5" />
+                                    {new Date(evt.createdAt).toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="space-y-2">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Audit Trail */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <History className="size-4" />
+                Audit Trail
+                {auditData && (
+                  <Badge variant="secondary" className="ml-1">{auditData.count}</Badge>
+                )}
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Full Audit Log</CardTitle>
+                  <CardDescription>
+                    Every create, update, and learn event — the foundation of the learning loop
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="max-h-64">
+                    <div className="space-y-2 pr-3">
+                      {auditData?.events && auditData.events.length > 0 ? (
+                        auditData.events.map((evt) => {
+                          const actorColors: Record<string, string> = {
+                            creator: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+                            muse: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                            maker: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                            system: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                          };
+                          const deltaDisplay = evt.delta
+                            ? (() => { try { return JSON.stringify(JSON.parse(evt.delta)); } catch { return evt.delta; } })()
+                            : null;
+                          const truncatedDelta = deltaDisplay && deltaDisplay.length > 80 ? deltaDisplay.slice(0, 80) + '…' : deltaDisplay;
+
+                          return (
+                            <div key={evt.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${actorColors[evt.actor] ?? ''}`}>
+                                {evt.actor}
+                              </Badge>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-medium">{evt.action}</span>
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{evt.targetType}</Badge>
+                                </div>
+                                {truncatedDelta && (
+                                  <p className="text-xs text-muted-foreground mt-1 truncate">{truncatedDelta}</p>
+                                )}
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-1">
+                                  <Clock className="size-2.5" />
+                                  {new Date(evt.createdAt).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="space-y-2">
+                          {[1, 2, 3].map((i) => (
+                            <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </section>
+          </TabsContent>
         </Tabs>
       </main>
 
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Muse — Day 2 Creative Pipeline | Next.js 16 + Minds SDK + Zero-Credit Architecture</span>
+          <span>Muse — Day 3 Memory | Creator Identity + Memory Graph + Audit Trail | 0 credits</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
