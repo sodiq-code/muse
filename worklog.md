@@ -497,3 +497,46 @@ Stage Summary:
 - Creator-specific comparisons (not global averages)
 - Zero credits used (all local computation)
 - Schema frozen (no changes)
+
+---
+Task ID: 6
+Agent: main
+Task: Day 6 — Hook Comparison Engine + Enhanced Hook Classifier
+
+Work Log:
+- Read blueprint Day 6 tasks: Build Hook classifier (8 pattern taxonomy) + Build Hook comparison engine
+- Hook classifier already existed from Day 2 (hook-classifier.ts) — verified working
+- Built Hook Comparison Engine (src/lib/hook-comparison.ts) with 4 core functions:
+  - compareHookVsHistory: classifies hook text → compares pattern's historical performance against creator's overall average
+  - comparePatternVsPattern: head-to-head comparison with winner, margin, confidence, evidence
+  - getHookRankings: ranks all 8 patterns by effectiveness, untested patterns marked "No data"
+  - predictHookPerformance: predicts hook effectiveness from historical pattern data
+- Created 3 new API routes:
+  - GET /api/learning/comparison?hookText=... — Hook comparison against creator history
+  - GET /api/learning/rankings — All 8 patterns ranked by effectiveness
+  - POST /api/learning/predict — Predict hook performance from historical data
+- Added Learning tab to dashboard with 4 sections:
+  - Hook Classifier: textarea + Classify button + pattern badge + confidence + all 8 scores
+  - Hook Comparison: Compare button + pattern vs overall bars + rank + evidence
+  - Hook Pattern Rankings: all 8 patterns ranked with effectiveness bars + confidence badges
+  - Performance Prediction: Predict button + predicted effectiveness + similar hooks
+- Updated header to "Muse — Day 6 Learning", default tab to "learning"
+- Verified all API routes return 200:
+  - GET /api/learning/rankings → 200 with all 8 patterns ranked
+  - GET /api/learning/comparison?hookText=... → 200 with creator-specific comparison
+  - POST /api/learning/predict → 200 with prediction
+  - POST /api/learning/hooks → 200 (existing, still works)
+- Rankings result: Personal 36.7% > Listicle 33.6% > Tutorial 33.2% > Question 31.5% > Story 31.0% > Analogy 30.4% > Statistic 30.0% > Contrarian Claim 29.6%
+- Browser verified: Learning tab renders with all sections, all other tabs still work
+- Lint: 0 errors, 0 warnings
+- Pushed to GitHub: commit bbaef03 at sodiq-code/muse
+
+Stage Summary:
+- Day 6 complete: Hook Comparison Engine fully operational with creator-specific comparisons
+- 4 comparison functions: compareHookVsHistory;History, comparePatternVsPattern, getHookRankings, predictHookPerformance
+- 3 new API routes: /api/learning/comparison, /api/learning/rankings, /api/learning/predict
+- Dashboard: Learning tab with Hook Classifier + Comparison + Rankings + Prediction
+- All comparisons enforce statistical honesty: confidence levels, evidence types, sample sizes
+- Creator-specific: "This Statistic hook typically underperforms your average by 5%" (not generic)
+- Total credit burn: 0 (all local computation)
+- Commit pushed: bbaef03 at https://github.com/sodiq-code/muse
