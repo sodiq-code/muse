@@ -4,15 +4,17 @@ import {
   listContentItems,
   getPerformanceSummary,
 } from '@/lib/performance-service';
-import { seedCreator, seedPerformanceData } from '@/lib/seed';
+import { seedCreator, seedPerformanceData, seedExtraContent, seedDecisions } from '@/lib/seed';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const creatorId = searchParams.get('creatorId') ?? (await seedCreator());
 
-    // Auto-seed performance data if not already seeded
+    // Auto-seed all data if not already seeded
     await seedPerformanceData(creatorId);
+    await seedExtraContent(creatorId);
+    await seedDecisions(creatorId);
 
     const type = searchParams.get('type') ?? undefined;
     const status = searchParams.get('status') ?? undefined;

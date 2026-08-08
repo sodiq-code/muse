@@ -65,6 +65,10 @@ import {
   PieChart,
   Plus,
   Upload,
+  Scale,
+  ThumbsUp,
+  ThumbsDown,
+  GitBranch,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -306,6 +310,50 @@ interface ContentMetricsResponse {
   error?: string;
 }
 
+// Decisions Domain Types
+interface DecisionItem {
+  id: string;
+  contentItemId: string;
+  contentItemTitle: string;
+  decisionType: 'accepted' | 'modified' | 'rejected' | 'ignored';
+  category: string;
+  reason: string;
+  modifications: string | null;
+  createdAt: string;
+}
+
+interface DecisionLearning {
+  insight: string;
+  confidence: 'low' | 'medium' | 'high';
+  dataPoints: number;
+}
+
+interface DecisionsResponse {
+  success: boolean;
+  decisions: DecisionItem[];
+  learnings: DecisionLearning[];
+  summary: {
+    total: number;
+    accepted: number;
+    modified: number;
+    rejected: number;
+    ignored: number;
+    acceptanceRate: number;
+    modificationRate: number;
+    mostRejectedCategory: string;
+  };
+}
+
+interface IngestStatusResponse {
+  success: boolean;
+  totalContentItems: number;
+  totalHooks: number;
+  totalMetrics: number;
+  hookPatternCoverage: number;
+  meetsMinimum: boolean;
+  lastIngestAt: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
@@ -389,6 +437,13 @@ export default function MuseDashboard() {
   const [addingContent, setAddingContent] = useState(false);
   const [addingMetrics, setAddingMetrics] = useState(false);
 
+  // Decisions Domain State
+  const [decisionsData, setDecisionsData] = useState<DecisionsResponse | null>(null);
+  const [decisionsLoading, setDecisionsLoading] = useState(true);
+  const [ingestStatus, setIngestStatus] = useState<IngestStatusResponse | null>(null);
+  const [decisionForm, setDecisionForm] = useState({ contentItemId: '', decisionType: 'accepted', category: '', reason: '' });
+  const [submittingDecision, setSubmittingDecision] = useState(false);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -435,6 +490,23 @@ export default function MuseDashboard() {
     }
   }, []);
 
+  // Fetch decisions and ingest data
+  const fetchDecisionsData = useCallback(async () => {
+    setDecisionsLoading(true);
+    try {
+      const [decisionsRes, ingestRes] = await Promise.all([
+        fetch('/api/creator/decisions').then((r) => r.json()).catch(() => null),
+        fetch('/api/content/ingest').then((r) => r.json()).catch(() => null),
+      ]);
+      if (decisionsRes) setDecisionsData(decisionsRes);
+      if (ingestRes) setIngestStatus(ingestRes);
+    } catch {
+      // silently fail
+    } finally {
+      setDecisionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     async function fetchAll() {
       try {
@@ -473,7 +545,8 @@ export default function MuseDashboard() {
     fetchAll();
     fetchVoiceProfile();
     fetchPerformanceData();
-  }, [fetchVoiceProfile, fetchPerformanceData]);
+    fetchDecisionsData();
+  }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData]);
 
   // Build test rows from validation data
   const tests: ValidationTest[] = validation
@@ -532,7 +605,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 4 Memory
+                Muse — Day 5 — Memory Complete
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -560,6 +633,9 @@ export default function MuseDashboard() {
               <Sparkles className="size-3" />
               Dual-Role: Orchestrator + Creative
             </Badge>
+            <Badge variant="outline" className="gap-1 border-sky-500/40 text-sky-400">
+              ❄️ Schema Frozen
+            </Badge>
             {validation?.config && (
               <Badge variant="outline" className="gap-1">
                 <Users className="size-3" />
@@ -572,7 +648,7 @@ export default function MuseDashboard() {
 
       {/* ===== Main ===== */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
-        <Tabs defaultValue="voice" className="w-full">
+        <Tabs defaultValue="decisions" className="w-full">
           <TabsList className="w-full sm:w-auto flex-wrap">
             <TabsTrigger value="day1" className="gap-1.5">
               <Shield className="size-3.5" />
@@ -601,6 +677,10 @@ export default function MuseDashboard() {
             <TabsTrigger value="performance" className="gap-1.5">
               <TrendingUp className="size-3.5" />
               Performance
+            </TabsTrigger>
+            <TabsTrigger value="decisions" className="gap-1.5">
+              <Scale className="size-3.5" />
+              Decisions
             </TabsTrigger>
           </TabsList>
 
@@ -2289,17 +2369,370 @@ export default function MuseDashboard() {
               </div>
             </section>
           </TabsContent>
+
+          {/* ===== DECISIONS TAB ===== */}
+          <TabsContent value="decisions" className="space-y-6">
+            {/* Decision Summary Cards */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Scale className="size-4" />
+                Decision Summary
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="border-emerald-500/30 shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <ThumbsUp className="size-4 text-emerald-400" />
+                      <CardTitle className="text-sm">Total Decisions</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">{decisionsData?.summary?.total ?? 0}</div>
+                    <p className="text-xs text-muted-foreground mt-1">all decisions recorded</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-amber-500/30 shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <GitBranch className="size-4 text-amber-400" />
+                      <CardTitle className="text-sm">Acceptance Rate</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">
+                      {decisionsData?.summary ? `${Math.round(decisionsData.summary.acceptanceRate * 100)}%` : '—'}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">accepted + modified / total</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-rose-500/30 shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <ThumbsDown className="size-4 text-rose-400" />
+                      <CardTitle className="text-sm">Most Rejected Category</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-lg font-bold truncate">{decisionsData?.summary?.mostRejectedCategory ?? '—'}</div>
+                    <p className="text-xs text-muted-foreground mt-1">highest rejection count</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-violet-500/30 shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <Pencil className="size-4 text-violet-400" />
+                      <CardTitle className="text-sm">Modification Rate</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold">
+                      {decisionsData?.summary ? `${Math.round(decisionsData.summary.modificationRate * 100)}%` : '—'}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">modified / total</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+
+            <Separator />
+
+            {/* Decision Learnings */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Lightbulb className="size-4" />
+                Decision Learnings
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Insights from Decision Patterns</CardTitle>
+                  <CardDescription>What your decision history reveals about content strategy</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {decisionsLoading ? (
+                      <div className="space-y-2">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
+                        ))}
+                      </div>
+                    ) : decisionsData?.learnings && decisionsData.learnings.length > 0 ? (
+                      decisionsData.learnings.map((learning, i) => (
+                        <div key={i} className="p-3 rounded-lg bg-muted/50">
+                          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                            <span className="text-sm font-medium">{learning.insight}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${confidenceBadgeStyle(learning.confidence)}`}>
+                                {learning.confidence}
+                              </Badge>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                {learning.dataPoints} pts
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-muted-foreground text-center py-6">
+                        No decision learnings yet. Make decisions on content to generate insights.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Recent Decisions Feed */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <History className="size-4" />
+                Recent Decisions
+                {decisionsData?.decisions && (
+                  <Badge variant="secondary" className="ml-1">{decisionsData.decisions.length}</Badge>
+                )}
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Decision Feed</CardTitle>
+                  <CardDescription>Your content decisions with type, category, and reasoning</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="max-h-96">
+                    <div className="space-y-2 pr-3">
+                      {decisionsLoading ? (
+                        <div className="space-y-2">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+                          ))}
+                        </div>
+                      ) : decisionsData?.decisions && decisionsData.decisions.length > 0 ? (
+                        decisionsData.decisions.map((decision) => {
+                          const typeColors: Record<string, string> = {
+                            accepted: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                            modified: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                            rejected: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                            ignored: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+                          };
+                          let extractedCategory = decision.category;
+                          if (!extractedCategory && decision.modifications) {
+                            try {
+                              const mods = JSON.parse(decision.modifications);
+                              extractedCategory = mods.category ?? mods.type ?? '';
+                            } catch { /* ignore */ }
+                          }
+
+                          return (
+                            <div key={decision.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${typeColors[decision.decisionType] ?? ''}`}>
+                                {decision.decisionType}
+                              </Badge>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <span className="text-sm font-medium truncate">{decision.contentItemTitle}</span>
+                                  {extractedCategory && (
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                                      {extractedCategory}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground truncate">{decision.reason}</p>
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-1">
+                                  <Clock className="size-2.5" />
+                                  {new Date(decision.createdAt).toLocaleString()}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="text-sm text-muted-foreground text-center py-6">
+                          No decisions recorded yet. Use the form below to submit a decision.
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Decision Quick Action */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Zap className="size-4" />
+                Decision Quick Action
+              </h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Submit Decision</CardTitle>
+                  <CardDescription>Record a content decision with type, category, and reasoning</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">Content Item</label>
+                      <Select
+                        value={decisionForm.contentItemId}
+                        onValueChange={(val) => setDecisionForm({ ...decisionForm, contentItemId: val })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select content item..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {contentItems?.items?.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.title.slice(0, 40)}{item.title.length > 40 ? '…' : ''}
+                            </SelectItem>
+                          )) ?? (
+                            <SelectItem value="none" disabled>No content items</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">Decision Type</label>
+                        <Select
+                          value={decisionForm.decisionType}
+                          onValueChange={(val) => setDecisionForm({ ...decisionForm, decisionType: val })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="accepted">Accepted</SelectItem>
+                            <SelectItem value="modified">Modified</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                            <SelectItem value="ignored">Ignored</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">Category</label>
+                        <Select
+                          value={decisionForm.category}
+                          onValueChange={(val) => setDecisionForm({ ...decisionForm, category: val })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="hook_pattern">Hook Pattern</SelectItem>
+                            <SelectItem value="voice_match">Voice Match</SelectItem>
+                            <SelectItem value="content_quality">Content Quality</SelectItem>
+                            <SelectItem value="timing">Timing</SelectItem>
+                            <SelectItem value="audience_fit">Audience Fit</SelectItem>
+                            <SelectItem value="format">Format</SelectItem>
+                            <SelectItem value="cta">CTA</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">Reason</label>
+                      <Input
+                        placeholder="Why this decision?"
+                        value={decisionForm.reason}
+                        onChange={(e) => setDecisionForm({ ...decisionForm, reason: e.target.value })}
+                      />
+                    </div>
+                    <Button
+                      className="w-full gap-1.5 bg-violet-600 text-white hover:bg-violet-700"
+                      disabled={!decisionForm.contentItemId || !decisionForm.category || !decisionForm.reason.trim() || submittingDecision}
+                      onClick={async () => {
+                        setSubmittingDecision(true);
+                        try {
+                          const res = await fetch('/api/creator/decisions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(decisionForm),
+                          });
+                          if (res.ok) {
+                            setDecisionForm({ contentItemId: '', decisionType: 'accepted', category: '', reason: '' });
+                            await fetchDecisionsData();
+                          }
+                        } catch {
+                          // error
+                        } finally {
+                          setSubmittingDecision(false);
+                        }
+                      }}
+                    >
+                      <Scale className="size-3.5" />
+                      {submittingDecision ? 'Submitting…' : 'Submit Decision'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Ingest Status Card */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Upload className="size-4" />
+                Ingest Status
+              </h2>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <Database className="size-4 text-emerald-400" />
+                      <CardTitle className="text-base">Content Ingest Status</CardTitle>
+                    </div>
+                    {ingestStatus && (
+                      <Badge variant="outline" className={`gap-1 ${ingestStatus.meetsMinimum ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                        {ingestStatus.meetsMinimum ? '✅ Meets 20+ minimum' : '❌ Below 20+ minimum'}
+                      </Badge>
+                    )}
+                  </div>
+                  <CardDescription>Content ingestion pipeline statistics</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {decisionsLoading ? (
+                    <div className="space-y-3">
+                      <div className="h-8 bg-muted rounded animate-pulse" />
+                      <div className="h-8 bg-muted rounded animate-pulse" />
+                      <div className="h-8 bg-muted rounded animate-pulse" />
+                    </div>
+                  ) : ingestStatus ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-3 rounded-lg bg-muted/50 text-center">
+                        <p className="text-2xl font-bold">{ingestStatus.totalContentItems}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Total Content Items</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/50 text-center">
+                        <p className="text-2xl font-bold">{ingestStatus.totalHooks}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Total Hooks</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/50 text-center">
+                        <p className="text-2xl font-bold">{Math.round(ingestStatus.hookPatternCoverage * 100)}%</p>
+                        <p className="text-xs text-muted-foreground mt-1">Pattern Coverage</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground text-center py-6">
+                      Ingest status unavailable
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+          </TabsContent>
         </Tabs>
       </main>
 
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Muse — Day 4 Memory | Voice + Performance domains active</span>
+          <span>All 4 memory domains active • Schema frozen ❄️ • 0 credits burned</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
-            <span className="ml-2">0 credits burned</span>
           </span>
         </div>
       </footer>
