@@ -301,3 +301,94 @@ Stage Summary:
 - Edit form works: inline editing of name, niche, audience, tone, avoid
 - Memory events: 10 logged, Audit events: 4 logged
 - Commit pushed: 100d570a at https://github.com/sodiq-code/muse
+
+---
+Task ID: 4
+Agent: main
+Task: Day 4 — Voice Profile Domain + Performance Domain
+
+Work Log:
+- Built Voice Profiler (src/lib/voice-profiler.ts):
+  - 7-dimension voice analysis: directness, technicalDepth, humor, hype, storytelling, sentenceLength, ctaIntensity
+  - Text analysis functions with per-dimension indicators and reasoning
+  - analyzeDirectness: imperative detection, hedging detection, sentence length, absolute language
+  - analyzeTechnicalDepth: tech terms, code patterns, camelCase, architecture language, version numbers
+  - analyzeHumor: self-deprecation, witty patterns, comedic exaggeration, parenthetical asides
+  - analyzeHype: hype words, exclamation marks, ALL CAPS emphasis, urgency language vs caveats
+  - analyzeStorytelling: first-person narrative, temporal markers, problem→resolution arcs, dialogue
+  - analyzeSentenceLength: average word count, subordinate clauses, short punchy percentage
+  - analyzeCtaIntensity: subscribe/follow patterns, engagement CTAs, urgency modifiers, soft framing
+  - computeVoiceMatch: weighted per-dimension similarity (directness 0.25, technicalDepth 0.20, hype 0.15, etc.)
+  - Mismatch detection: flags dimensions >30 points off from target
+  - updateVoiceProfile: weighted merge (existing * 0.7 + new * 0.3) with memory events for each change
+  - analyzeAndUpdateVoice: single-step analyze + update + match
+  - JULES_VOICE_PROFILE: {directness: 91, technicalDepth: 88, humor: 34, hype: 8, storytelling: 72, sentenceLength: 43, ctaIntensity: 28}
+
+- Built Performance Service (src/lib/performance-service.ts):
+  - createContentItem: ContentItem CRUD with audit event + memory event
+  - listContentItems: paginated list with hooks + metrics included
+  - getContentItemDetail: full detail with hook patterns and metrics
+  - updateContentItemStatus: status transitions with audit trail
+  - ingestMetrics: bulk metrics ingestion, auto engagement score computation, hook effectiveness update
+  - createHook: hook creation + auto-classification via hook-classifier, memory event for pattern
+  - getPerformanceSummary: aggregated stats (byType, byStatus, topMetrics, hookStats, bestPattern, worstPattern)
+  - getPerformanceInsights: honest insights with confidence levels (low/medium/high) and evidence types
+  - computeEngagementScore: weighted (shares*20 + comments*5 + likes*2) / views
+
+- Updated Seed Script (src/lib/seed.ts):
+  - Added seedPerformanceData() function with 10 real Jules YouTube video entries
+  - 8 hook patterns covered: contrarian_claim (3), question, story, statistic, tutorial, listicle, analogy, personal
+  - Each entry has: title, hook text, hook pattern, body, publishedAt, 7 metrics (views, likes, shares, comments, watchTime, subscribers, CTR)
+  - Total: 10 content items, 10 hooks, 10 hook patterns, 70 metrics
+  - Auto-engagement score computed and stored for each hook
+  - Memory events + audit events created for each content item
+  - Idempotent: checks existing count before seeding
+
+- Created 5 new API routes:
+  - GET /api/creator/voice — Voice profile + dimension labels + descriptions
+  - POST /api/creator/voice/analyze — Analyze text, return dimensions + match, optionally update profile
+  - GET /api/content — List content items with summary stats (auto-seeds on first call)
+  - POST /api/content — Create content item with optional hook auto-classification
+  - POST /api/content/metrics — Ingest metrics for a content item
+  - GET /api/content/performance — Hook pattern stats + insights + best/worst patterns
+
+- Updated Dashboard (src/app/page.tsx):
+  - 7-tab layout: Day 1, Day 2, Draft, Autonomy, Memory, Voice, Performance
+  - Header: "Muse — Day 4 Memory"
+  - Default tab: "voice"
+  - Voice tab — Voice Profile Domain:
+    - 7-dimension bar chart sorted descending with color coding (≥70 emerald, ≥40 amber, <40 rose)
+    - Voice Analysis Tool: textarea + "Analyze Voice" button + "Update Profile" toggle
+    - Analysis results: dimension scores, indicators, reasoning
+    - Voice match: overall score %, per-dimension match grid, mismatch warnings
+  - Performance tab — Performance Domain:
+    - Overview Cards: Total Content Items, Total Hooks, Best Hook Pattern
+    - Content Items List: ScrollArea, title/type/status/hook badges, metrics count, dates
+    - Hook Pattern Performance: pattern stats with effectiveness, sample sizes, honesty labels
+    - Performance Insights: title, detail, confidence badge, evidence type, data points
+    - Quick Actions: Add Content form, Ingest Metrics form
+  - Footer: "Voice + Performance domains active • 0 credits burned"
+
+- Tested all APIs:
+  - GET /api/creator/voice → 200, returns stored Jules voice profile (91/88/34/8/72/43/28)
+  - POST /api/creator/voice/analyze → 200, returns 7 dimension scores + voice match
+  - GET /api/content → 200, returns 10 items with summary stats
+  - POST /api/content → 201, creates item with hook auto-classification
+  - POST /api/content/metrics → 201, ingests metrics with engagement score
+  - GET /api/content/performance → 200, returns hook patterns + insights
+- Browser verified: Dashboard renders with all 7 tabs, Voice tab default, Performance tab with all sections
+- Lint: 0 errors, 0 warnings
+- Pushed to GitHub: commit 41bb8ae at sodiq-code/muse
+
+Stage Summary:
+- Day 4 complete: Voice Profile Domain + Performance Domain fully operational
+- Voice Profiler: 7 dimensions, text analysis with indicators/reasoning, weighted voice match, profile merge
+- Performance Service: ContentItem CRUD, metrics ingestion, hook tracking, pattern effectiveness, honest insights
+- Seed: 10 real Jules content items with 70 metrics and 8 hook patterns
+- API routes: 5 new (total ~19 across all days), all returning 200
+- Dashboard V4: 7 tabs with Voice + Performance domains
+- Voice profile stored and retrievable: Directness 91, Technical Depth 88, Storytelling 72, Humor 34, CTA 28, Sentence 43, Hype 8
+- 10 content items seeded with real performance data
+- Statistical honesty enforced: confidence levels (low/medium/high), evidence types (observed/statistical/correlation)
+- Total credit burn: 0 (all local computation)
+- Commit pushed: 41bb8ae at https://github.com/sodiq-code/muse
