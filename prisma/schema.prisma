@@ -8,8 +8,9 @@ datasource db {
 }
 
 // ============================================================================
-// MUSE Database Schema — Day 1
+// MUSE Database Schema — FROZEN as of Day 5
 // The AI Creative Team That Learns You
+// ❄️ NO MORE SCHEMA CHANGES without explicit approval (Phase 2 freeze gate)
 // ============================================================================
 
 /// The human creator — the person whose creative identity Muse learns and amplifies.

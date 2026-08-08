@@ -1,0 +1,502 @@
+  1700→                  </CardHeader>
+  1701→                  <CardContent>
+  1702→                    {analyzeResult.success && analyzeResult.analysis ? (
+  1703→                      <div className="space-y-4">
+  1704→                        {/* Dimension Scores */}
+  1705→                        <div className="space-y-3">
+  1706→                          {analyzeResult.analysis.map((dim) => {
+  1707→                            const pct = Math.round(dim.score);
+  1708→                            return (
+  1709→                              <div key={dim.dimension} className="p-3 rounded-lg bg-muted/50">
+  1710→                                <div className="flex items-center justify-between mb-2">
+  1711→                                  <span className="text-sm font-medium">{dim.dimension}</span>
+  1712→                                  <div className="flex items-center gap-2">
+  1713→                                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${voiceBadgeColor(pct)}`}>
+  1714→                                      {dim.indicator}
+  1715→                                    </Badge>
+  1716→                                    <span className="text-sm font-mono font-semibold">{pct}%</span>
+  1717→                                  </div>
+  1718→                                </div>
+  1719→                                <div className="h-3 bg-muted rounded-md overflow-hidden mb-2">
+  1720→                                  <div
+  1721→                                    className={`h-full rounded-md ${voiceBarColor(pct)} transition-all duration-500`}
+  1722→                                    style={{ width: `${pct}%` }}
+  1723→                                  />
+  1724→                                </div>
+  1725→                                <p className="text-xs text-muted-foreground">{dim.reasoning}</p>
+  1726→                              </div>
+  1727→                            );
+  1728→                          })}
+  1729→                        </div>
+  1730→
+  1731→                        {/* Voice Match Display */}
+  1732→                        {analyzeResult.match && (
+  1733→                          <>
+  1734→                            <Separator />
+  1735→                            <div>
+  1736→                              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+  1737→                                <Award className="size-4 text-violet-400" />
+  1738→                                Voice Match Score
+  1739→                              </h3>
+  1740→                              {/* Overall Match */}
+  1741→                              <div className="flex items-center gap-4 mb-4">
+  1742→                                <div className="text-3xl font-bold">
+  1743→                                  {Math.round(analyzeResult.match.overallMatch * 100)}%
+  1744→                                </div>
+  1745→                                <Badge
+  1746→                                  variant="outline"
+  1747→                                  className={
+  1748→                                    analyzeResult.match.overallMatch >= 0.8
+  1749→                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+  1750→                                      : analyzeResult.match.overallMatch >= 0.5
+  1751→                                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+  1752→                                        : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+  1753→                                  }
+  1754→                                >
+  1755→                                  {analyzeResult.match.overallMatch >= 0.8
+  1756→                                    ? 'Strong Match'
+  1757→                                    : analyzeResult.match.overallMatch >= 0.5
+  1758→                                      ? 'Partial Match'
+  1759→                                      : 'Weak Match'}
+  1760→                                </Badge>
+  1761→                              </div>
+  1762→
+  1763→                              {/* Per-dimension Matches */}
+  1764→                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
+  1765→                                {analyzeResult.match.dimensionMatches.map((dm) => (
+  1766→                                  <div
+  1767→                                    key={dm.dimension}
+  1768→                                    className={`p-2 rounded-lg text-xs ${
+  1769→                                      dm.isMismatch
+  1770→                                        ? 'bg-rose-500/10 border border-rose-500/20'
+  1771→                                        : 'bg-muted/50'
+  1772→                                    }`}
+  1773→                                  >
+  1774→                                    <div className="flex items-center justify-between mb-1">
+  1775→                                      <span className={`font-medium ${dm.isMismatch ? 'text-rose-400' : ''}`}>
+  1776→                                        {dm.dimension}
+  1777→                                      </span>
+  1778→                                      <span className="font-mono">{Math.round(dm.match * 100)}%</span>
+  1779→                                    </div>
+  1780→                                    <div className="flex items-center gap-1 text-muted-foreground">
+  1781→                                      <span>Profile: {Math.round(dm.profileScore * 100)}%</span>
+  1782→                                      <span>→</span>
+  1783→                                      <span>Content: {Math.round(dm.contentScore * 100)}%</span>
+  1784→                                    </div>
+  1785→                                  </div>
+  1786→                                ))}
+  1787→                              </div>
+  1788→
+  1789→                              {/* Mismatch Warnings */}
+  1790→                              {analyzeResult.match.mismatchCount > 0 && (
+  1791→                                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+  1792→                                  <p className="text-sm font-medium text-rose-400 flex items-center gap-2">
+  1793→                                    <AlertTriangle className="size-4" />
+  1794→                                    {analyzeResult.match.mismatchCount} dimension{analyzeResult.match.mismatchCount > 1 ? 's' : ''} mismatched
+  1795→                                  </p>
+  1796→                                  <div className="mt-2 space-y-1">
+  1797→                                    {analyzeResult.match.dimensionMatches
+  1798→                                      .filter((dm) => dm.isMismatch)
+  1799→                                      .map((dm) => (
+  1800→                                        <p key={dm.dimension} className="text-xs text-rose-300">
+  1801→                                          • {dm.dimension}: profile {Math.round(dm.profileScore * 100)}% vs content {Math.round(dm.contentScore * 100)}%
+  1802→                                        </p>
+  1803→                                      ))}
+  1804→                                  </div>
+  1805→                                </div>
+  1806→                              )}
+  1807→                            </div>
+  1808→                          </>
+  1809→                        )}
+  1810→                      </div>
+  1811→                    ) : (
+  1812→                      <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+  1813→                        <p className="text-sm text-rose-400">
+  1814→                          {analyzeResult.error ?? 'Analysis failed. Please try again.'}
+  1815→                        </p>
+  1816→                      </div>
+  1817→                    )}
+  1818→                  </CardContent>
+  1819→                </Card>
+  1820→              </section>
+  1821→            )}
+  1822→          </TabsContent>
+  1823→
+  1824→          {/* ===== PERFORMANCE TAB ===== */}
+  1825→          <TabsContent value="performance" className="space-y-6">
+  1826→            {/* Performance Overview Cards */}
+  1827→            <section>
+  1828→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1829→                <TrendingUp className="size-4" />
+  1830→                Performance Overview
+  1831→              </h2>
+  1832→              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  1833→                <Card className="border-emerald-500/30 shadow-md">
+  1834→                  <CardHeader className="pb-3">
+  1835→                    <div className="flex items-center gap-2">
+  1836→                      <FileText className="size-4 text-emerald-400" />
+  1837→                      <CardTitle className="text-sm">Total Content Items</CardTitle>
+  1838→                    </div>
+  1839→                  </CardHeader>
+  1840→                  <CardContent>
+  1841→                    <div className="text-3xl font-bold">{totalContentItems}</div>
+  1842→                    <p className="text-xs text-muted-foreground mt-1">across all statuses</p>
+  1843→                  </CardContent>
+  1844→                </Card>
+  1845→                <Card className="border-amber-500/30 shadow-md">
+  1846→                  <CardHeader className="pb-3">
+  1847→                    <div className="flex items-center gap-2">
+  1848→                      <BarChart3 className="size-4 text-amber-400" />
+  1849→                      <CardTitle className="text-sm">Total Hooks Tracked</CardTitle>
+  1850→                    </div>
+  1851→                  </CardHeader>
+  1852→                  <CardContent>
+  1853→                    <div className="text-3xl font-bold">{totalHooksTracked}</div>
+  1854→                    <p className="text-xs text-muted-foreground mt-1">hook pattern observations</p>
+  1855→                  </CardContent>
+  1856→                </Card>
+  1857→                <Card className="border-violet-500/30 shadow-md">
+  1858→                  <CardHeader className="pb-3">
+  1859→                    <div className="flex items-center gap-2">
+  1860→                      <Award className="size-4 text-violet-400" />
+  1861→                      <CardTitle className="text-sm">Best Hook Pattern</CardTitle>
+  1862→                    </div>
+  1863→                  </CardHeader>
+  1864→                  <CardContent>
+  1865→                    <div className="text-lg font-bold">{bestPatternEntry?.pattern ?? perfData?.bestPattern ?? '—'}</div>
+  1866→                    <p className="text-xs text-muted-foreground mt-1">
+  1867→                      avg {bestPatternEntry ? `${Math.round(bestPatternEntry.avgEffectiveness * 100)}% effectiveness` : 'no data'}
+  1868→                    </p>
+  1869→                  </CardContent>
+  1870→                </Card>
+  1871→              </div>
+  1872→            </section>
+  1873→
+  1874→            <Separator />
+  1875→
+  1876→            {/* Content Items List */}
+  1877→            <section>
+  1878→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1879→                <FileText className="size-4" />
+  1880→                Content Items
+  1881→                {contentItems && (
+  1882→                  <Badge variant="secondary" className="ml-1">{contentItems.count}</Badge>
+  1883→                )}
+  1884→              </h2>
+  1885→              <Card>
+  1886→                <CardHeader>
+  1887→                  <CardTitle className="text-base">All Content</CardTitle>
+  1888→                  <CardDescription>Your content items with hook patterns and performance metrics</CardDescription>
+  1889→                </CardHeader>
+  1890→                <CardContent>
+  1891→                  <ScrollArea className="max-h-96">
+  1892→                    <div className="space-y-2 pr-3">
+  1893→                      {perfLoading ? (
+  1894→                        <div className="space-y-2">
+  1895→                          {[1, 2, 3, 4, 5].map((i) => (
+  1896→                            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+  1897→                          ))}
+  1898→                        </div>
+  1899→                      ) : contentItems?.items && contentItems.items.length > 0 ? (
+  1900→                        contentItems.items.map((item) => (
+  1901→                          <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+  1902→                            <div className="flex-1 min-w-0">
+  1903→                              <div className="flex items-center gap-2 flex-wrap mb-1">
+  1904→                                <span className="text-sm font-medium truncate">{item.title}</span>
+  1905→                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+  1906→                                  {item.type}
+  1907→                                </Badge>
+  1908→                                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${statusBadgeStyle(item.status)}`}>
+  1909→                                  {item.status}
+  1910→                                </Badge>
+  1911→                              </div>
+  1912→                              <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+  1913→                                {item.hookPattern && (
+  1914→                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+  1915→                                    {item.hookPattern}
+  1916→                                  </Badge>
+  1917→                                )}
+  1918→                                <span className="flex items-center gap-0.5">
+  1919→                                  <BarChart3 className="size-2.5" />
+  1920→                                  {item.metricsCount} metrics
+  1921→                                </span>
+  1922→                                {item.publishedAt && (
+  1923→                                  <span className="flex items-center gap-0.5">
+  1924→                                    <Clock className="size-2.5" />
+  1925→                                    {new Date(item.publishedAt).toLocaleDateString()}
+  1926→                                  </span>
+  1927→                                )}
+  1928→                              </div>
+  1929→                            </div>
+  1930→                          </div>
+  1931→                        ))
+  1932→                      ) : (
+  1933→                        <div className="text-sm text-muted-foreground text-center py-6">
+  1934→                          No content items yet. Use &quot;Add Content&quot; below to create one.
+  1935→                        </div>
+  1936→                      )}
+  1937→                    </div>
+  1938→                  </ScrollArea>
+  1939→                </CardContent>
+  1940→              </Card>
+  1941→            </section>
+  1942→
+  1943→            <Separator />
+  1944→
+  1945→            {/* Hook Pattern Performance */}
+  1946→            <section>
+  1947→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1948→                <PieChart className="size-4" />
+  1949→                Hook Pattern Performance
+  1950→              </h2>
+  1951→              <Card>
+  1952→                <CardHeader>
+  1953→                  <CardTitle className="text-base">Pattern Effectiveness</CardTitle>
+  1954→                  <CardDescription>Statistical comparison of hook patterns with honest sample sizes</CardDescription>
+  1955→                </CardHeader>
+  1956→                <CardContent>
+  1957→                  <div className="space-y-3">
+  1958→                    {perfLoading ? (
+  1959→                      <div className="space-y-2">
+  1960→                        {[1, 2, 3, 4].map((i) => (
+  1961→                          <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+  1962→                        ))}
+  1963→                      </div>
+  1964→                    ) : perfData?.hookPatterns && perfData.hookPatterns.length > 0 ? (
+  1965→                      perfData.hookPatterns.map((pattern) => {
+  1966→                        const isBest = pattern.pattern === perfData.bestPattern;
+  1967→                        const isWorst = pattern.pattern === perfData.worstPattern;
+  1968→                        const pct = Math.round(pattern.avgEffectiveness * 100);
+  1969→                        return (
+  1970→                          <div
+  1971→                            key={pattern.pattern}
+  1972→                            className={`p-3 rounded-lg ${
+  1973→                              isBest
+  1974→                                ? 'bg-emerald-500/10 border border-emerald-500/20'
+  1975→                                : isWorst
+  1976→                                  ? 'bg-rose-500/10 border border-rose-500/20'
+  1977→                                  : 'bg-muted/50'
+  1978→                            }`}
+  1979→                          >
+  1980→                            <div className="flex items-center justify-between mb-2">
+  1981→                              <div className="flex items-center gap-2">
+  1982→                                <span className="text-sm font-medium">{pattern.pattern}</span>
+  1983→                                {isBest && (
+  1984→                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+  1985→                                    Best
+  1986→                                  </Badge>
+  1987→                                )}
+  1988→                                {isWorst && (
+  1989→                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-rose-500/10 text-rose-400 border-rose-500/20">
+  1990→                                    Worst
+  1991→                                  </Badge>
+  1992→                                )}
+  1993→                              </div>
+  1994→                              <div className="flex items-center gap-2">
+  1995→                                <span className="text-sm font-mono font-semibold">{pct}%</span>
+  1996→                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+  1997→                                  {pattern.count} uses
+  1998→                                </Badge>
+  1999→                              </div>
+  2000→                            </div>
+  2001→                            <div className="h-2 bg-muted rounded-md overflow-hidden mb-1">
+  2002→                              <div
+  2003→                                className={`h-full rounded-md ${
+  2004→                                  isBest ? 'bg-emerald-500' : isWorst ? 'bg-rose-400' : voiceBarColor(pct)
+  2005→                                } transition-all duration-500`}
+  2006→                                style={{ width: `${pct}%` }}
+  2007→                              />
+  2008→                            </div>
+  2009→                            <p className="text-[10px] text-muted-foreground">
+  2010→                              Based on {pattern.sampleSize} sample{pattern.sampleSize !== 1 ? 's' : ''} — avg effectiveness {pct}%
+  2011→                            </p>
+  2012→                          </div>
+  2013→                        );
+  2014→                      })
+  2015→                    ) : (
+  2016→                      <div className="text-sm text-muted-foreground text-center py-6">
+  2017→                        No hook pattern data yet. Add content and metrics to build performance stats.
+  2018→                      </div>
+  2019→                    )}
+  2020→                  </div>
+  2021→                </CardContent>
+  2022→              </Card>
+  2023→            </section>
+  2024→
+  2025→            <Separator />
+  2026→
+  2027→            {/* Performance Insights */}
+  2028→            <section>
+  2029→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  2030→                <Lightbulb className="size-4" />
+  2031→                Performance Insights
+  2032→              </h2>
+  2033→              <Card>
+  2034→                <CardHeader>
+  2035→                  <CardTitle className="text-base">AI-Generated Insights</CardTitle>
+  2036→                  <CardDescription>Statistically honest recommendations based on your content data</CardDescription>
+  2037→                </CardHeader>
+  2038→                <CardContent>
+  2039→                  <div className="space-y-3">
+  2040→                    {perfLoading ? (
+  2041→                      <div className="space-y-2">
+  2042→                        {[1, 2, 3].map((i) => (
+  2043→                          <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
+  2044→                        ))}
+  2045→                      </div>
+  2046→                    ) : perfData?.insights && perfData.insights.length > 0 ? (
+  2047→                      perfData.insights.map((insight, i) => (
+  2048→                        <div key={i} className="p-3 rounded-lg bg-muted/50">
+  2049→                          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+  2050→                            <span className="text-sm font-medium">{insight.title}</span>
+  2051→                            <div className="flex items-center gap-2">
+  2052→                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${confidenceBadgeStyle(insight.confidence)}`}>
+  2053→                                {insight.confidence} confidence
+  2054→                              </Badge>
+  2055→                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+  2056→                                {insight.evidenceType}
+  2057→                              </Badge>
+  2058→                            </div>
+  2059→                          </div>
+  2060→                          <p className="text-xs text-muted-foreground mb-1">{insight.detail}</p>
+  2061→                          <p className="text-[10px] text-muted-foreground">
+  2062→                            Based on {insight.dataPoints} data point{insight.dataPoints !== 1 ? 's' : ''}
+  2063→                          </p>
+  2064→                        </div>
+  2065→                      ))
+  2066→                    ) : (
+  2067→                      <div className="text-sm text-muted-foreground text-center py-6">
+  2068→                        No insights yet. Add more content and metrics to generate insights.
+  2069→                      </div>
+  2070→                    )}
+  2071→                  </div>
+  2072→                </CardContent>
+  2073→              </Card>
+  2074→            </section>
+  2075→
+  2076→            <Separator />
+  2077→
+  2078→            {/* Quick Actions */}
+  2079→            <section>
+  2080→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  2081→                <Zap className="size-4" />
+  2082→                Quick Actions
+  2083→              </h2>
+  2084→              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  2085→                {/* Add Content */}
+  2086→                <Card>
+  2087→                  <CardHeader className="pb-3">
+  2088→                    <div className="flex items-center justify-between">
+  2089→                      <div className="flex items-center gap-2">
+  2090→                        <Plus className="size-4 text-violet-400" />
+  2091→                        <CardTitle className="text-sm">Add Content</CardTitle>
+  2092→                      </div>
+  2093→                      <Button
+  2094→                        variant="ghost"
+  2095→                        size="sm"
+  2096→                        className="gap-1 text-xs"
+  2097→                        onClick={() => { setShowAddContent(!showAddContent); setShowIngestMetrics(false); }}
+  2098→                      >
+  2099→                        {showAddContent ? <X className="size-3" /> : <Plus className="size-3" />}
+  2100→                        {showAddContent ? 'Cancel' : 'New'}
+  2101→                      </Button>
+  2102→                    </div>
+  2103→                  </CardHeader>
+  2104→                  {showAddContent && (
+  2105→                    <CardContent>
+  2106→                      <div className="space-y-3">
+  2107→                        <div>
+  2108→                          <label className="text-xs font-medium text-muted-foreground block mb-1">Title</label>
+  2109→                          <Input
+  2110→                            placeholder="Content title..."
+  2111→                            value={newContent.title}
+  2112→                            onChange={(e) => setNewContent({ ...newContent, title: e.target.value })}
+  2113→                          />
+  2114→                        </div>
+  2115→                        <div>
+  2116→                          <label className="text-xs font-medium text-muted-foreground block mb-1">Type</label>
+  2117→                          <Select
+  2118→                            value={newContent.type}
+  2119→                            onValueChange={(val) => setNewContent({ ...newContent, type: val })}
+  2120→                          >
+  2121→                            <SelectTrigger>
+  2122→                              <SelectValue />
+  2123→                            </SelectTrigger>
+  2124→                            <SelectContent>
+  2125→                              <SelectItem value="short_form">Short Form</SelectItem>
+  2126→                              <SelectItem value="long_form">Long Form</SelectItem>
+  2127→                              <SelectItem value="carousel">Carousel</SelectItem>
+  2128→                              <SelectItem value="video">Video</SelectItem>
+  2129→                              <SelectItem value="thread">Thread</SelectItem>
+  2130→                            </SelectContent>
+  2131→                          </Select>
+  2132→                        </div>
+  2133→                        <div>
+  2134→                          <label className="text-xs font-medium text-muted-foreground block mb-1">Hook Text</label>
+  2135→                          <Textarea
+  2136→                            placeholder="Opening hook text..."
+  2137→                            value={newContent.hookText}
+  2138→                            onChange={(e) => setNewContent({ ...newContent, hookText: e.target.value })}
+  2139→                            rows={2}
+  2140→                          />
+  2141→                        </div>
+  2142→                        <Button
+  2143→                          className="w-full gap-1.5 bg-violet-600 text-white hover:bg-violet-700"
+  2144→                          disabled={!newContent.title.trim() || addingContent}
+  2145→                          onClick={async () => {
+  2146→                            setAddingContent(true);
+  2147→                            try {
+  2148→                              const res = await fetch('/api/content', {
+  2149→                                method: 'POST',
+  2150→                                headers: { 'Content-Type': 'application/json' },
+  2151→                                body: JSON.stringify(newContent),
+  2152→                              });
+  2153→                              if (res.ok) {
+  2154→                                setNewContent({ title: '', type: 'short_form', hookText: '' });
+  2155→                                setShowAddContent(false);
+  2156→                                await fetchPerformanceData();
+  2157→                              }
+  2158→                            } catch {
+  2159→                              // error
+  2160→                            } finally {
+  2161→                              setAddingContent(false);
+  2162→                            }
+  2163→                          }}
+  2164→                        >
+  2165→                          <Plus className="size-3.5" />
+  2166→                          {addingContent ? 'Adding…' : 'Add Content'}
+  2167→                        </Button>
+  2168→                      </div>
+  2169→                    </CardContent>
+  2170→                  )}
+  2171→                </Card>
+  2172→
+  2173→                {/* Ingest Metrics */}
+  2174→                <Card>
+  2175→                  <CardHeader className="pb-3">
+  2176→                    <div className="flex items-center justify-between">
+  2177→                      <div className="flex items-center gap-2">
+  2178→                        <Upload className="size-4 text-emerald-400" />
+  2179→                        <CardTitle className="text-sm">Ingest Metrics</CardTitle>
+  2180→                      </div>
+  2181→                      <Button
+  2182→                        variant="ghost"
+  2183→                        size="sm"
+  2184→                        className="gap-1 text-xs"
+  2185→                        onClick={() => { setShowIngestMetrics(!showIngestMetrics); setShowAddContent(false); }}
+  2186→                      >
+  2187→                        {showIngestMetrics ? <X className="size-3" /> : <Upload className="size-3" />}
+  2188→                        {showIngestMetrics ? 'Cancel' : 'Add'}
+  2189→                      </Button>
+  2190→                    </div>
+  2191→                  </CardHeader>
+  2192→                  {showIngestMetrics && (
+  2193→                    <CardContent>
+  2194→                      <div className="space-y-3">
+  2195→                        <div>
+  2196→                          <label className="text-xs font-medium text-muted-foreground block mb-1">Content Item</label>
+  2197→                          <Select
+  2198→                            value={newMetrics.contentId}
+  2199→                            onValueChange={(val) => setNewMetrics({ ...newMetrics, contentId: val })}
+
+[showing lines 1700-2199 of 2554; use offset=2200 with limit to continue reading]

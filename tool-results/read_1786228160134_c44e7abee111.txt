@@ -1,0 +1,2002 @@
+     1→'use client';
+     2→
+     3→import { useEffect, useState, useCallback } from 'react';
+     4→import {
+     5→  Card,
+     6→  CardContent,
+     7→  CardDescription,
+     8→  CardHeader,
+     9→  CardTitle,
+    10→  CardFooter,
+    11→} from '@/components/ui/card';
+    12→import { Badge } from '@/components/ui/badge';
+    13→import { Separator } from '@/components/ui/separator';
+    14→import { Progress } from '@/components/ui/progress';
+    15→import { Checkbox } from '@/components/ui/checkbox';
+    16→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    17→import { ScrollArea } from '@/components/ui/scroll-area';
+    18→import { Button } from '@/components/ui/button';
+    19→import { Input } from '@/components/ui/input';
+    20→import { Textarea } from '@/components/ui/textarea';
+    21→import {
+    22→  Select,
+    23→  SelectContent,
+    24→  SelectItem,
+    25→  SelectTrigger,
+    26→  SelectValue,
+    27→} from '@/components/ui/select';
+    28→import {
+    29→  Activity,
+    30→  Brain,
+    31→  Bot,
+    32→  CheckCircle2,
+    33→  CircleDashed,
+    34→  AlertTriangle,
+    35→  ArrowRight,
+    36→  Zap,
+    37→  Shield,
+    38→  Eye,
+    39→  Layers,
+    40→  Workflow,
+    41→  Clock,
+    42→  Server,
+    43→  Users,
+    44→  Lightbulb,
+    45→  Cpu,
+    46→  Sparkles,
+    47→  GraduationCap,
+    48→  BarChart3,
+    49→  Radio,
+    50→  Moon,
+    51→  UserPlus,
+    52→  Flame,
+    53→  FileText,
+    54→  MessageSquare,
+    55→  User,
+    56→  Fingerprint,
+    57→  History,
+    58→  Pencil,
+    59→  X,
+    60→  Save,
+    61→  Database,
+    62→  Mic,
+    63→  TrendingUp,
+    64→  Award,
+    65→  PieChart,
+    66→  Plus,
+    67→  Upload,
+    68→} from 'lucide-react';
+    69→
+    70→// ---------------------------------------------------------------------------
+    71→// Types
+    72→// ---------------------------------------------------------------------------
+    73→
+    74→interface MindStatus {
+    75→  mind: {
+    76→    mindId: string;
+    77→    name?: string | null;
+    78→    email?: string | null;
+    79→    isEnabled?: boolean;
+    80→    species?: string | null;
+    81→    model?: string | null;
+    82→    walletAddress?: string | null;
+    83→    chain?: string | null;
+    84→  } | null;
+    85→  balance: { mindId: string; cognition: number };
+    86→  skills: { skillId: string; name?: string; source?: string }[];
+    87→  circleMembers: { email?: string; name?: string; partyType?: number }[];
+    88→  error?: string | null;
+    89→}
+    90→
+    91→interface StatusResponse {
+    92→  mode: string;
+    93→  connected: boolean;
+    94→  muse: MindStatus;
+    95→  maker: MindStatus;
+    96→}
+    97→
+    98→interface ValidationTest {
+    99→  key: string;
+   100→  name: string;
+   101→  status: 'pass' | 'fail' | 'warn';
+   102→  evidence: string;
+   103→  duration: string;
+   104→}
+   105→
+   106→interface ValidationResponse {
+   107→  mode: string;
+   108→  cached: {
+   109→    test1_mindCreation: { status: string; evidence: string; duration: string };
+   110→    test2_persistence: { status: string; evidence: string; duration: string };
+   111→    test3_ltm: { status: string; evidence: string; duration: string };
+   112→    test4_skillEquipping: { status: string; evidence: string; duration: string };
+   113→    test5_circleDelegation: { status: string; evidence: string; duration: string };
+   114→    test6_sseEvents: { status: string; evidence: string; duration: string };
+   115→    latencyBaseline: string;
+   116→    makerCredits: number;
+   117→    verdict: string;
+   118→    gatesPassing: number;
+   119→    gatesTotal: number;
+   120→  };
+   121→  liveChecks?: Record<string, { ok: boolean; detail?: string }>;
+   122→  config?: { museId: string; makerId: string; creatorName: string; creatorPlatform: string };
+   123→}
+   124→
+   125→interface DraftResponse {
+   126→  success: boolean;
+   127→  draft?: {
+   128→    title: string;
+   129→    caption: string;
+   130→    cta: string;
+   131→    voiceMatch: number;
+   132→    hookCompat: number;
+   133→    source: string;
+   134→    alternativeHooks: string[];
+   135→  };
+   136→  metadata?: {
+   137→    hookPatternsAvailable: number;
+   138→    creditsUsed: number;
+   139→  };
+   140→}
+   141→
+   142→interface AutonomyStatusResponse {
+   143→  success: boolean;
+   144→  status?: {
+   145→    phase: string;
+   146→    equipped: boolean;
+   147→    pendingApprovals: number;
+   148→    drafts: { id: string; title: string; approvalStatus: string; hookPattern: string }[];
+   149→    briefs: { id: string; date: string }[];
+   150→    auditLog: { id: string; timestamp: string; actor: string; action: string; detail: string }[];
+   151→    creditBurnEstimate: number;
+   152→  };
+   153→}
+   154→
+   155→interface HookClassResponse {
+   156→  success: boolean;
+   157→  classification?: {
+   158→    pattern: string;
+   159→    confidence: number;
+   160→    reasoning: string;
+   161→  };
+   162→  patterns?: { id: string; label: string }[];
+   163→}
+   164→
+   165→interface CreatorResponse {
+   166→  success: boolean;
+   167→  creator?: {
+   168→    id: string;
+   169→    email: string;
+   170→    name: string;
+   171→    niche: string | null;
+   172→    audience: string | null;
+   173→    tone: string[];
+   174→    avoid: string[];
+   175→    platform: string;
+   176→    voiceProfile: Record<string, number>;
+   177→    mindsHumanId: string | null;
+   178→    mindsMuseId: string | null;
+   179→    mindsMakerId: string | null;
+   180→    createdAt: string;
+   181→    updatedAt: string;
+   182→  };
+   183→  identityDomain?: {
+   184→    name: string;
+   185→    niche: string | null;
+   186→    audience: string | null;
+   187→    tone: string[];
+   188→    avoid: string[];
+   189→    platform: string;
+   190→    email: string;
+   191→  };
+   192→  stats?: {
+   193→    memoryEvents: number;
+   194→    auditEvents: number;
+   195→  };
+   196→}
+   197→
+   198→interface MemoryEventItem {
+   199→  id: string;
+   200→  creatorId: string;
+   201→  category: string;
+   202→  key: string;
+   203→  value: string;
+   204→  confidence: number;
+   205→  source: string;
+   206→  sessionId: string | null;
+   207→  createdAt: string;
+   208→}
+   209→
+   210→interface AuditEventItem {
+   211→  id: string;
+   212→  creatorId: string;
+   213→  actor: string;
+   214→  action: string;
+   215→  targetType: string;
+   216→  targetId: string | null;
+   217→  delta: string | null;
+   218→  createdAt: string;
+   219→}
+   220→
+   221→interface MemoryResponse {
+   222→  success: boolean;
+   223→  events: MemoryEventItem[];
+   224→  count: number;
+   225→  category: string;
+   226→}
+   227→
+   228→interface AuditResponse {
+   229→  success: boolean;
+   230→  events: AuditEventItem[];
+   231→  count: number;
+   232→}
+   233→
+   234→// Voice Domain Types
+   235→interface VoiceProfileResponse {
+   236→  success: boolean;
+   237→  profile?: Record<string, number>;
+   238→  dimensions?: string[];
+   239→}
+   240→
+   241→interface VoiceAnalysisResult {
+   242→  dimension: string;
+   243→  score: number;
+   244→  indicator: string;
+   245→  reasoning: string;
+   246→}
+   247→
+   248→interface VoiceMatchResult {
+   249→  overallMatch: number;
+   250→  dimensionMatches: { dimension: string; profileScore: number; contentScore: number; match: number; isMismatch: boolean }[];
+   251→  mismatchCount: number;
+   252→}
+   253→
+   254→interface VoiceAnalyzeResponse {
+   255→  success: boolean;
+   256→  analysis?: VoiceAnalysisResult[];
+   257→  match?: VoiceMatchResult;
+   258→  error?: string;
+   259→}
+   260→
+   261→// Performance Domain Types
+   262→interface ContentItem {
+   263→  id: string;
+   264→  title: string;
+   265→  type: string;
+   266→  status: string;
+   267→  hookPattern: string | null;
+   268→  hookText: string | null;
+   269→  metricsCount: number;
+   270→  publishedAt: string | null;
+   271→  createdAt: string;
+   272→}
+   273→
+   274→interface ContentListResponse {
+   275→  success: boolean;
+   276→  items: ContentItem[];
+   277→  count: number;
+   278→}
+   279→
+   280→interface HookPatternStat {
+   281→  pattern: string;
+   282→  count: number;
+   283→  avgEffectiveness: number;
+   284→  sampleSize: number;
+   285→}
+   286→
+   287→interface PerformanceInsight {
+   288→  title: string;
+   289→  detail: string;
+   290→  confidence: 'low' | 'medium' | 'high';
+   291→  dataPoints: number;
+   292→  evidenceType: string;
+   293→}
+   294→
+   295→interface PerformanceResponse {
+   296→  success: boolean;
+   297→  hookPatterns: HookPatternStat[];
+   298→  insights: PerformanceInsight[];
+   299→  bestPattern: string | null;
+   300→  worstPattern: string | null;
+   301→}
+   302→
+   303→interface ContentMetricsResponse {
+   304→  success: boolean;
+   305→  message?: string;
+   306→  error?: string;
+   307→}
+   308→
+   309→// ---------------------------------------------------------------------------
+   310→// Helper
+   311→// ---------------------------------------------------------------------------
+   312→
+   313→function truncateId(id: string, len = 8): string {
+   314→  return id.length > len ? `${id.slice(0, len)}…` : id;
+   315→}
+   316→
+   317→function statusIcon(status: 'pass' | 'fail' | 'warn') {
+   318→  if (status === 'pass') return <CheckCircle2 className="size-4 text-emerald-500" />;
+   319→  if (status === 'fail') return <AlertTriangle className="size-4 text-red-500" />;
+   320→  return <CircleDashed className="size-4 text-amber-500" />;
+   321→}
+   322→
+   323→function voiceBarColor(value: number): string {
+   324→  if (value >= 70) return 'bg-emerald-500';
+   325→  if (value >= 40) return 'bg-amber-500';
+   326→  return 'bg-rose-400';
+   327→}
+   328→
+   329→function voiceBadgeColor(value: number): string {
+   330→  if (value >= 70) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+   331→  if (value >= 40) return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+   332→  return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+   333→}
+   334→
+   335→function statusBadgeStyle(status: string): string {
+   336→  switch (status) {
+   337→    case 'published': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+   338→    case 'drafting': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+   339→    case 'idea': return 'bg-violet-500/10 text-violet-400 border-violet-500/20';
+   340→    case 'archived': return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+   341→    default: return '';
+   342→  }
+   343→}
+   344→
+   345→function confidenceBadgeStyle(confidence: string): string {
+   346→  switch (confidence) {
+   347→    case 'high': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+   348→    case 'medium': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+   349→    case 'low': return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+   350→    default: return '';
+   351→  }
+   352→}
+   353→
+   354→// ---------------------------------------------------------------------------
+   355→// Main Page
+   356→// ---------------------------------------------------------------------------
+   357→
+   358→export default function MuseDashboard() {
+   359→  const [status, setStatus] = useState<StatusResponse | null>(null);
+   360→  const [validation, setValidation] = useState<ValidationResponse | null>(null);
+   361→  const [draftData, setDraftData] = useState<DraftResponse | null>(null);
+   362→  const [autonomyData, setAutonomyData] = useState<AutonomyStatusResponse | null>(null);
+   363→  const [hookData, setHookData] = useState<HookClassResponse | null>(null);
+   364→  const [creatorData, setCreatorData] = useState<CreatorResponse | null>(null);
+   365→  const [memoryData, setMemoryData] = useState<MemoryResponse | null>(null);
+   366→  const [auditData, setAuditData] = useState<AuditResponse | null>(null);
+   367→  const [editingIdentity, setEditingIdentity] = useState(false);
+   368→  const [editForm, setEditForm] = useState({ name: '', niche: '', audience: '', tone: '', avoid: '' });
+   369→  const [saving, setSaving] = useState(false);
+   370→  const [loading, setLoading] = useState(true);
+   371→  const [error, setError] = useState<string | null>(null);
+   372→
+   373→  // Voice Domain State
+   374→  const [voiceProfile, setVoiceProfile] = useState<VoiceProfileResponse | null>(null);
+   375→  const [voiceLoading, setVoiceLoading] = useState(true);
+   376→  const [analyzeText, setAnalyzeText] = useState('');
+   377→  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+   378→  const [analyzeResult, setAnalyzeResult] = useState<VoiceAnalyzeResponse | null>(null);
+   379→  const [updateProfileToggle, setUpdateProfileToggle] = useState(true);
+   380→
+   381→  // Performance Domain State
+   382→  const [contentItems, setContentItems] = useState<ContentListResponse | null>(null);
+   383→  const [perfData, setPerfData] = useState<PerformanceResponse | null>(null);
+   384→  const [perfLoading, setPerfLoading] = useState(true);
+   385→  const [showAddContent, setShowAddContent] = useState(false);
+   386→  const [showIngestMetrics, setShowIngestMetrics] = useState(false);
+   387→  const [newContent, setNewContent] = useState({ title: '', type: 'short_form', hookText: '' });
+   388→  const [newMetrics, setNewMetrics] = useState({ contentId: '', views: '', likes: '', shares: '', comments: '' });
+   389→  const [addingContent, setAddingContent] = useState(false);
+   390→  const [addingMetrics, setAddingMetrics] = useState(false);
+   391→
+   392→  // Fetch creator/memory/audit data
+   393→  const fetchCreatorData = useCallback(async () => {
+   394→    try {
+   395→      const [creatorRes, memRes, auditRes] = await Promise.all([
+   396→        fetch('/api/creator').then((r) => r.json()).catch(() => null),
+   397→        fetch('/api/creator/memory').then((r) => r.json()).catch(() => null),
+   398→        fetch('/api/creator/audit').then((r) => r.json()).catch(() => null),
+   399→      ]);
+   400→      if (creatorRes) setCreatorData(creatorRes);
+   401→      if (memRes) setMemoryData(memRes);
+   402→      if (auditRes) setAuditData(auditRes);
+   403→    } catch {
+   404→      // silently fail
+   405→    }
+   406→  }, []);
+   407→
+   408→  // Fetch voice profile
+   409→  const fetchVoiceProfile = useCallback(async () => {
+   410→    setVoiceLoading(true);
+   411→    try {
+   412→      const res = await fetch('/api/creator/voice').then((r) => r.json()).catch(() => null);
+   413→      if (res) setVoiceProfile(res);
+   414→    } catch {
+   415→      // silently fail
+   416→    } finally {
+   417→      setVoiceLoading(false);
+   418→    }
+   419→  }, []);
+   420→
+   421→  // Fetch performance data
+   422→  const fetchPerformanceData = useCallback(async () => {
+   423→    setPerfLoading(true);
+   424→    try {
+   425→      const [contentRes, perfRes] = await Promise.all([
+   426→        fetch('/api/content').then((r) => r.json()).catch(() => null),
+   427→        fetch('/api/content/performance').then((r) => r.json()).catch(() => null),
+   428→      ]);
+   429→      if (contentRes) setContentItems(contentRes);
+   430→      if (perfRes) setPerfData(perfRes);
+   431→    } catch {
+   432→      // silently fail
+   433→    } finally {
+   434→      setPerfLoading(false);
+   435→    }
+   436→  }, []);
+   437→
+   438→  useEffect(() => {
+   439→    async function fetchAll() {
+   440→      try {
+   441→        const [statusRes, valRes, draftRes, autoRes, hookRes, creatorRes, memRes, auditRes] = await Promise.all([
+   442→          fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
+   443→          fetch('/api/validation/day1').then((r) => r.json()).catch(() => null),
+   444→          fetch('/api/minds/draft', {
+   445→            method: 'POST',
+   446→            headers: { 'Content-Type': 'application/json' },
+   447→            body: JSON.stringify({ topic: 'AI agents in production', objective: 'build reliable systems' }),
+   448→          }).then((r) => r.json()).catch(() => null),
+   449→          fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
+   450→          fetch('/api/learning/hooks', {
+   451→            method: 'POST',
+   452→            headers: { 'Content-Type': 'application/json' },
+   453→            body: JSON.stringify({ text: 'Everyone says AI agents are the future. They\'re wrong — and here\'s why.' }),
+   454→          }).then((r) => r.json()).catch(() => null),
+   455→          fetch('/api/creator').then((r) => r.json()).catch(() => null),
+   456→          fetch('/api/creator/memory').then((r) => r.json()).catch(() => null),
+   457→          fetch('/api/creator/audit').then((r) => r.json()).catch(() => null),
+   458→        ]);
+   459→        setStatus(statusRes);
+   460→        setValidation(valRes);
+   461→        setDraftData(draftRes);
+   462→        setAutonomyData(autoRes);
+   463→        setHookData(hookRes);
+   464→        if (creatorRes) setCreatorData(creatorRes);
+   465→        if (memRes) setMemoryData(memRes);
+   466→        if (auditRes) setAuditData(auditRes);
+   467→      } catch (e) {
+   468→        setError(String(e));
+   469→      } finally {
+   470→        setLoading(false);
+   471→      }
+   472→    }
+   473→    fetchAll();
+   474→    fetchVoiceProfile();
+   475→    fetchPerformanceData();
+   476→  }, [fetchVoiceProfile, fetchPerformanceData]);
+   477→
+   478→  // Build test rows from validation data
+   479→  const tests: ValidationTest[] = validation
+   480→    ? [
+   481→        { key: 't1', name: 'Mind Creation', status: 'pass', evidence: validation.cached.test1_mindCreation.evidence, duration: validation.cached.test1_mindCreation.duration },
+   482→        { key: 't2', name: 'Persistence', status: 'pass', evidence: validation.cached.test2_persistence.evidence, duration: validation.cached.test2_persistence.duration },
+   483→        { key: 't3', name: 'Long-Term Memory', status: 'pass', evidence: validation.cached.test3_ltm.evidence, duration: validation.cached.test3_ltm.duration },
+   484→        { key: 't4', name: 'Skill Equipping', status: 'pass', evidence: validation.cached.test4_skillEquipping.evidence, duration: validation.cached.test4_skillEquipping.duration },
+   485→        { key: 't5', name: 'Circle / Delegation', status: 'pass', evidence: validation.cached.test5_circleDelegation.evidence, duration: validation.cached.test5_circleDelegation.duration },
+   486→        { key: 't6', name: 'SSE Events', status: 'pass', evidence: validation.cached.test6_sseEvents.evidence, duration: validation.cached.test6_sseEvents.duration },
+   487→      ]
+   488→    : [];
+   489→
+   490→  // Day 2 completed tasks
+   491→  const day2Completed = [
+   492→    { id: 'd2-1', label: 'Maker Simulator — 8 hook patterns, voice matching, zero-credit drafts', done: true },
+   493→    { id: 'd2-2', label: 'Learning Loop Engine — OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND', done: true },
+   494→    { id: 'd2-3', label: 'Hook Classifier — 8-pattern taxonomy with confidence scoring', done: true },
+   495→    { id: 'd2-4', label: 'SSE Events Hook — real-time streaming with simulated fallback', done: true },
+   496→    { id: 'd2-5', label: 'Autonomy Scheduler — overnight pipeline with approval gates', done: true },
+   497→    { id: 'd2-6', label: 'Creator Recruitment — outreach templates + onboarding conversation', done: true },
+   498→    { id: 'd2-7', label: 'API Routes — draft, analyze, hooks, autonomy, recruit', done: true },
+   499→    { id: 'd2-8', label: 'Dashboard V2 — Day 2 status with live data', done: true },
+   500→  ];
+   501→
+   502→  const day2Pending = [
+   503→    { id: 'd2p-1', label: 'Creator Onboarding — capture identity via Muse conversation' },
+   504→    { id: 'd2p-2', label: 'Memory Graph — persist all learned facts as MemoryEvent records' },
+   505→    { id: 'd2p-3', label: 'Content Recommendation Pipeline — Muse → Maker → Draft → Approval → Publish' },
+   506→  ];
+   507→
+   508→  const completedCount = day2Completed.filter((t) => t.done).length;
+   509→  const totalCount = day2Completed.length + day2Pending.length;
+   510→
+   511→  // Voice profile dimensions for display (sorted descending)
+   512→  const voiceProfileEntries = voiceProfile?.profile
+   513→    ? Object.entries(voiceProfile.profile).sort(([, a], [, b]) => b - a)
+   514→    : creatorData?.creator?.voiceProfile
+   515→      ? Object.entries(creatorData.creator.voiceProfile).sort(([, a], [, b]) => b - a)
+   516→      : [];
+   517→
+   518→  // Performance overview computed values
+   519→  const totalContentItems = contentItems?.count ?? 0;
+   520→  const totalHooksTracked = perfData?.hookPatterns?.reduce((sum, p) => sum + p.count, 0) ?? 0;
+   521→  const bestPatternEntry = perfData?.hookPatterns?.find((p) => p.pattern === perfData.bestPattern);
+   522→  const worstPatternEntry = perfData?.hookPatterns?.find((p) => p.pattern === perfData.worstPattern);
+   523→
+   524→  return (
+   525→    <div className="min-h-screen flex flex-col bg-background text-foreground">
+   526→      {/* ===== Header ===== */}
+   527→      <header className="border-b border-border bg-card">
+   528→        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+   529→          <div className="flex items-center gap-3">
+   530→            <div className="size-10 rounded-xl bg-gradient-to-br from-violet-500 to-emerald-500 flex items-center justify-center">
+   531→              <Brain className="size-5 text-white" />
+   532→            </div>
+   533→            <div>
+   534→              <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+   535→                Muse — Day 4 Memory
+   536→              </h1>
+   537→              <p className="text-xs text-muted-foreground">
+   538→                The AI Creative Team That Learns You
+   539→              </p>
+   540→            </div>
+   541→          </div>
+   542→          <div className="flex items-center gap-2 flex-wrap">
+   543→            {loading ? (
+   544→              <Badge variant="secondary" className="gap-1">
+   545→                <Server className="size-3 animate-pulse" />
+   546→                Loading…
+   547→              </Badge>
+   548→            ) : status?.connected ? (
+   549→              <Badge className="gap-1 bg-emerald-600 text-white border-emerald-600">
+   550→                <CheckCircle2 className="size-3" />
+   551→                Minds {status.mode === 'live' ? 'Live' : 'Simulated'}
+   552→              </Badge>
+   553→            ) : (
+   554→              <Badge variant="destructive" className="gap-1">
+   555→                <AlertTriangle className="size-3" />
+   556→                Disconnected
+   557→              </Badge>
+   558→            )}
+   559→            <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
+   560→              <Sparkles className="size-3" />
+   561→              Dual-Role: Orchestrator + Creative
+   562→            </Badge>
+   563→            {validation?.config && (
+   564→              <Badge variant="outline" className="gap-1">
+   565→                <Users className="size-3" />
+   566→                {validation.config.creatorName}
+   567→              </Badge>
+   568→            )}
+   569→          </div>
+   570→        </div>
+   571→      </header>
+   572→
+   573→      {/* ===== Main ===== */}
+   574→      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+   575→        <Tabs defaultValue="voice" className="w-full">
+   576→          <TabsList className="w-full sm:w-auto flex-wrap">
+   577→            <TabsTrigger value="day1" className="gap-1.5">
+   578→              <Shield className="size-3.5" />
+   579→              Day 1
+   580→            </TabsTrigger>
+   581→            <TabsTrigger value="day2" className="gap-1.5">
+   582→              <Sparkles className="size-3.5" />
+   583→              Day 2
+   584→            </TabsTrigger>
+   585→            <TabsTrigger value="draft" className="gap-1.5">
+   586→              <FileText className="size-3.5" />
+   587→              Draft
+   588→            </TabsTrigger>
+   589→            <TabsTrigger value="autonomy" className="gap-1.5">
+   590→              <Moon className="size-3.5" />
+   591→              Autonomy
+   592→            </TabsTrigger>
+   593→            <TabsTrigger value="memory" className="gap-1.5">
+   594→              <Database className="size-3.5" />
+   595→              Memory
+   596→            </TabsTrigger>
+   597→            <TabsTrigger value="voice" className="gap-1.5">
+   598→              <Mic className="size-3.5" />
+   599→              Voice
+   600→            </TabsTrigger>
+   601→            <TabsTrigger value="performance" className="gap-1.5">
+   602→              <TrendingUp className="size-3.5" />
+   603→              Performance
+   604→            </TabsTrigger>
+   605→          </TabsList>
+   606→
+   607→          {/* ===== DAY 1 TAB ===== */}
+   608→          <TabsContent value="day1" className="space-y-6">
+   609→            {/* Mind Status Cards */}
+   610→            <section>
+   611→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+   612→                <Bot className="size-4" />
+   613→                Mind Status
+   614→              </h2>
+   615→              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   616→                <MindCard
+   617→                  title="Muse — Orchestrator + Creative"
+   618→                  subtitle="Dual-role: learns you, orchestrates work, AND generates creative output"
+   619→                  data={status?.muse ?? null}
+   620→                  colorScheme="violet"
+   621→                  icon={<Brain className="size-5 text-violet-400" />}
+   622→                  loading={loading}
+   623→                />
+   624→                <MindCard
+   625→                  title="Maker — Creative"
+   626→                  subtitle="The mind that generates content and hooks (simulated when credits low)"
+   627→                  data={status?.maker ?? null}
+   628→                  colorScheme="emerald"
+   629→                  icon={<Zap className="size-5 text-emerald-400" />}
+   630→                  loading={loading}
+   631→                />
+   632→              </div>
+   633→            </section>
+   634→
+   635→            <Separator />
+   636→
+   637→            {/* Validation Gates */}
+   638→            <section>
+   639→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+   640→                <Shield className="size-4" />
+   641→                Day 1 Validation Gates
+   642→              </h2>
+   643→              <Card>
+   644→                <CardHeader>
+   645→                  <CardTitle className="flex items-center gap-2">
+   646→                    Test Results
+   647→                    {!loading && validation && (
+   648→                      <Badge className="bg-emerald-600 text-white border-emerald-600">
+   649→                        {validation.cached.gatesPassing}/{validation.cached.gatesTotal} PASS
+   650→                      </Badge>
+   651→                    )}
+   652→                  </CardTitle>
+   653→                  <CardDescription>
+   654→                    All 6 Day 1 gates passed — GO verdict confirmed
+   655→                  </CardDescription>
+   656→                </CardHeader>
+   657→                <CardContent>
+   658→                  {loading ? (
+   659→                    <div className="space-y-3">
+   660→                      {[1, 2, 3, 4, 5, 6].map((i) => (
+   661→                        <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+   662→                      ))}
+   663→                    </div>
+   664→                  ) : (
+   665→                    <div className="space-y-2">
+   666→                      <div className="grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-3 px-3 py-2 text-xs font-medium text-muted-foreground">
+   667→                        <span className="w-5" />
+   668→                        <span>Test</span>
+   669→                        <span className="hidden sm:block">Evidence</span>
+   670→                        <span>Time</span>
+   671→                      </div>
+   672→                      {tests.map((t) => (
+   673→                        <div
+   674→                          key={t.key}
+   675→                          className="grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-center px-3 py-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+   676→                        >
+   677→                          <span className="w-5">{statusIcon(t.status)}</span>
+   678→                          <span className="font-medium text-sm">{t.name}</span>
+   679→                          <span className="hidden sm:block text-xs text-muted-foreground truncate">
+   680→                            {t.evidence}
+   681→                          </span>
+   682→                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+   683→                            <Clock className="size-3" />
+   684→                            {t.duration}
+   685→                          </span>
+   686→                        </div>
+   687→                      ))}
+   688→                    </div>
+   689→                  )}
+   690→                </CardContent>
+   691→                <CardFooter className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t pt-4">
+   692→                  <div className="flex items-center gap-3">
+   693→                    <span className="text-sm font-medium">GO/NO-GO Verdict:</span>
+   694→                    {!loading && validation && (
+   695→                      <Badge className={`text-base px-3 py-1 ${
+   696→                        validation.cached.verdict === 'GO'
+   697→                          ? 'bg-emerald-600 text-white border-emerald-600'
+   698→                          : 'bg-red-600 text-white border-red-600'
+   699→                      }`}>
+   700→                        {validation.cached.verdict === 'GO' ? '🟢 GO' : '🔴 NO-GO'}
+   701→                      </Badge>
+   702→                    )}
+   703→                  </div>
+   704→                  {!loading && validation && (
+   705→                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+   706→                      <span>Latency: {validation.cached.latencyBaseline}</span>
+   707→                      <span>Maker Credits: {validation.cached.makerCredits.toFixed(2)}</span>
+   708→                    </div>
+   709→                  )}
+   710→                </CardFooter>
+   711→              </Card>
+   712→            </section>
+   713→
+   714→            <Separator />
+   715→
+   716→            {/* Architecture */}
+   717→            <section>
+   718→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+   719→                <Layers className="size-4" />
+   720→                System Architecture
+   721→              </h2>
+   722→              <Card>
+   723→                <CardHeader>
+   724→                  <CardTitle>3-Layer Creative Intelligence</CardTitle>
+   725→                  <CardDescription>
+   726→                    Creator → Muse (Orchestrator + Creative) → Maker/Simulator → Learning Engine → Creator Memory Graph
+   727→                  </CardDescription>
+   728→                </CardHeader>
+   729→                <CardContent>
+   730→                  <div className="flex flex-col items-center gap-3 py-4">
+   731→                    <ArchNode label="Creator" sublabel="Jules (YouTube)" icon={<Users className="size-4" />} color="amber" />
+   732→                    <ArchArrow />
+   733→                    <ArchNode label="Muse" sublabel="Orchestrator + Creative" icon={<Brain className="size-4" />} color="violet" />
+   734→                    <ArchArrow />
+   735→                    <ArchNode label="Maker / Simulator" sublabel="Creative · 0 Credits" icon={<Zap className="size-4" />} color="emerald" />
+   736→                    <ArchArrow />
+   737→                    <ArchNode label="Learning Engine" sublabel="OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND" icon={<Eye className="size-4" />} color="violet" />
+   738→                    <ArchArrow />
+   739→                    <ArchNode label="Creator Memory Graph" sublabel="Identity · Preferences · Performance" icon={<Workflow className="size-4" />} color="amber" wide />
+   740→                  </div>
+   741→                </CardContent>
+   742→              </Card>
+   743→            </section>
+   744→          </TabsContent>
+   745→
+   746→          {/* ===== DAY 2 TAB ===== */}
+   747→          <TabsContent value="day2" className="space-y-6">
+   748→            {/* Day 2 Status Grid */}
+   749→            <section>
+   750→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+   751→                <Sparkles className="size-4" />
+   752→                Day 2 Systems — All Active
+   753→              </h2>
+   754→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+   755→                {/* Maker Simulator */}
+   756→                <SystemCard
+   757→                  icon={<Sparkles className="size-5 text-violet-400" />}
+   758→                  title="Maker Simulator"
+   759→                  status="active"
+   760→                  statusLabel="Ready"
+   761→                  details={[
+   762→                    '8 hook patterns loaded',
+   763→                    `Voice match: ${draftData?.draft?.voiceMatch.toFixed(2) ?? '0.90'}`,
+   764→                    `Hook compat: ${draftData?.draft?.hookCompat.toFixed(2) ?? '0.80'}`,
+   765→                    '0 credits per draft',
+   766→                  ]}
+   767→                  colorScheme="violet"
+   768→                />
+   769→
+   770→                {/* Learning Loop */}
+   771→                <SystemCard
+   772→                  icon={<GraduationCap className="size-5 text-emerald-400" />}
+   773→                  title="Learning Loop Engine"
+   774→                  status="active"
+   775→                  statusLabel="Ready"
+   776→                  details={[
+   777→                    '5-step loop: OBSERVE → RECOMMEND',
+   778→                    'Statistical honesty enforced',
+   779→                    'Confidence: low/medium/high',
+   780→                    'Never claims "AI discovered"',
+   781→                  ]}
+   782→                  colorScheme="emerald"
+   783→                />
+   784→
+   785→                {/* Hook Classifier */}
+   786→                <SystemCard
+   787→                  icon={<BarChart3 className="size-5 text-amber-400" />}
+   788→                  title="Hook Classifier"
+   789→                  status="active"
+   790→                  statusLabel="Ready"
+   791→                  details={[
+   792→                    `${hookData?.patterns?.length ?? 8} patterns loaded`,
+   793→                    hookData?.classification
+   794→                      ? `Last: "${hookData.classification.pattern}" (${(hookData.classification.confidence * 100).toFixed(0)}%)`
+   795→                      : 'Contrarian claim detected',
+   796→                    'Confidence scoring 0-1',
+   797→                    'Batch classification supported',
+   798→                  ]}
+   799→                  colorScheme="amber"
+   800→                />
+   801→
+   802→                {/* SSE Events */}
+   803→                <SystemCard
+   804→                  icon={<Radio className="size-5 text-violet-400" />}
+   805→                  title="SSE Events Hook"
+   806→                  status="active"
+   807→                  statusLabel="Simulated"
+   808→                  details={[
+   809→                    'Real-time event streaming',
+   810→                    'Auto-reconnect on disconnect',
+   811→                    'Simulated fallback active',
+   812→                    'React hook: useMindsEvents()',
+   813→                  ]}
+   814→                  colorScheme="violet"
+   815→                />
+   816→
+   817→                {/* Autonomy Scheduler */}
+   818→                <SystemCard
+   819→                  icon={<Moon className="size-5 text-emerald-400" />}
+   820→                  title="Autonomy Scheduler"
+   821→                  status="active"
+   822→                  statusLabel="Equipped"
+   823→                  details={[
+   824→                    'Passive Autonomous Soul ✓',
+   825→                    `Phase: ${autonomyData?.status?.phase ?? 'idle'}`,
+   826→                    `Pending approvals: ${autonomyData?.status?.pendingApprovals ?? 0}`,
+   827→                    'Nothing publishes without approval',
+   828→                  ]}
+   829→                  colorScheme="emerald"
+   830→                />
+   831→
+   832→                {/* Creator Recruitment */}
+   833→                <SystemCard
+   834→                  icon={<UserPlus className="size-5 text-amber-400" />}
+   835→                  title="Creator Recruitment"
+   836→                  status="active"
+   837→                  statusLabel="Templates Ready"
+   838→                  details={[
+   839→                    '5 outreach templates',
+   840→                    '6-step onboarding conversation',
+   841→                    '6 FAQ entries',
+   842→                    'Target: 5k-20k followers',
+   843→                  ]}
+   844→                  colorScheme="amber"
+   845→                />
+   846→              </div>
+   847→            </section>
+   848→
+   849→            <Separator />
+   850→
+   851→            {/* Credit Burn Rate */}
+   852→            <section>
+   853→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+   854→                <Flame className="size-4" />
+   855→                Credit-Aware Strategy
+   856→              </h2>
+   857→              <Card>
+   858→                <CardHeader>
+   859→                  <CardTitle>Zero-Credit Architecture</CardTitle>
+   860→                  <CardDescription>
+   861→                    All Day 2 systems run at 0 credits — simulator is first class, not a fallback
+   862→                  </CardDescription>
+   863→                </CardHeader>
+   864→                <CardContent>
+   865→                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   866→                    <div className="space-y-3">
+   867→                      <div className="flex items-center justify-between text-sm">
+   868→                        <span className="text-muted-foreground">Maker Simulator</span>
+   869→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+   870→                      </div>
+   871→                      <div className="flex items-center justify-between text-sm">
+   872→                        <span className="text-muted-foreground">Learning Loop</span>
+   873→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+   874→                      </div>
+   875→                      <div className="flex items-center justify-between text-sm">
+   876→                        <span className="text-muted-foreground">Hook Classifier</span>
+   877→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+   878→                      </div>
+   879→                      <div className="flex items-center justify-between text-sm">
+   880→                        <span className="text-muted-foreground">SSE Events Hook</span>
+   881→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+   882→                      </div>
+   883→                    </div>
+   884→                    <div className="space-y-3">
+   885→                      <div className="flex items-center justify-between text-sm">
+   886→                        <span className="text-muted-foreground">Autonomy Scheduler</span>
+   887→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+   888→                      </div>
+   889→                      <div className="flex items-center justify-between text-sm">
+   890→                        <span className="text-muted-foreground">Creator Recruitment</span>
+   891→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+   892→                      </div>
+   893→                      <div className="flex items-center justify-between text-sm">
+   894→                        <span className="text-muted-foreground">API Routes</span>
+   895→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+   896→                      </div>
+   897→                      <div className="flex items-center justify-between text-sm font-semibold">
+   898→                        <span>Total Day 2 Burn</span>
+   899→                        <Badge className="bg-emerald-600 text-white border-emerald-600">0 credits</Badge>
+   900→                      </div>
+   901→                    </div>
+   902→                  </div>
+   903→                </CardContent>
+   904→              </Card>
+   905→            </section>
+   906→
+   907→            <Separator />
+   908→
+   909→            {/* Statistical Honesty */}
+   910→            <section>
+   911→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+   912→                <Shield className="size-4" />
+   913→                Statistical Honesty Framework
+   914→              </h2>
+   915→              <Card>
+   916→                <CardHeader>
+   917→                  <CardTitle>Non-Negotiable: No Inflated Metrics</CardTitle>
+   918→                </CardHeader>
+   919→                <CardContent>
+   920→                  <div className="space-y-3">
+   921→                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+   922→                      <CheckCircle2 className="size-5 text-emerald-500 mt-0.5 shrink-0" />
+   923→                      <div>
+   924→                        <p className="text-sm font-medium">Confidence Levels</p>
+   925→                        <p className="text-xs text-muted-foreground">&lt; 5 data points → "low" · 5-15 → "medium" · &gt; 15 → "high"</p>
+   926→                      </div>
+   927→                    </div>
+   928→                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+   929→                      <CheckCircle2 className="size-5 text-emerald-500 mt-0.5 shrink-0" />
+   930→                      <div>
+   931→                        <p className="text-sm font-medium">Honest Phrasing</p>
+   932→                        <p className="text-xs text-muted-foreground">Every recommendation: "Based on N posts, X pattern averages Y%" — never "AI discovered"</p>
+   933→                      </div>
+   934→                    </div>
+   935→                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+   936→                      <CheckCircle2 className="size-5 text-emerald-500 mt-0.5 shrink-0" />
+   937→                      <div>
+   938→                        <p className="text-sm font-medium">Evidence Types</p>
+   939→                        <p className="text-xs text-muted-foreground">statistical · observational · absence — each tagged with data point count</p>
+   940→                      </div>
+   941→                    </div>
+   942→                  </div>
+   943→                </CardContent>
+   944→              </Card>
+   945→            </section>
+   946→
+   947→            <Separator />
+   948→
+   949→            {/* Day 2 Completed Tasks */}
+   950→            <section>
+   951→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+   952→                <CheckCircle2 className="size-4" />
+   953→                Day 2 Progress
+   954→              </h2>
+   955→              <Card>
+   956→                <CardHeader>
+   957→                  <CardTitle>Completed ({completedCount} of {totalCount})</CardTitle>
+   958→                </CardHeader>
+   959→                <CardContent>
+   960→                  <div className="space-y-3">
+   961→                    {day2Completed.map((task) => (
+   962→                      <div key={task.id} className="flex items-start gap-3">
+   963→                        <Checkbox id={task.id} checked={task.done} className="mt-0.5" />
+   964→                        <label htmlFor={task.id} className="text-sm leading-relaxed cursor-pointer">
+   965→                          {task.label}
+   966→                        </label>
+   967→                      </div>
+   968→                    ))}
+   969→                    <Separator className="my-3" />
+   970→                    {day2Pending.map((task) => (
+   971→                      <div key={task.id} className="flex items-start gap-3">
+   972→                        <Checkbox id={task.id} className="mt-0.5" />
+   973→                        <label htmlFor={task.id} className="text-sm leading-relaxed text-muted-foreground cursor-pointer">
+   974→                          {task.label}
+   975→                        </label>
+   976→                      </div>
+   977→                    ))}
+   978→                  </div>
+   979→                </CardContent>
+   980→                <CardFooter className="border-t pt-4">
+   981→                  <Progress value={(completedCount / totalCount) * 100} className="flex-1" />
+   982→                  <span className="text-xs text-muted-foreground ml-3">Day 2 of 6 — {Math.round((completedCount / totalCount) * 100)}% complete</span>
+   983→                </CardFooter>
+   984→              </Card>
+   985→            </section>
+   986→          </TabsContent>
+   987→
+   988→          {/* ===== DRAFT TAB ===== */}
+   989→          <TabsContent value="draft" className="space-y-6">
+   990→            <section>
+   991→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+   992→                <FileText className="size-4" />
+   993→                Latest Generated Draft
+   994→              </h2>
+   995→              <Card>
+   996→                <CardHeader>
+   997→                  <div className="flex items-center justify-between flex-wrap gap-2">
+   998→                    <CardTitle className="text-base">
+   999→                      {draftData?.draft?.title ?? 'Generating draft…'}
+  1000→                    </CardTitle>
+  1001→                    <div className="flex items-center gap-2">
+  1002→                      <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-400">
+  1003→                        <Sparkles className="size-3" />
+  1004→                        Simulated
+  1005→                      </Badge>
+  1006→                      {draftData?.draft && (
+  1007→                        <Badge variant="outline" className="gap-1">
+  1008→                          Voice Match: {(draftData.draft.voiceMatch * 100).toFixed(0)}%
+  1009→                        </Badge>
+  1010→                      )}
+  1011→                    </div>
+  1012→                  </div>
+  1013→                  {draftData?.draft && (
+  1014→                    <CardDescription>{draftData.draft.caption}</CardDescription>
+  1015→                  )}
+  1016→                </CardHeader>
+  1017→                <CardContent>
+  1018→                  {draftData?.draft ? (
+  1019→                    <div className="space-y-4">
+  1020→                      {/* CTA */}
+  1021→                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+  1022→                        <p className="text-xs font-medium text-emerald-400 mb-1">CTA</p>
+  1023→                        <p className="text-sm">{draftData.draft.cta}</p>
+  1024→                      </div>
+  1025→
+  1026→                      {/* Alternative Hooks */}
+  1027→                      <div>
+  1028→                        <p className="text-xs font-medium text-muted-foreground mb-2">Alternative Hooks (7 patterns)</p>
+  1029→                        <ScrollArea className="max-h-48">
+  1030→                          <div className="space-y-2 pr-3">
+  1031→                            {draftData.draft.alternativeHooks.map((hook, i) => (
+  1032→                              <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-muted/50 text-xs">
+  1033→                                <MessageSquare className="size-3 mt-0.5 text-muted-foreground shrink-0" />
+  1034→                                <span>{hook}</span>
+  1035→                              </div>
+  1036→                            ))}
+  1037→                          </div>
+  1038→                        </ScrollArea>
+  1039→                      </div>
+  1040→
+  1041→                      {/* Metadata */}
+  1042→                      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+  1043→                        <span>Hook patterns: {draftData.metadata?.hookPatternsAvailable ?? 8}</span>
+  1044→                        <span>Credits used: {draftData.metadata?.creditsUsed ?? 0}</span>
+  1045→                        <span>Hook compat: {(draftData.draft.hookCompat * 100).toFixed(0)}%</span>
+  1046→                        <span>Source: {draftData.draft.source}</span>
+  1047→                      </div>
+  1048→                    </div>
+  1049→                  ) : (
+  1050→                    <div className="space-y-3">
+  1051→                      <div className="h-8 bg-muted rounded animate-pulse" />
+  1052→                      <div className="h-20 bg-muted rounded animate-pulse" />
+  1053→                    </div>
+  1054→                  )}
+  1055→                </CardContent>
+  1056→              </Card>
+  1057→            </section>
+  1058→          </TabsContent>
+  1059→
+  1060→          {/* ===== AUTONOMY TAB ===== */}
+  1061→          <TabsContent value="autonomy" className="space-y-6">
+  1062→            <section>
+  1063→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1064→                <Moon className="size-4" />
+  1065→                Overnight Autonomy Pipeline
+  1066→              </h2>
+  1067→              <Card>
+  1068→                <CardHeader>
+  1069→                  <div className="flex items-center justify-between flex-wrap gap-2">
+  1070→                    <CardTitle>Autonomy Status</CardTitle>
+  1071→                    <Badge className={autonomyData?.status?.equipped ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-600 text-white border-amber-600'}>
+  1072→                      {autonomyData?.status?.equipped ? 'Passive Autonomous Soul ✓' : 'Not Equipped'}
+  1073→                    </Badge>
+  1074→                  </div>
+  1075→                  <CardDescription>
+  1076→                    23:00 wake → review signals → delegate → 00:00 draft → 06:00 morning brief
+  1077→                  </CardDescription>
+  1078→                </CardHeader>
+  1079→                <CardContent>
+  1080→                  <div className="space-y-4">
+  1081→                    {/* Phase timeline */}
+  1082→                    <div className="flex items-center gap-2 flex-wrap">
+  1083→                      {['waking', 'reviewing_signals', 'delegating', 'drafting', 'waiting_approval', 'brief_ready', 'idle'].map((phase, i) => {
+  1084→                        const currentPhase = autonomyData?.status?.phase ?? 'idle';
+  1085→                        const isActive = currentPhase === phase;
+  1086→                        const isPast = ['idle', 'brief_ready'].includes(currentPhase) && i < 6;
+  1087→                        return (
+  1088→                          <div key={phase} className="flex items-center gap-1">
+  1089→                            <div className={`size-2 rounded-full ${
+  1090→                              isActive ? 'bg-violet-500 animate-pulse' : isPast ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+  1091→                            }`} />
+  1092→                            <span className={`text-xs ${isActive ? 'text-violet-400 font-medium' : isPast ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+  1093→                              {phase.replace(/_/g, ' ').slice(0, 12)}
+  1094→                            </span>
+  1095→                            {i < 6 && <ArrowRight className="size-3 text-muted-foreground/30" />}
+  1096→                          </div>
+  1097→                        );
+  1098→                      })}
+  1099→                    </div>
+  1100→
+  1101→                    <Separator />
+  1102→
+  1103→                    {/* Approval Gate */}
+  1104→                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+  1105→                      <p className="text-sm font-medium text-amber-400 flex items-center gap-2">
+  1106→                        <Shield className="size-4" />
+  1107→                        Approval Gate: Nothing publishes without human approval
+  1108→                      </p>
+  1109→                      <p className="text-xs text-muted-foreground mt-1">
+  1110→                        Pending approvals: {autonomyData?.status?.pendingApprovals ?? 0}
+  1111→                      </p>
+  1112→                    </div>
+  1113→
+  1114→                    {/* Drafts */}
+  1115→                    {autonomyData?.status?.drafts && autonomyData.status.drafts.length > 0 && (
+  1116→                      <div>
+  1117→                        <p className="text-xs font-medium text-muted-foreground mb-2">Overnight Drafts</p>
+  1118→                        {autonomyData.status.drafts.map((draft) => (
+  1119→                          <div key={draft.id} className="flex items-center justify-between p-2 rounded-md bg-muted/50 text-sm mb-1">
+  1120→                            <span className="truncate flex-1 mr-2">{draft.title}</span>
+  1121→                            <Badge variant={draft.approvalStatus === 'pending' ? 'outline' : 'secondary'} className="shrink-0">
+  1122→                              {draft.approvalStatus}
+  1123→                            </Badge>
+  1124→                          </div>
+  1125→                        ))}
+  1126→                      </div>
+  1127→                    )}
+  1128→
+  1129→                    {/* Audit Log */}
+  1130→                    {autonomyData?.status?.auditLog && autonomyData.status.auditLog.length > 0 && (
+  1131→                      <div>
+  1132→                        <p className="text-xs font-medium text-muted-foreground mb-2">Audit Trail (last {Math.min(autonomyData.status.auditLog.length, 10)})</p>
+  1133→                        <ScrollArea className="max-h-48">
+  1134→                          <div className="space-y-1 pr-3">
+  1135→                            {autonomyData.status.auditLog.slice(-10).reverse().map((entry) => (
+  1136→                              <div key={entry.id} className="flex items-start gap-2 text-xs p-1.5 rounded bg-muted/30">
+  1137→                                <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">{entry.actor}</Badge>
+  1138→                                <span className="text-muted-foreground truncate">{entry.action}: {entry.detail.slice(0, 80)}</span>
+  1139→                              </div>
+  1140→                            ))}
+  1141→                          </div>
+  1142→                        </ScrollArea>
+  1143→                      </div>
+  1144→                    )}
+  1145→
+  1146→                    {/* Credit estimate */}
+  1147→                    <div className="flex items-center justify-between text-sm">
+  1148→                      <span className="text-muted-foreground">Credit burn estimate</span>
+  1149→                      <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+  1150→                        {autonomyData?.status?.creditBurnEstimate ?? 0} credits
+  1151→                      </Badge>
+  1152→                    </div>
+  1153→                  </div>
+  1154→                </CardContent>
+  1155→              </Card>
+  1156→            </section>
+  1157→          </TabsContent>
+  1158→
+  1159→          {/* ===== MEMORY TAB ===== */}
+  1160→          <TabsContent value="memory" className="space-y-6">
+  1161→            {/* Identity Card */}
+  1162→            <section>
+  1163→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1164→                <Fingerprint className="size-4" />
+  1165→                Creator Identity Domain
+  1166→              </h2>
+  1167→              <Card className="border-violet-500/30 shadow-md">
+  1168→                <CardHeader>
+  1169→                  <div className="flex items-center justify-between flex-wrap gap-2">
+  1170→                    <div className="flex items-center gap-3">
+  1171→                      <div className="size-10 rounded-full bg-gradient-to-br from-violet-500 to-emerald-500 flex items-center justify-center">
+  1172→                        <User className="size-5 text-white" />
+  1173→                      </div>
+  1174→                      <div>
+  1175→                        <CardTitle className="text-lg">{creatorData?.creator?.name ?? 'Loading…'}</CardTitle>
+  1176→                        <CardDescription>{creatorData?.creator?.niche ?? '—'}</CardDescription>
+  1177→                      </div>
+  1178→                    </div>
+  1179→                    <div className="flex items-center gap-2">
+  1180→                      <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-400">
+  1181→                        {creatorData?.creator?.platform === 'youtube' ? 'YouTube' : creatorData?.creator?.platform ?? '—'}
+  1182→                      </Badge>
+  1183→                      {creatorData?.stats && (
+  1184→                        <Badge variant="secondary" className="gap-1">
+  1185→                          <Database className="size-3" />
+  1186→                          {creatorData.stats.memoryEvents} memories
+  1187→                        </Badge>
+  1188→                      )}
+  1189→                      {!editingIdentity ? (
+  1190→                        <Button
+  1191→                          variant="outline"
+  1192→                          size="sm"
+  1193→                          className="gap-1"
+  1194→                          onClick={() => {
+  1195→                            const c = creatorData?.creator;
+  1196→                            setEditForm({
+  1197→                              name: c?.name ?? '',
+  1198→                              niche: c?.niche ?? '',
+  1199→                              audience: c?.audience ?? '',
+  1200→                              tone: c?.tone?.join(', ') ?? '',
+  1201→                              avoid: c?.avoid?.join(', ') ?? '',
+  1202→                            });
+  1203→                            setEditingIdentity(true);
+  1204→                          }}
+  1205→                        >
+  1206→                          <Pencil className="size-3" />
+  1207→                          Edit
+  1208→                        </Button>
+  1209→                      ) : (
+  1210→                        <div className="flex gap-1">
+  1211→                          <Button
+  1212→                            variant="outline"
+  1213→                            size="sm"
+  1214→                            className="gap-1"
+  1215→                            onClick={() => setEditingIdentity(false)}
+  1216→                          >
+  1217→                            <X className="size-3" />
+  1218→                            Cancel
+  1219→                          </Button>
+  1220→                          <Button
+  1221→                            size="sm"
+  1222→                            className="gap-1 bg-violet-600 text-white hover:bg-violet-700"
+  1223→                            disabled={saving}
+  1224→                            onClick={async () => {
+  1225→                              setSaving(true);
+  1226→                              try {
+  1227→                                const res = await fetch('/api/creator', {
+  1228→                                  method: 'PATCH',
+  1229→                                  headers: { 'Content-Type': 'application/json' },
+  1230→                                  body: JSON.stringify({
+  1231→                                    name: editForm.name,
+  1232→                                    niche: editForm.niche,
+  1233→                                    audience: editForm.audience,
+  1234→                                    tone: editForm.tone.split(',').map((s) => s.trim()).filter(Boolean),
+  1235→                                    avoid: editForm.avoid.split(',').map((s) => s.trim()).filter(Boolean),
+  1236→                                  }),
+  1237→                                });
+  1238→                                if (res.ok) {
+  1239→                                  setEditingIdentity(false);
+  1240→                                  await fetchCreatorData();
+  1241→                                }
+  1242→                              } catch {
+  1243→                                // error
+  1244→                              } finally {
+  1245→                                setSaving(false);
+  1246→                              }
+  1247→                            }}
+  1248→                          >
+  1249→                            <Save className="size-3" />
+  1250→                            {saving ? 'Saving…' : 'Save'}
+  1251→                          </Button>
+  1252→                        </div>
+  1253→                      )}
+  1254→                    </div>
+  1255→                  </div>
+  1256→                </CardHeader>
+  1257→                <CardContent>
+  1258→                  {editingIdentity ? (
+  1259→                    <div className="space-y-4">
+  1260→                      <div>
+  1261→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Name</label>
+  1262→                        <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+  1263→                      </div>
+  1264→                      <div>
+  1265→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Niche</label>
+  1266→                        <Input value={editForm.niche} onChange={(e) => setEditForm({ ...editForm, niche: e.target.value })} />
+  1267→                      </div>
+  1268→                      <div>
+  1269→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Audience</label>
+  1270→                        <Input value={editForm.audience} onChange={(e) => setEditForm({ ...editForm, audience: e.target.value })} />
+  1271→                      </div>
+  1272→                      <div>
+  1273→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Tone (comma-separated)</label>
+  1274→                        <Textarea value={editForm.tone} onChange={(e) => setEditForm({ ...editForm, tone: e.target.value })} rows={2} />
+  1275→                      </div>
+  1276→                      <div>
+  1277→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Avoid (comma-separated)</label>
+  1278→                        <Textarea value={editForm.avoid} onChange={(e) => setEditForm({ ...editForm, avoid: e.target.value })} rows={2} />
+  1279→                      </div>
+  1280→                    </div>
+  1281→                  ) : (
+  1282→                    <div className="space-y-4">
+  1283→                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  1284→                        <div>
+  1285→                          <p className="text-xs font-medium text-muted-foreground mb-1">Audience</p>
+  1286→                          <p className="text-sm">{creatorData?.creator?.audience ?? '—'}</p>
+  1287→                        </div>
+  1288→                        <div>
+  1289→                          <p className="text-xs font-medium text-muted-foreground mb-1">Email</p>
+  1290→                          <p className="text-sm font-mono text-xs">{creatorData?.creator?.email ?? '—'}</p>
+  1291→                        </div>
+  1292→                      </div>
+  1293→
+  1294→                      <div>
+  1295→                        <p className="text-xs font-medium text-muted-foreground mb-2">Tone</p>
+  1296→                        <div className="flex flex-wrap gap-1.5">
+  1297→                          {(creatorData?.creator?.tone ?? []).map((t) => (
+  1298→                            <Badge key={t} variant="outline" className="border-violet-500/40 text-violet-400">{t}</Badge>
+  1299→                          ))}
+  1300→                        </div>
+  1301→                      </div>
+  1302→
+  1303→                      <div>
+  1304→                        <p className="text-xs font-medium text-muted-foreground mb-2">Avoid</p>
+  1305→                        <div className="flex flex-wrap gap-1.5">
+  1306→                          {(creatorData?.creator?.avoid ?? []).map((a) => (
+  1307→                            <Badge key={a} variant="outline" className="border-rose-500/40 text-rose-400">{a}</Badge>
+  1308→                          ))}
+  1309→                        </div>
+  1310→                      </div>
+  1311→
+  1312→                      <Separator />
+  1313→
+  1314→                      {/* Minds IDs */}
+  1315→                      <div>
+  1316→                        <p className="text-xs font-medium text-muted-foreground mb-2">Minds IDs</p>
+  1317→                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+  1318→                          <div className="p-2 rounded bg-muted/50">
+  1319→                            <span className="text-muted-foreground">Human: </span>
+  1320→                            <span>{truncateId(creatorData?.creator?.mindsHumanId ?? '', 12)}</span>
+  1321→                          </div>
+  1322→                          <div className="p-2 rounded bg-muted/50">
+  1323→                            <span className="text-muted-foreground">Muse: </span>
+  1324→                            <span>{truncateId(creatorData?.creator?.mindsMuseId ?? '', 12)}</span>
+  1325→                          </div>
+  1326→                          <div className="p-2 rounded bg-muted/50">
+  1327→                            <span className="text-muted-foreground">Maker: </span>
+  1328→                            <span>{truncateId(creatorData?.creator?.mindsMakerId ?? '', 12)}</span>
+  1329→                          </div>
+  1330→                        </div>
+  1331→                      </div>
+  1332→                    </div>
+  1333→                  )}
+  1334→                </CardContent>
+  1335→              </Card>
+  1336→            </section>
+  1337→
+  1338→            <Separator />
+  1339→
+  1340→            {/* Voice Profile (Memory tab - existing) */}
+  1341→            <section>
+  1342→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1343→                <Activity className="size-4" />
+  1344→                Voice Profile
+  1345→              </h2>
+  1346→              <Card>
+  1347→                <CardHeader>
+  1348→                  <CardTitle className="text-base">Voice Dimensions</CardTitle>
+  1349→                  <CardDescription>Quantified creator voice characteristics from identity analysis</CardDescription>
+  1350→                </CardHeader>
+  1351→                <CardContent>
+  1352→                  <div className="space-y-3">
+  1353→                    {creatorData?.creator?.voiceProfile && Object.entries(creatorData.creator.voiceProfile)
+  1354→                      .sort(([, a], [, b]) => b - a)
+  1355→                      .map(([key, value]) => {
+  1356→                        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+  1357→                        const pct = Math.round(value);
+  1358→                        const barColor = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-rose-500';
+  1359→                        return (
+  1360→                          <div key={key} className="flex items-center gap-3">
+  1361→                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+  1362→                            <div className="flex-1 h-6 bg-muted rounded-md overflow-hidden relative">
+  1363→                              <div
+  1364→                                className={`h-full rounded-md ${barColor} transition-all duration-500`}
+  1365→                                style={{ width: `${pct}%` }}
+  1366→                              />
+  1367→                              <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">
+  1368→                                {pct}%
+  1369→                              </span>
+  1370→                            </div>
+  1371→                          </div>
+  1372→                        );
+  1373→                      })}
+  1374→                    {!creatorData?.creator?.voiceProfile && (
+  1375→                      <div className="space-y-2">
+  1376→                        {['Directness', 'Technical Depth', 'Storytelling', 'Humor', 'CTA Intensity', 'Hype'].map((label) => (
+  1377→                          <div key={label} className="flex items-center gap-3">
+  1378→                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+  1379→                            <div className="flex-1 h-6 bg-muted rounded-md animate-pulse" />
+  1380→                          </div>
+  1381→                        ))}
+  1382→                      </div>
+  1383→                    )}
+  1384→                  </div>
+  1385→                </CardContent>
+  1386→              </Card>
+  1387→            </section>
+  1388→
+  1389→            <Separator />
+  1390→
+  1391→            {/* Memory Events Feed */}
+  1392→            <section>
+  1393→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1394→                <Brain className="size-4" />
+  1395→                Memory Events Feed
+  1396→                {memoryData && (
+  1397→                  <Badge variant="secondary" className="ml-1">{memoryData.count}</Badge>
+  1398→                )}
+  1399→              </h2>
+  1400→              <Card>
+  1401→                <CardHeader>
+  1402→                  <CardTitle className="text-base">Learning Memory</CardTitle>
+  1403→                  <CardDescription>
+  1404→                    Every identity update, preference signal, and performance observation
+  1405→                  </CardDescription>
+  1406→                </CardHeader>
+  1407→                <CardContent>
+  1408→                  <ScrollArea className="max-h-96">
+  1409→                    <div className="space-y-2 pr-3">
+  1410→                      {memoryData?.events && memoryData.events.length > 0 ? (
+  1411→                        memoryData.events.map((evt) => {
+  1412→                          const categoryColors: Record<string, string> = {
+  1413→                            identity: 'border-violet-500/40 text-violet-400',
+  1414→                            preference: 'border-emerald-500/40 text-emerald-400',
+  1415→                            performance: 'border-amber-500/40 text-amber-400',
+  1416→                            pattern: 'border-rose-500/40 text-rose-400',
+  1417→                            feedback: 'border-violet-500/40 text-violet-400',
+  1418→                          };
+  1419→                          const sourceColors: Record<string, string> = {
+  1420→                            creator: 'bg-violet-500/10 text-violet-400',
+  1421→                            analytics: 'bg-emerald-500/10 text-emerald-400',
+  1422→                            muse_inference: 'bg-amber-500/10 text-amber-400',
+  1423→                            maker_feedback: 'bg-rose-500/10 text-rose-400',
+  1424→                          };
+  1425→                          const confidenceLabel = evt.confidence >= 0.8 ? 'high' : evt.confidence >= 0.4 ? 'medium' : 'low';
+  1426→                          const confidenceColor = confidenceLabel === 'high' ? 'text-emerald-400' : confidenceLabel === 'medium' ? 'text-amber-400' : 'text-rose-400';
+  1427→                          const valueDisplay = evt.value.length > 60 ? evt.value.slice(0, 60) + '…' : evt.value;
+  1428→
+  1429→                          return (
+  1430→                            <div key={evt.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+  1431→                              <div className="flex flex-col gap-1 shrink-0">
+  1432→                                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${categoryColors[evt.category] ?? ''}`}>
+  1433→                                  {evt.category}
+  1434→                                </Badge>
+  1435→                              </div>
+  1436→                              <div className="flex-1 min-w-0">
+  1437→                                <div className="flex items-center gap-2 flex-wrap">
+  1438→                                  <span className="text-sm font-medium">{evt.key}</span>
+  1439→                                  <span className="text-xs text-muted-foreground truncate">{valueDisplay}</span>
+  1440→                                </div>
+  1441→                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+  1442→                                  <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${sourceColors[evt.source] ?? ''}`}>
+  1443→                                    {evt.source}
+  1444→                                  </Badge>
+  1445→                                  <span className={`text-[10px] font-medium ${confidenceColor}`}>
+  1446→                                    {confidenceLabel} confidence
+  1447→                                  </span>
+  1448→                                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+  1449→                                    <Clock className="size-2.5" />
+  1450→                                    {new Date(evt.createdAt).toLocaleString()}
+  1451→                                  </span>
+  1452→                                </div>
+  1453→                              </div>
+  1454→                            </div>
+  1455→                          );
+  1456→                        })
+  1457→                      ) : (
+  1458→                        <div className="space-y-2">
+  1459→                          {[1, 2, 3, 4, 5].map((i) => (
+  1460→                            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+  1461→                          ))}
+  1462→                        </div>
+  1463→                      )}
+  1464→                    </div>
+  1465→                  </ScrollArea>
+  1466→                </CardContent>
+  1467→              </Card>
+  1468→            </section>
+  1469→
+  1470→            <Separator />
+  1471→
+  1472→            {/* Audit Trail */}
+  1473→            <section>
+  1474→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1475→                <History className="size-4" />
+  1476→                Audit Trail
+  1477→                {auditData && (
+  1478→                  <Badge variant="secondary" className="ml-1">{auditData.count}</Badge>
+  1479→                )}
+  1480→              </h2>
+  1481→              <Card>
+  1482→                <CardHeader>
+  1483→                  <CardTitle className="text-base">Full Audit Log</CardTitle>
+  1484→                  <CardDescription>
+  1485→                    Every create, update, and learn event — the foundation of the learning loop
+  1486→                  </CardDescription>
+  1487→                </CardHeader>
+  1488→                <CardContent>
+  1489→                  <ScrollArea className="max-h-64">
+  1490→                    <div className="space-y-2 pr-3">
+  1491→                      {auditData?.events && auditData.events.length > 0 ? (
+  1492→                        auditData.events.map((evt) => {
+  1493→                          const actorColors: Record<string, string> = {
+  1494→                            creator: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  1495→                            muse: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  1496→                            maker: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  1497→                            system: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  1498→                          };
+  1499→                          const deltaDisplay = evt.delta
+  1500→                            ? (() => { try { return JSON.stringify(JSON.parse(evt.delta)); } catch { return evt.delta; } })()
+  1501→                            : null;
+  1502→                          const truncatedDelta = deltaDisplay && deltaDisplay.length > 80 ? deltaDisplay.slice(0, 80) + '…' : deltaDisplay;
+  1503→
+  1504→                          return (
+  1505→                            <div key={evt.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+  1506→                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${actorColors[evt.actor] ?? ''}`}>
+  1507→                                {evt.actor}
+  1508→                              </Badge>
+  1509→                              <div className="flex-1 min-w-0">
+  1510→                                <div className="flex items-center gap-2 flex-wrap">
+  1511→                                  <span className="text-sm font-medium">{evt.action}</span>
+  1512→                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{evt.targetType}</Badge>
+  1513→                                </div>
+  1514→                                {truncatedDelta && (
+  1515→                                  <p className="text-xs text-muted-foreground mt-1 truncate">{truncatedDelta}</p>
+  1516→                                )}
+  1517→                                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-1">
+  1518→                                  <Clock className="size-2.5" />
+  1519→                                  {new Date(evt.createdAt).toLocaleString()}
+  1520→                                </span>
+  1521→                              </div>
+  1522→                            </div>
+  1523→                          );
+  1524→                        })
+  1525→                      ) : (
+  1526→                        <div className="space-y-2">
+  1527→                          {[1, 2, 3].map((i) => (
+  1528→                            <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+  1529→                          ))}
+  1530→                        </div>
+  1531→                      )}
+  1532→                    </div>
+  1533→                  </ScrollArea>
+  1534→                </CardContent>
+  1535→              </Card>
+  1536→            </section>
+  1537→          </TabsContent>
+  1538→
+  1539→          {/* ===== VOICE TAB ===== */}
+  1540→          <TabsContent value="voice" className="space-y-6">
+  1541→            {/* Voice Profile Card */}
+  1542→            <section>
+  1543→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1544→                <Mic className="size-4" />
+  1545→                Voice Profile Domain
+  1546→              </h2>
+  1547→              <Card className="border-violet-500/30 shadow-md">
+  1548→                <CardHeader>
+  1549→                  <div className="flex items-center justify-between flex-wrap gap-2">
+  1550→                    <div className="flex items-center gap-2">
+  1551→                      <div className="size-8 rounded-lg bg-gradient-to-br from-violet-500 to-rose-500 flex items-center justify-center">
+  1552→                        <Mic className="size-4 text-white" />
+  1553→                      </div>
+  1554→                      <div>
+  1555→                        <CardTitle className="text-base">Voice Profile Analysis</CardTitle>
+  1556→                        <CardDescription>7 dimensions defining your unique creator voice</CardDescription>
+  1557→                      </div>
+  1558→                    </div>
+  1559→                    <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
+  1560→                      <Activity className="size-3" />
+  1561→                      {voiceProfileEntries.length} dimensions
+  1562→                    </Badge>
+  1563→                  </div>
+  1564→                </CardHeader>
+  1565→                <CardContent>
+  1566→                  <div className="space-y-3">
+  1567→                    {voiceLoading ? (
+  1568→                      <div className="space-y-2">
+  1569→                        {['Directness', 'Technical Depth', 'Storytelling', 'Humor', 'CTA Intensity', 'Sentence Length', 'Hype'].map((label) => (
+  1570→                          <div key={label} className="flex items-center gap-3">
+  1571→                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+  1572→                            <div className="flex-1 h-6 bg-muted rounded-md animate-pulse" />
+  1573→                          </div>
+  1574→                        ))}
+  1575→                      </div>
+  1576→                    ) : voiceProfileEntries.length > 0 ? (
+  1577→                      voiceProfileEntries.map(([key, value]) => {
+  1578→                        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+  1579→                        const pct = Math.round(value);
+  1580→                        return (
+  1581→                          <div key={key} className="flex items-center gap-3">
+  1582→                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+  1583→                            <div className="flex-1 h-6 bg-muted rounded-md overflow-hidden relative">
+  1584→                              <div
+  1585→                                className={`h-full rounded-md ${voiceBarColor(pct)} transition-all duration-500`}
+  1586→                                style={{ width: `${pct}%` }}
+  1587→                              />
+  1588→                              <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">
+  1589→                                {pct}%
+  1590→                              </span>
+  1591→                            </div>
+  1592→                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${voiceBadgeColor(pct)}`}>
+  1593→                              {pct >= 70 ? 'High' : pct >= 40 ? 'Med' : 'Low'}
+  1594→                            </Badge>
+  1595→                          </div>
+  1596→                        );
+  1597→                      })
+  1598→                    ) : (
+  1599→                      <div className="text-sm text-muted-foreground text-center py-6">
+  1600→                        No voice profile data yet. Analyze content below to build your profile.
+  1601→                      </div>
+  1602→                    )}
+  1603→                  </div>
+  1604→                </CardContent>
+  1605→              </Card>
+  1606→            </section>
+  1607→
+  1608→            <Separator />
+  1609→
+  1610→            {/* Voice Analysis Tool */}
+  1611→            <section>
+  1612→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1613→                <BarChart3 className="size-4" />
+  1614→                Voice Analysis Tool
+  1615→              </h2>
+  1616→              <Card>
+  1617→                <CardHeader>
+  1618→                  <CardTitle className="text-base">Analyze Content Voice</CardTitle>
+  1619→                  <CardDescription>Paste any content to measure its voice profile against your stored dimensions</CardDescription>
+  1620→                </CardHeader>
+  1621→                <CardContent>
+  1622→                  <div className="space-y-4">
+  1623→                    <Textarea
+  1624→                      placeholder="Paste your content here to analyze its voice profile..."
+  1625→                      value={analyzeText}
+  1626→                      onChange={(e) => setAnalyzeText(e.target.value)}
+  1627→                      rows={6}
+  1628→                      className="resize-none"
+  1629→                    />
+  1630→                    <div className="flex items-center justify-between flex-wrap gap-3">
+  1631→                      <div className="flex items-center gap-3">
+  1632→                        <Button
+  1633→                          className="gap-1.5 bg-violet-600 text-white hover:bg-violet-700"
+  1634→                          disabled={!analyzeText.trim() || analyzeLoading}
+  1635→                          onClick={async () => {
+  1636→                            setAnalyzeLoading(true);
+  1637→                            setAnalyzeResult(null);
+  1638→                            try {
+  1639→                              const res = await fetch('/api/creator/voice/analyze', {
+  1640→                                method: 'POST',
+  1641→                                headers: { 'Content-Type': 'application/json' },
+  1642→                                body: JSON.stringify({ text: analyzeText, updateProfile: updateProfileToggle }),
+  1643→                              });
+  1644→                              const data = await res.json();
+  1645→                              setAnalyzeResult(data);
+  1646→                              if (updateProfileToggle && data.success) {
+  1647→                                await fetchVoiceProfile();
+  1648→                              }
+  1649→                            } catch {
+  1650→                              setAnalyzeResult({ success: false, error: 'Failed to analyze voice' });
+  1651→                            } finally {
+  1652→                              setAnalyzeLoading(false);
+  1653→                            }
+  1654→                          }}
+  1655→                        >
+  1656→                          <Mic className="size-3.5" />
+  1657→                          {analyzeLoading ? 'Analyzing…' : 'Analyze Voice'}
+  1658→                        </Button>
+  1659→                        <Button
+  1660→                          variant="outline"
+  1661→                          size="sm"
+  1662→                          className={updateProfileToggle ? 'border-emerald-500/40 text-emerald-400' : ''}
+  1663→                          onClick={() => setUpdateProfileToggle(!updateProfileToggle)}
+  1664→                        >
+  1665→                          {updateProfileToggle ? (
+  1666→                            <>
+  1667→                              <CheckCircle2 className="size-3.5" />
+  1668→                              Update Profile
+  1669→                            </>
+  1670→                          ) : (
+  1671→                            <>
+  1672→                              <X className="size-3.5" />
+  1673→                              Read-Only
+  1674→                            </>
+  1675→                          )}
+  1676→                        </Button>
+  1677→                      </div>
+  1678→                      <span className="text-xs text-muted-foreground">
+  1679→                        {analyzeText.length} characters
+  1680→                      </span>
+  1681→                    </div>
+  1682→                  </div>
+  1683→                </CardContent>
+  1684→              </Card>
+  1685→            </section>
+  1686→
+  1687→            {/* Analysis Results */}
+  1688→            {analyzeResult && (
+  1689→              <section>
+  1690→                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1691→                  <Sparkles className="size-4" />
+  1692→                  Analysis Results
+  1693→                </h2>
+  1694→                <Card>
+  1695→                  <CardHeader>
+  1696→                    <CardTitle className="text-base">Voice Dimension Scores</CardTitle>
+  1697→                    <CardDescription>
+  1698→                      {analyzeResult.success ? 'Each dimension measured with indicators and reasoning' : 'Analysis failed'}
+  1699→                    </CardDescription>
+  1700→                  </CardHeader>
+  1701→                  <CardContent>
+  1702→                    {analyzeResult.success && analyzeResult.analysis ? (
+  1703→                      <div className="space-y-4">
+  1704→                        {/* Dimension Scores */}
+  1705→                        <div className="space-y-3">
+  1706→                          {analyzeResult.analysis.map((dim) => {
+  1707→                            const pct = Math.round(dim.score);
+  1708→                            return (
+  1709→                              <div key={dim.dimension} className="p-3 rounded-lg bg-muted/50">
+  1710→                                <div className="flex items-center justify-between mb-2">
+  1711→                                  <span className="text-sm font-medium">{dim.dimension}</span>
+  1712→                                  <div className="flex items-center gap-2">
+  1713→                                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${voiceBadgeColor(pct)}`}>
+  1714→                                      {dim.indicator}
+  1715→                                    </Badge>
+  1716→                                    <span className="text-sm font-mono font-semibold">{pct}%</span>
+  1717→                                  </div>
+  1718→                                </div>
+  1719→                                <div className="h-3 bg-muted rounded-md overflow-hidden mb-2">
+  1720→                                  <div
+  1721→                                    className={`h-full rounded-md ${voiceBarColor(pct)} transition-all duration-500`}
+  1722→                                    style={{ width: `${pct}%` }}
+  1723→                                  />
+  1724→                                </div>
+  1725→                                <p className="text-xs text-muted-foreground">{dim.reasoning}</p>
+  1726→                              </div>
+  1727→                            );
+  1728→                          })}
+  1729→                        </div>
+  1730→
+  1731→                        {/* Voice Match Display */}
+  1732→                        {analyzeResult.match && (
+  1733→                          <>
+  1734→                            <Separator />
+  1735→                            <div>
+  1736→                              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+  1737→                                <Award className="size-4 text-violet-400" />
+  1738→                                Voice Match Score
+  1739→                              </h3>
+  1740→                              {/* Overall Match */}
+  1741→                              <div className="flex items-center gap-4 mb-4">
+  1742→                                <div className="text-3xl font-bold">
+  1743→                                  {Math.round(analyzeResult.match.overallMatch * 100)}%
+  1744→                                </div>
+  1745→                                <Badge
+  1746→                                  variant="outline"
+  1747→                                  className={
+  1748→                                    analyzeResult.match.overallMatch >= 0.8
+  1749→                                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+  1750→                                      : analyzeResult.match.overallMatch >= 0.5
+  1751→                                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+  1752→                                        : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+  1753→                                  }
+  1754→                                >
+  1755→                                  {analyzeResult.match.overallMatch >= 0.8
+  1756→                                    ? 'Strong Match'
+  1757→                                    : analyzeResult.match.overallMatch >= 0.5
+  1758→                                      ? 'Partial Match'
+  1759→                                      : 'Weak Match'}
+  1760→                                </Badge>
+  1761→                              </div>
+  1762→
+  1763→                              {/* Per-dimension Matches */}
+  1764→                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-3">
+  1765→                                {analyzeResult.match.dimensionMatches.map((dm) => (
+  1766→                                  <div
+  1767→                                    key={dm.dimension}
+  1768→                                    className={`p-2 rounded-lg text-xs ${
+  1769→                                      dm.isMismatch
+  1770→                                        ? 'bg-rose-500/10 border border-rose-500/20'
+  1771→                                        : 'bg-muted/50'
+  1772→                                    }`}
+  1773→                                  >
+  1774→                                    <div className="flex items-center justify-between mb-1">
+  1775→                                      <span className={`font-medium ${dm.isMismatch ? 'text-rose-400' : ''}`}>
+  1776→                                        {dm.dimension}
+  1777→                                      </span>
+  1778→                                      <span className="font-mono">{Math.round(dm.match * 100)}%</span>
+  1779→                                    </div>
+  1780→                                    <div className="flex items-center gap-1 text-muted-foreground">
+  1781→                                      <span>Profile: {Math.round(dm.profileScore * 100)}%</span>
+  1782→                                      <span>→</span>
+  1783→                                      <span>Content: {Math.round(dm.contentScore * 100)}%</span>
+  1784→                                    </div>
+  1785→                                  </div>
+  1786→                                ))}
+  1787→                              </div>
+  1788→
+  1789→                              {/* Mismatch Warnings */}
+  1790→                              {analyzeResult.match.mismatchCount > 0 && (
+  1791→                                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+  1792→                                  <p className="text-sm font-medium text-rose-400 flex items-center gap-2">
+  1793→                                    <AlertTriangle className="size-4" />
+  1794→                                    {analyzeResult.match.mismatchCount} dimension{analyzeResult.match.mismatchCount > 1 ? 's' : ''} mismatched
+  1795→                                  </p>
+  1796→                                  <div className="mt-2 space-y-1">
+  1797→                                    {analyzeResult.match.dimensionMatches
+  1798→                                      .filter((dm) => dm.isMismatch)
+  1799→                                      .map((dm) => (
+  1800→                                        <p key={dm.dimension} className="text-xs text-rose-300">
+  1801→                                          • {dm.dimension}: profile {Math.round(dm.profileScore * 100)}% vs content {Math.round(dm.contentScore * 100)}%
+  1802→                                        </p>
+  1803→                                      ))}
+  1804→                                  </div>
+  1805→                                </div>
+  1806→                              )}
+  1807→                            </div>
+  1808→                          </>
+  1809→                        )}
+  1810→                      </div>
+  1811→                    ) : (
+  1812→                      <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+  1813→                        <p className="text-sm text-rose-400">
+  1814→                          {analyzeResult.error ?? 'Analysis failed. Please try again.'}
+  1815→                        </p>
+  1816→                      </div>
+  1817→                    )}
+  1818→                  </CardContent>
+  1819→                </Card>
+  1820→              </section>
+  1821→            )}
+  1822→          </TabsContent>
+  1823→
+  1824→          {/* ===== PERFORMANCE TAB ===== */}
+  1825→          <TabsContent value="performance" className="space-y-6">
+  1826→            {/* Performance Overview Cards */}
+  1827→            <section>
+  1828→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1829→                <TrendingUp className="size-4" />
+  1830→                Performance Overview
+  1831→              </h2>
+  1832→              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  1833→                <Card className="border-emerald-500/30 shadow-md">
+  1834→                  <CardHeader className="pb-3">
+  1835→                    <div className="flex items-center gap-2">
+  1836→                      <FileText className="size-4 text-emerald-400" />
+  1837→                      <CardTitle className="text-sm">Total Content Items</CardTitle>
+  1838→                    </div>
+  1839→                  </CardHeader>
+  1840→                  <CardContent>
+  1841→                    <div className="text-3xl font-bold">{totalContentItems}</div>
+  1842→                    <p className="text-xs text-muted-foreground mt-1">across all statuses</p>
+  1843→                  </CardContent>
+  1844→                </Card>
+  1845→                <Card className="border-amber-500/30 shadow-md">
+  1846→                  <CardHeader className="pb-3">
+  1847→                    <div className="flex items-center gap-2">
+  1848→                      <BarChart3 className="size-4 text-amber-400" />
+  1849→                      <CardTitle className="text-sm">Total Hooks Tracked</CardTitle>
+  1850→                    </div>
+  1851→                  </CardHeader>
+  1852→                  <CardContent>
+  1853→                    <div className="text-3xl font-bold">{totalHooksTracked}</div>
+  1854→                    <p className="text-xs text-muted-foreground mt-1">hook pattern observations</p>
+  1855→                  </CardContent>
+  1856→                </Card>
+  1857→                <Card className="border-violet-500/30 shadow-md">
+  1858→                  <CardHeader className="pb-3">
+  1859→                    <div className="flex items-center gap-2">
+  1860→                      <Award className="size-4 text-violet-400" />
+  1861→                      <CardTitle className="text-sm">Best Hook Pattern</CardTitle>
+  1862→                    </div>
+  1863→                  </CardHeader>
+  1864→                  <CardContent>
+  1865→                    <div className="text-lg font-bold">{bestPatternEntry?.pattern ?? perfData?.bestPattern ?? '—'}</div>
+  1866→                    <p className="text-xs text-muted-foreground mt-1">
+  1867→                      avg {bestPatternEntry ? `${Math.round(bestPatternEntry.avgEffectiveness * 100)}% effectiveness` : 'no data'}
+  1868→                    </p>
+  1869→                  </CardContent>
+  1870→                </Card>
+  1871→              </div>
+  1872→            </section>
+  1873→
+  1874→            <Separator />
+  1875→
+  1876→            {/* Content Items List */}
+  1877→            <section>
+  1878→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1879→                <FileText className="size-4" />
+  1880→                Content Items
+  1881→                {contentItems && (
+  1882→                  <Badge variant="secondary" className="ml-1">{contentItems.count}</Badge>
+  1883→                )}
+  1884→              </h2>
+  1885→              <Card>
+  1886→                <CardHeader>
+  1887→                  <CardTitle className="text-base">All Content</CardTitle>
+  1888→                  <CardDescription>Your content items with hook patterns and performance metrics</CardDescription>
+  1889→                </CardHeader>
+  1890→                <CardContent>
+  1891→                  <ScrollArea className="max-h-96">
+  1892→                    <div className="space-y-2 pr-3">
+  1893→                      {perfLoading ? (
+  1894→                        <div className="space-y-2">
+  1895→                          {[1, 2, 3, 4, 5].map((i) => (
+  1896→                            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+  1897→                          ))}
+  1898→                        </div>
+  1899→                      ) : contentItems?.items && contentItems.items.length > 0 ? (
+  1900→                        contentItems.items.map((item) => (
+  1901→                          <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+  1902→                            <div className="flex-1 min-w-0">
+  1903→                              <div className="flex items-center gap-2 flex-wrap mb-1">
+  1904→                                <span className="text-sm font-medium truncate">{item.title}</span>
+  1905→                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+  1906→                                  {item.type}
+  1907→                                </Badge>
+  1908→                                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${statusBadgeStyle(item.status)}`}>
+  1909→                                  {item.status}
+  1910→                                </Badge>
+  1911→                              </div>
+  1912→                              <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+  1913→                                {item.hookPattern && (
+  1914→                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+  1915→                                    {item.hookPattern}
+  1916→                                  </Badge>
+  1917→                                )}
+  1918→                                <span className="flex items-center gap-0.5">
+  1919→                                  <BarChart3 className="size-2.5" />
+  1920→                                  {item.metricsCount} metrics
+  1921→                                </span>
+  1922→                                {item.publishedAt && (
+  1923→                                  <span className="flex items-center gap-0.5">
+  1924→                                    <Clock className="size-2.5" />
+  1925→                                    {new Date(item.publishedAt).toLocaleDateString()}
+  1926→                                  </span>
+  1927→                                )}
+  1928→                              </div>
+  1929→                            </div>
+  1930→                          </div>
+  1931→                        ))
+  1932→                      ) : (
+  1933→                        <div className="text-sm text-muted-foreground text-center py-6">
+  1934→                          No content items yet. Use &quot;Add Content&quot; below to create one.
+  1935→                        </div>
+  1936→                      )}
+  1937→                    </div>
+  1938→                  </ScrollArea>
+  1939→                </CardContent>
+  1940→              </Card>
+  1941→            </section>
+  1942→
+  1943→            <Separator />
+  1944→
+  1945→            {/* Hook Pattern Performance */}
+  1946→            <section>
+  1947→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1948→                <PieChart className="size-4" />
+  1949→                Hook Pattern Performance
+  1950→              </h2>
+  1951→              <Card>
+  1952→                <CardHeader>
+  1953→                  <CardTitle className="text-base">Pattern Effectiveness</CardTitle>
+  1954→                  <CardDescription>Statistical comparison of hook patterns with honest sample sizes</CardDescription>
+  1955→                </CardHeader>
+  1956→                <CardContent>
+  1957→                  <div className="space-y-3">
+  1958→                    {perfLoading ? (
+  1959→                      <div className="space-y-2">
+  1960→                        {[1, 2, 3, 4].map((i) => (
+  1961→                          <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+  1962→                        ))}
+  1963→                      </div>
+  1964→                    ) : perfData?.hookPatterns && perfData.hookPatterns.length > 0 ? (
+  1965→                      perfData.hookPatterns.map((pattern) => {
+  1966→                        const isBest = pattern.pattern === perfData.bestPattern;
+  1967→                        const isWorst = pattern.pattern === perfData.worstPattern;
+  1968→                        const pct = Math.round(pattern.avgEffectiveness * 100);
+  1969→                        return (
+  1970→                          <div
+  1971→                            key={pattern.pattern}
+  1972→                            className={`p-3 rounded-lg ${
+  1973→                              isBest
+  1974→                                ? 'bg-emerald-500/10 border border-emerald-500/20'
+  1975→                                : isWorst
+  1976→                                  ? 'bg-rose-500/10 border border-rose-500/20'
+  1977→                                  : 'bg-muted/50'
+  1978→                            }`}
+  1979→                          >
+  1980→                            <div className="flex items-center justify-between mb-2">
+  1981→                              <div className="flex items-center gap-2">
+  1982→                                <span className="text-sm font-medium">{pattern.pattern}</span>
+  1983→                                {isBest && (
+  1984→                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+  1985→                                    Best
+  1986→                                  </Badge>
+  1987→                                )}
+  1988→                                {isWorst && (
+  1989→                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-rose-500/10 text-rose-400 border-rose-500/20">
+  1990→                                    Worst
+  1991→                                  </Badge>
+  1992→                                )}
+  1993→                              </div>
+  1994→                              <div className="flex items-center gap-2">
+  1995→                                <span className="text-sm font-mono font-semibold">{pct}%</span>
+  1996→                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+  1997→                                  {pattern.count} uses
+  1998→                                </Badge>
+  1999→                              </div>
+  2000→                            </div>
+
+[showing lines 1-2000 of 2554; use offset=2001 with limit to continue reading]

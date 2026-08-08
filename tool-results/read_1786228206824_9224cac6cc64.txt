@@ -1,0 +1,502 @@
+  1200→                              tone: c?.tone?.join(', ') ?? '',
+  1201→                              avoid: c?.avoid?.join(', ') ?? '',
+  1202→                            });
+  1203→                            setEditingIdentity(true);
+  1204→                          }}
+  1205→                        >
+  1206→                          <Pencil className="size-3" />
+  1207→                          Edit
+  1208→                        </Button>
+  1209→                      ) : (
+  1210→                        <div className="flex gap-1">
+  1211→                          <Button
+  1212→                            variant="outline"
+  1213→                            size="sm"
+  1214→                            className="gap-1"
+  1215→                            onClick={() => setEditingIdentity(false)}
+  1216→                          >
+  1217→                            <X className="size-3" />
+  1218→                            Cancel
+  1219→                          </Button>
+  1220→                          <Button
+  1221→                            size="sm"
+  1222→                            className="gap-1 bg-violet-600 text-white hover:bg-violet-700"
+  1223→                            disabled={saving}
+  1224→                            onClick={async () => {
+  1225→                              setSaving(true);
+  1226→                              try {
+  1227→                                const res = await fetch('/api/creator', {
+  1228→                                  method: 'PATCH',
+  1229→                                  headers: { 'Content-Type': 'application/json' },
+  1230→                                  body: JSON.stringify({
+  1231→                                    name: editForm.name,
+  1232→                                    niche: editForm.niche,
+  1233→                                    audience: editForm.audience,
+  1234→                                    tone: editForm.tone.split(',').map((s) => s.trim()).filter(Boolean),
+  1235→                                    avoid: editForm.avoid.split(',').map((s) => s.trim()).filter(Boolean),
+  1236→                                  }),
+  1237→                                });
+  1238→                                if (res.ok) {
+  1239→                                  setEditingIdentity(false);
+  1240→                                  await fetchCreatorData();
+  1241→                                }
+  1242→                              } catch {
+  1243→                                // error
+  1244→                              } finally {
+  1245→                                setSaving(false);
+  1246→                              }
+  1247→                            }}
+  1248→                          >
+  1249→                            <Save className="size-3" />
+  1250→                            {saving ? 'Saving…' : 'Save'}
+  1251→                          </Button>
+  1252→                        </div>
+  1253→                      )}
+  1254→                    </div>
+  1255→                  </div>
+  1256→                </CardHeader>
+  1257→                <CardContent>
+  1258→                  {editingIdentity ? (
+  1259→                    <div className="space-y-4">
+  1260→                      <div>
+  1261→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Name</label>
+  1262→                        <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+  1263→                      </div>
+  1264→                      <div>
+  1265→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Niche</label>
+  1266→                        <Input value={editForm.niche} onChange={(e) => setEditForm({ ...editForm, niche: e.target.value })} />
+  1267→                      </div>
+  1268→                      <div>
+  1269→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Audience</label>
+  1270→                        <Input value={editForm.audience} onChange={(e) => setEditForm({ ...editForm, audience: e.target.value })} />
+  1271→                      </div>
+  1272→                      <div>
+  1273→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Tone (comma-separated)</label>
+  1274→                        <Textarea value={editForm.tone} onChange={(e) => setEditForm({ ...editForm, tone: e.target.value })} rows={2} />
+  1275→                      </div>
+  1276→                      <div>
+  1277→                        <label className="text-xs font-medium text-muted-foreground block mb-1">Avoid (comma-separated)</label>
+  1278→                        <Textarea value={editForm.avoid} onChange={(e) => setEditForm({ ...editForm, avoid: e.target.value })} rows={2} />
+  1279→                      </div>
+  1280→                    </div>
+  1281→                  ) : (
+  1282→                    <div className="space-y-4">
+  1283→                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  1284→                        <div>
+  1285→                          <p className="text-xs font-medium text-muted-foreground mb-1">Audience</p>
+  1286→                          <p className="text-sm">{creatorData?.creator?.audience ?? '—'}</p>
+  1287→                        </div>
+  1288→                        <div>
+  1289→                          <p className="text-xs font-medium text-muted-foreground mb-1">Email</p>
+  1290→                          <p className="text-sm font-mono text-xs">{creatorData?.creator?.email ?? '—'}</p>
+  1291→                        </div>
+  1292→                      </div>
+  1293→
+  1294→                      <div>
+  1295→                        <p className="text-xs font-medium text-muted-foreground mb-2">Tone</p>
+  1296→                        <div className="flex flex-wrap gap-1.5">
+  1297→                          {(creatorData?.creator?.tone ?? []).map((t) => (
+  1298→                            <Badge key={t} variant="outline" className="border-violet-500/40 text-violet-400">{t}</Badge>
+  1299→                          ))}
+  1300→                        </div>
+  1301→                      </div>
+  1302→
+  1303→                      <div>
+  1304→                        <p className="text-xs font-medium text-muted-foreground mb-2">Avoid</p>
+  1305→                        <div className="flex flex-wrap gap-1.5">
+  1306→                          {(creatorData?.creator?.avoid ?? []).map((a) => (
+  1307→                            <Badge key={a} variant="outline" className="border-rose-500/40 text-rose-400">{a}</Badge>
+  1308→                          ))}
+  1309→                        </div>
+  1310→                      </div>
+  1311→
+  1312→                      <Separator />
+  1313→
+  1314→                      {/* Minds IDs */}
+  1315→                      <div>
+  1316→                        <p className="text-xs font-medium text-muted-foreground mb-2">Minds IDs</p>
+  1317→                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+  1318→                          <div className="p-2 rounded bg-muted/50">
+  1319→                            <span className="text-muted-foreground">Human: </span>
+  1320→                            <span>{truncateId(creatorData?.creator?.mindsHumanId ?? '', 12)}</span>
+  1321→                          </div>
+  1322→                          <div className="p-2 rounded bg-muted/50">
+  1323→                            <span className="text-muted-foreground">Muse: </span>
+  1324→                            <span>{truncateId(creatorData?.creator?.mindsMuseId ?? '', 12)}</span>
+  1325→                          </div>
+  1326→                          <div className="p-2 rounded bg-muted/50">
+  1327→                            <span className="text-muted-foreground">Maker: </span>
+  1328→                            <span>{truncateId(creatorData?.creator?.mindsMakerId ?? '', 12)}</span>
+  1329→                          </div>
+  1330→                        </div>
+  1331→                      </div>
+  1332→                    </div>
+  1333→                  )}
+  1334→                </CardContent>
+  1335→              </Card>
+  1336→            </section>
+  1337→
+  1338→            <Separator />
+  1339→
+  1340→            {/* Voice Profile (Memory tab - existing) */}
+  1341→            <section>
+  1342→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1343→                <Activity className="size-4" />
+  1344→                Voice Profile
+  1345→              </h2>
+  1346→              <Card>
+  1347→                <CardHeader>
+  1348→                  <CardTitle className="text-base">Voice Dimensions</CardTitle>
+  1349→                  <CardDescription>Quantified creator voice characteristics from identity analysis</CardDescription>
+  1350→                </CardHeader>
+  1351→                <CardContent>
+  1352→                  <div className="space-y-3">
+  1353→                    {creatorData?.creator?.voiceProfile && Object.entries(creatorData.creator.voiceProfile)
+  1354→                      .sort(([, a], [, b]) => b - a)
+  1355→                      .map(([key, value]) => {
+  1356→                        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+  1357→                        const pct = Math.round(value);
+  1358→                        const barColor = pct >= 70 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-rose-500';
+  1359→                        return (
+  1360→                          <div key={key} className="flex items-center gap-3">
+  1361→                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+  1362→                            <div className="flex-1 h-6 bg-muted rounded-md overflow-hidden relative">
+  1363→                              <div
+  1364→                                className={`h-full rounded-md ${barColor} transition-all duration-500`}
+  1365→                                style={{ width: `${pct}%` }}
+  1366→                              />
+  1367→                              <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">
+  1368→                                {pct}%
+  1369→                              </span>
+  1370→                            </div>
+  1371→                          </div>
+  1372→                        );
+  1373→                      })}
+  1374→                    {!creatorData?.creator?.voiceProfile && (
+  1375→                      <div className="space-y-2">
+  1376→                        {['Directness', 'Technical Depth', 'Storytelling', 'Humor', 'CTA Intensity', 'Hype'].map((label) => (
+  1377→                          <div key={label} className="flex items-center gap-3">
+  1378→                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+  1379→                            <div className="flex-1 h-6 bg-muted rounded-md animate-pulse" />
+  1380→                          </div>
+  1381→                        ))}
+  1382→                      </div>
+  1383→                    )}
+  1384→                  </div>
+  1385→                </CardContent>
+  1386→              </Card>
+  1387→            </section>
+  1388→
+  1389→            <Separator />
+  1390→
+  1391→            {/* Memory Events Feed */}
+  1392→            <section>
+  1393→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1394→                <Brain className="size-4" />
+  1395→                Memory Events Feed
+  1396→                {memoryData && (
+  1397→                  <Badge variant="secondary" className="ml-1">{memoryData.count}</Badge>
+  1398→                )}
+  1399→              </h2>
+  1400→              <Card>
+  1401→                <CardHeader>
+  1402→                  <CardTitle className="text-base">Learning Memory</CardTitle>
+  1403→                  <CardDescription>
+  1404→                    Every identity update, preference signal, and performance observation
+  1405→                  </CardDescription>
+  1406→                </CardHeader>
+  1407→                <CardContent>
+  1408→                  <ScrollArea className="max-h-96">
+  1409→                    <div className="space-y-2 pr-3">
+  1410→                      {memoryData?.events && memoryData.events.length > 0 ? (
+  1411→                        memoryData.events.map((evt) => {
+  1412→                          const categoryColors: Record<string, string> = {
+  1413→                            identity: 'border-violet-500/40 text-violet-400',
+  1414→                            preference: 'border-emerald-500/40 text-emerald-400',
+  1415→                            performance: 'border-amber-500/40 text-amber-400',
+  1416→                            pattern: 'border-rose-500/40 text-rose-400',
+  1417→                            feedback: 'border-violet-500/40 text-violet-400',
+  1418→                          };
+  1419→                          const sourceColors: Record<string, string> = {
+  1420→                            creator: 'bg-violet-500/10 text-violet-400',
+  1421→                            analytics: 'bg-emerald-500/10 text-emerald-400',
+  1422→                            muse_inference: 'bg-amber-500/10 text-amber-400',
+  1423→                            maker_feedback: 'bg-rose-500/10 text-rose-400',
+  1424→                          };
+  1425→                          const confidenceLabel = evt.confidence >= 0.8 ? 'high' : evt.confidence >= 0.4 ? 'medium' : 'low';
+  1426→                          const confidenceColor = confidenceLabel === 'high' ? 'text-emerald-400' : confidenceLabel === 'medium' ? 'text-amber-400' : 'text-rose-400';
+  1427→                          const valueDisplay = evt.value.length > 60 ? evt.value.slice(0, 60) + '…' : evt.value;
+  1428→
+  1429→                          return (
+  1430→                            <div key={evt.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+  1431→                              <div className="flex flex-col gap-1 shrink-0">
+  1432→                                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${categoryColors[evt.category] ?? ''}`}>
+  1433→                                  {evt.category}
+  1434→                                </Badge>
+  1435→                              </div>
+  1436→                              <div className="flex-1 min-w-0">
+  1437→                                <div className="flex items-center gap-2 flex-wrap">
+  1438→                                  <span className="text-sm font-medium">{evt.key}</span>
+  1439→                                  <span className="text-xs text-muted-foreground truncate">{valueDisplay}</span>
+  1440→                                </div>
+  1441→                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+  1442→                                  <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${sourceColors[evt.source] ?? ''}`}>
+  1443→                                    {evt.source}
+  1444→                                  </Badge>
+  1445→                                  <span className={`text-[10px] font-medium ${confidenceColor}`}>
+  1446→                                    {confidenceLabel} confidence
+  1447→                                  </span>
+  1448→                                  <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+  1449→                                    <Clock className="size-2.5" />
+  1450→                                    {new Date(evt.createdAt).toLocaleString()}
+  1451→                                  </span>
+  1452→                                </div>
+  1453→                              </div>
+  1454→                            </div>
+  1455→                          );
+  1456→                        })
+  1457→                      ) : (
+  1458→                        <div className="space-y-2">
+  1459→                          {[1, 2, 3, 4, 5].map((i) => (
+  1460→                            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
+  1461→                          ))}
+  1462→                        </div>
+  1463→                      )}
+  1464→                    </div>
+  1465→                  </ScrollArea>
+  1466→                </CardContent>
+  1467→              </Card>
+  1468→            </section>
+  1469→
+  1470→            <Separator />
+  1471→
+  1472→            {/* Audit Trail */}
+  1473→            <section>
+  1474→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1475→                <History className="size-4" />
+  1476→                Audit Trail
+  1477→                {auditData && (
+  1478→                  <Badge variant="secondary" className="ml-1">{auditData.count}</Badge>
+  1479→                )}
+  1480→              </h2>
+  1481→              <Card>
+  1482→                <CardHeader>
+  1483→                  <CardTitle className="text-base">Full Audit Log</CardTitle>
+  1484→                  <CardDescription>
+  1485→                    Every create, update, and learn event — the foundation of the learning loop
+  1486→                  </CardDescription>
+  1487→                </CardHeader>
+  1488→                <CardContent>
+  1489→                  <ScrollArea className="max-h-64">
+  1490→                    <div className="space-y-2 pr-3">
+  1491→                      {auditData?.events && auditData.events.length > 0 ? (
+  1492→                        auditData.events.map((evt) => {
+  1493→                          const actorColors: Record<string, string> = {
+  1494→                            creator: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  1495→                            muse: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  1496→                            maker: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  1497→                            system: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  1498→                          };
+  1499→                          const deltaDisplay = evt.delta
+  1500→                            ? (() => { try { return JSON.stringify(JSON.parse(evt.delta)); } catch { return evt.delta; } })()
+  1501→                            : null;
+  1502→                          const truncatedDelta = deltaDisplay && deltaDisplay.length > 80 ? deltaDisplay.slice(0, 80) + '…' : deltaDisplay;
+  1503→
+  1504→                          return (
+  1505→                            <div key={evt.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+  1506→                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${actorColors[evt.actor] ?? ''}`}>
+  1507→                                {evt.actor}
+  1508→                              </Badge>
+  1509→                              <div className="flex-1 min-w-0">
+  1510→                                <div className="flex items-center gap-2 flex-wrap">
+  1511→                                  <span className="text-sm font-medium">{evt.action}</span>
+  1512→                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{evt.targetType}</Badge>
+  1513→                                </div>
+  1514→                                {truncatedDelta && (
+  1515→                                  <p className="text-xs text-muted-foreground mt-1 truncate">{truncatedDelta}</p>
+  1516→                                )}
+  1517→                                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-1">
+  1518→                                  <Clock className="size-2.5" />
+  1519→                                  {new Date(evt.createdAt).toLocaleString()}
+  1520→                                </span>
+  1521→                              </div>
+  1522→                            </div>
+  1523→                          );
+  1524→                        })
+  1525→                      ) : (
+  1526→                        <div className="space-y-2">
+  1527→                          {[1, 2, 3].map((i) => (
+  1528→                            <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+  1529→                          ))}
+  1530→                        </div>
+  1531→                      )}
+  1532→                    </div>
+  1533→                  </ScrollArea>
+  1534→                </CardContent>
+  1535→              </Card>
+  1536→            </section>
+  1537→          </TabsContent>
+  1538→
+  1539→          {/* ===== VOICE TAB ===== */}
+  1540→          <TabsContent value="voice" className="space-y-6">
+  1541→            {/* Voice Profile Card */}
+  1542→            <section>
+  1543→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1544→                <Mic className="size-4" />
+  1545→                Voice Profile Domain
+  1546→              </h2>
+  1547→              <Card className="border-violet-500/30 shadow-md">
+  1548→                <CardHeader>
+  1549→                  <div className="flex items-center justify-between flex-wrap gap-2">
+  1550→                    <div className="flex items-center gap-2">
+  1551→                      <div className="size-8 rounded-lg bg-gradient-to-br from-violet-500 to-rose-500 flex items-center justify-center">
+  1552→                        <Mic className="size-4 text-white" />
+  1553→                      </div>
+  1554→                      <div>
+  1555→                        <CardTitle className="text-base">Voice Profile Analysis</CardTitle>
+  1556→                        <CardDescription>7 dimensions defining your unique creator voice</CardDescription>
+  1557→                      </div>
+  1558→                    </div>
+  1559→                    <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
+  1560→                      <Activity className="size-3" />
+  1561→                      {voiceProfileEntries.length} dimensions
+  1562→                    </Badge>
+  1563→                  </div>
+  1564→                </CardHeader>
+  1565→                <CardContent>
+  1566→                  <div className="space-y-3">
+  1567→                    {voiceLoading ? (
+  1568→                      <div className="space-y-2">
+  1569→                        {['Directness', 'Technical Depth', 'Storytelling', 'Humor', 'CTA Intensity', 'Sentence Length', 'Hype'].map((label) => (
+  1570→                          <div key={label} className="flex items-center gap-3">
+  1571→                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+  1572→                            <div className="flex-1 h-6 bg-muted rounded-md animate-pulse" />
+  1573→                          </div>
+  1574→                        ))}
+  1575→                      </div>
+  1576→                    ) : voiceProfileEntries.length > 0 ? (
+  1577→                      voiceProfileEntries.map(([key, value]) => {
+  1578→                        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+  1579→                        const pct = Math.round(value);
+  1580→                        return (
+  1581→                          <div key={key} className="flex items-center gap-3">
+  1582→                            <span className="text-xs text-muted-foreground w-28 shrink-0 text-right">{label}</span>
+  1583→                            <div className="flex-1 h-6 bg-muted rounded-md overflow-hidden relative">
+  1584→                              <div
+  1585→                                className={`h-full rounded-md ${voiceBarColor(pct)} transition-all duration-500`}
+  1586→                                style={{ width: `${pct}%` }}
+  1587→                              />
+  1588→                              <span className="absolute inset-0 flex items-center justify-center text-xs font-medium">
+  1589→                                {pct}%
+  1590→                              </span>
+  1591→                            </div>
+  1592→                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${voiceBadgeColor(pct)}`}>
+  1593→                              {pct >= 70 ? 'High' : pct >= 40 ? 'Med' : 'Low'}
+  1594→                            </Badge>
+  1595→                          </div>
+  1596→                        );
+  1597→                      })
+  1598→                    ) : (
+  1599→                      <div className="text-sm text-muted-foreground text-center py-6">
+  1600→                        No voice profile data yet. Analyze content below to build your profile.
+  1601→                      </div>
+  1602→                    )}
+  1603→                  </div>
+  1604→                </CardContent>
+  1605→              </Card>
+  1606→            </section>
+  1607→
+  1608→            <Separator />
+  1609→
+  1610→            {/* Voice Analysis Tool */}
+  1611→            <section>
+  1612→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1613→                <BarChart3 className="size-4" />
+  1614→                Voice Analysis Tool
+  1615→              </h2>
+  1616→              <Card>
+  1617→                <CardHeader>
+  1618→                  <CardTitle className="text-base">Analyze Content Voice</CardTitle>
+  1619→                  <CardDescription>Paste any content to measure its voice profile against your stored dimensions</CardDescription>
+  1620→                </CardHeader>
+  1621→                <CardContent>
+  1622→                  <div className="space-y-4">
+  1623→                    <Textarea
+  1624→                      placeholder="Paste your content here to analyze its voice profile..."
+  1625→                      value={analyzeText}
+  1626→                      onChange={(e) => setAnalyzeText(e.target.value)}
+  1627→                      rows={6}
+  1628→                      className="resize-none"
+  1629→                    />
+  1630→                    <div className="flex items-center justify-between flex-wrap gap-3">
+  1631→                      <div className="flex items-center gap-3">
+  1632→                        <Button
+  1633→                          className="gap-1.5 bg-violet-600 text-white hover:bg-violet-700"
+  1634→                          disabled={!analyzeText.trim() || analyzeLoading}
+  1635→                          onClick={async () => {
+  1636→                            setAnalyzeLoading(true);
+  1637→                            setAnalyzeResult(null);
+  1638→                            try {
+  1639→                              const res = await fetch('/api/creator/voice/analyze', {
+  1640→                                method: 'POST',
+  1641→                                headers: { 'Content-Type': 'application/json' },
+  1642→                                body: JSON.stringify({ text: analyzeText, updateProfile: updateProfileToggle }),
+  1643→                              });
+  1644→                              const data = await res.json();
+  1645→                              setAnalyzeResult(data);
+  1646→                              if (updateProfileToggle && data.success) {
+  1647→                                await fetchVoiceProfile();
+  1648→                              }
+  1649→                            } catch {
+  1650→                              setAnalyzeResult({ success: false, error: 'Failed to analyze voice' });
+  1651→                            } finally {
+  1652→                              setAnalyzeLoading(false);
+  1653→                            }
+  1654→                          }}
+  1655→                        >
+  1656→                          <Mic className="size-3.5" />
+  1657→                          {analyzeLoading ? 'Analyzing…' : 'Analyze Voice'}
+  1658→                        </Button>
+  1659→                        <Button
+  1660→                          variant="outline"
+  1661→                          size="sm"
+  1662→                          className={updateProfileToggle ? 'border-emerald-500/40 text-emerald-400' : ''}
+  1663→                          onClick={() => setUpdateProfileToggle(!updateProfileToggle)}
+  1664→                        >
+  1665→                          {updateProfileToggle ? (
+  1666→                            <>
+  1667→                              <CheckCircle2 className="size-3.5" />
+  1668→                              Update Profile
+  1669→                            </>
+  1670→                          ) : (
+  1671→                            <>
+  1672→                              <X className="size-3.5" />
+  1673→                              Read-Only
+  1674→                            </>
+  1675→                          )}
+  1676→                        </Button>
+  1677→                      </div>
+  1678→                      <span className="text-xs text-muted-foreground">
+  1679→                        {analyzeText.length} characters
+  1680→                      </span>
+  1681→                    </div>
+  1682→                  </div>
+  1683→                </CardContent>
+  1684→              </Card>
+  1685→            </section>
+  1686→
+  1687→            {/* Analysis Results */}
+  1688→            {analyzeResult && (
+  1689→              <section>
+  1690→                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1691→                  <Sparkles className="size-4" />
+  1692→                  Analysis Results
+  1693→                </h2>
+  1694→                <Card>
+  1695→                  <CardHeader>
+  1696→                    <CardTitle className="text-base">Voice Dimension Scores</CardTitle>
+  1697→                    <CardDescription>
+  1698→                      {analyzeResult.success ? 'Each dimension measured with indicators and reasoning' : 'Analysis failed'}
+  1699→                    </CardDescription>
+
+[showing lines 1200-1699 of 2554; use offset=1700 with limit to continue reading]
