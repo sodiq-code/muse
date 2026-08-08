@@ -2,15 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createDecision, listDecisions, getDecisionSummary, type DecisionType } from '@/lib/decision-service';
 import { seedCreator, seedPerformanceData, seedExtraContent, seedDecisions } from '@/lib/seed';
 
+// Module-level flag to skip re-seeding after first successful seed
+let seedCompleted = false;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const creatorId = searchParams.get('creatorId') ?? (await seedCreator());
 
-    // Auto-seed decisions
-    await seedPerformanceData(creatorId);
-    await seedExtraContent(creatorId);
-    await seedDecisions(creatorId);
+    // Auto-seed decisions (only runs once; subsequent calls skip via flag)
+    if (!seedCompleted) {
+      await seedPerformanceData(creatorId);
+      await seedExtraContent(creatorId);
+      await seedDecisions(creatorId);
+      seedCompleted = true;
+    }
 
     const decision = searchParams.get('decision') as DecisionType | null;
     const summary = await getDecisionSummary(creatorId);

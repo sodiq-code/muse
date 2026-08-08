@@ -268,18 +268,22 @@ export async function seedCreator(): Promise<string> {
 // ---------------------------------------------------------------------------
 
 export async function seedPerformanceData(creatorId: string): Promise<number> {
-  // Check if content items already exist for this creator
-  const existingItems = await db.contentItem.count({
-    where: { creatorId },
+  // Robust idempotency: check if the base content titles already exist
+  const baseTitles = JULES_CONTENT.map(c => c.title);
+  const existingBase = await db.contentItem.count({
+    where: { creatorId, title: { in: baseTitles } },
   });
-
-  if (existingItems > 0) {
-    return existingItems; // Already seeded
-  }
+  if (existingBase >= JULES_CONTENT.length) return existingBase; // Already seeded
 
   let totalItems = 0;
 
   for (const content of JULES_CONTENT) {
+    // Skip if this specific title already exists (prevents duplicates on concurrent calls)
+    const alreadyExists = await db.contentItem.findFirst({
+      where: { creatorId, title: content.title },
+    });
+    if (alreadyExists) continue;
+
     // Create the content item
     const item = await db.contentItem.create({
       data: {
@@ -521,11 +525,21 @@ const JULES_CONTENT_EXTRA: typeof JULES_CONTENT = [
 // ---------------------------------------------------------------------------
 
 export async function seedExtraContent(creatorId: string): Promise<number> {
-  const existingItems = await db.contentItem.count({ where: { creatorId } });
-  if (existingItems >= 25) return existingItems; // Already have enough
+  // Robust idempotency: check if any of the extra content titles already exist
+  const extraTitles = JULES_CONTENT_EXTRA.map(c => c.title);
+  const existingExtra = await db.contentItem.count({
+    where: { creatorId, title: { in: extraTitles } },
+  });
+  if (existingExtra >= JULES_CONTENT_EXTRA.length) return existingExtra; // All extra items already seeded
 
   let totalNew = 0;
   for (const content of JULES_CONTENT_EXTRA) {
+    // Skip if this specific title already exists (prevents duplicates on concurrent calls)
+    const alreadyExists = await db.contentItem.findFirst({
+      where: { creatorId, title: content.title },
+    });
+    if (alreadyExists) continue;
+
     const item = await db.contentItem.create({
       data: { creatorId, type: content.type, title: content.title, body: content.body, status: content.status, publishedAt: new Date(content.publishedAt) },
     });
