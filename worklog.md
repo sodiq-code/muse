@@ -792,3 +792,68 @@ Stage Summary:
   - Footer confirms Beat ✅ ✅
 - Lint: 0 errors, 0 warnings
 - Commit: 8f6eb3d pushed to GitHub (sodiq-code/muse)
+
+---
+Task ID: 12-2
+Agent: full-stack-developer
+Task: Day 12 — Build backend services for Today screen + Memory screen
+
+Work Log:
+- Created `/home/z/my-project/src/lib/today-screen-service.ts` with full `getTodayScreenData(creatorId)` implementation
+  - Time-aware greeting (morning/afternoon/evening/night)
+  - Overnight brief from AuditEvent queries (last 12h: reviews, drafts, updates)
+  - Top signals from HookPattern effectiveness + Recommendation data (max 3)
+  - New data: ContentItem count from last 24h + total + recent metrics
+  - Try next: second-best hook pattern with evidence from learning engine
+  - Pending approvals: Approval table (status=pending) + fallback to recent unapproved Drafts
+  - Every data point carries SOURCE and EVIDENCE
+  - Exported types: TodayScreenData, PendingApproval
+- Created `/home/z/my-project/src/lib/memory-screen-service.ts` with full `getMemoryScreenData(creatorId)` implementation
+  - Identity domain: niche, audience, tone[], avoid[] from Creator model (JSON parse)
+  - Voice Radar: 7 dimensions (directness, technicalDepth, storytelling, humor, hype, sentenceLength, ctaIntensity) from Creator.voiceProfile JSON + MemoryEvent overrides
+  - Winning Hooks: aggregated from HookPattern table, sorted by avg effectiveness, top 5
+  - Performance domain: from MemoryEvent (category=performance/pattern) + Recommendation insights
+  - Decisions domain: from CreatorDecision (total count + recent 10)
+  - Total memory events count
+  - Each domain shows SOURCE and data provenance
+  - Exported types: MemoryScreenData
+- Created API route `/home/z/my-project/src/app/api/dashboard/today/route.ts` (GET)
+- Created API route `/home/z/my-project/src/app/api/dashboard/memory/route.ts` (GET)
+- Both routes use getDefaultCreatorId() from respective services, try/catch error handling, NextResponse.json
+- Tested both endpoints with curl — both return real data from seeded database
+- Lint: 0 errors, 0 warnings
+- Prisma schema NOT modified (FROZEN)
+
+Stage Summary:
+- Two backend service files created with real DB queries (today-screen-service.ts, memory-screen-service.ts)
+- Two API routes created (/api/dashboard/today, /api/dashboard/memory)
+- Both endpoints tested and returning live data from seeded Jules creator
+- Today screen returns: greeting, overnight brief (0 overnight events), top signals (personal 37%, listicle 34%), new data (28 posts), try next (listicle hook), 3 pending approvals
+- Memory screen returns: identity (AI/developer education, technical creators, 3 tones, 3 avoid), voice radar (D=91 T=88 S=72 H=34 Hy=8), 5 winning hooks (personal 37%, listicle 34%, tutorial 33%, question 32%, story 31%), 5 performance signals, 11 decisions, 60 memory events
+- Every data point includes SOURCE and EVIDENCE per blueprint UX rule
+
+---
+Task ID: 12-4
+Agent: frontend-styling-expert
+Task: Day 12 — Build Today screen + Memory screen UI tabs in page.tsx
+
+Work Log:
+- Read worklog.md to understand prior agent work (Task 12-3 built the backend APIs)
+- Read page.tsx to find key insertion points: imports (line 21), state vars (line 990), tabs (line 1230), header (line 1186), footer (line 6008)
+- Added 6 new lucide-react icon imports: Sun, CloudSun, Sunrise, MapPin, Check, RotateCcw, Trophy
+- Added 4 state variables: todayScreenData, todayScreenLoading, memoryScreenData, memoryScreenLoading
+- Changed Tabs defaultValue from "learning" to "today" so Today is the default active tab
+- Added 2 new TabsTrigger elements (today, memoryscreen) before Day 1 trigger
+- Built full Today tab TabsContent: Load Today button, greeting card with time-of-day icon (Sunrise/CloudSun/Moon), overnight brief with 3 stat counters, 3-column quick-stat cards (Top Signals, New Data, Try Next), pending approvals section with Approve/Modify/Reject buttons, empty state placeholder
+- Built full Memory screen TabsContent: Load Memory button, "What Muse Knows About You" header, identity domain card (niche/audience/tone/avoid), voice radar card with 7 horizontal percentage bars (directness/technicalDepth/storytelling/humor/hype/sentenceLength/ctaIntensity), winning hooks card with pattern+retention+confidence, performance card (top signals + recent insights), decisions card (total + recent list with type icons), memory events summary, empty state placeholder
+- Updated header from "Day 11 Delegation Beat" to "Day 12 Dashboard Screens"
+- Updated footer to include "Today ✅ • Memory ✅" prefix
+- Verified build compiles cleanly with `npx next build`
+- Verified /api/dashboard/today and /api/dashboard/memory route files exist
+
+Stage Summary:
+- Two new dashboard tabs fully implemented in page.tsx: "Today" (value="today") and "Memory" (value="memoryscreen")
+- Today tab fetches /api/dashboard/today on button click, renders greeting, overnight brief, quick stats, and pending approvals
+- Memory tab fetches /api/dashboard/memory on button click, renders identity, voice radar, winning hooks, performance, decisions, and memory events
+- All existing tabs preserved intact; "today" is the new default tab
+- Build compiles successfully with no errors

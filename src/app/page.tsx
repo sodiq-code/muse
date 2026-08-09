@@ -78,6 +78,13 @@ import {
   Link2,
   Send,
   SendHorizontal,
+  Sun,
+  CloudSun,
+  Sunrise,
+  MapPin,
+  Check,
+  RotateCcw,
+  Trophy,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -987,6 +994,12 @@ export default function MuseDashboard() {
 
   // Day 11: Delegation Beat State
   const [beatResult, setBeatResult] = useState<DelegationBeatResponse | null>(null);
+
+  // Day 12: Today + Memory screen state
+  const [todayScreenData, setTodayScreenData] = useState<any>(null);
+  const [todayScreenLoading, setTodayScreenLoading] = useState(false);
+  const [memoryScreenData, setMemoryScreenData] = useState<any>(null);
+  const [memoryScreenLoading, setMemoryScreenLoading] = useState(false);
   const [beatLoading, setBeatLoading] = useState(false);
   const [beatHistory, setBeatHistory] = useState<BeatHistoryResponse | null>(null);
   const [beatHistoryLoading, setBeatHistoryLoading] = useState(false);
@@ -1183,7 +1196,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 11 Delegation Beat
+                Muse — Day 12 Dashboard Screens
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -1227,8 +1240,16 @@ export default function MuseDashboard() {
 
       {/* ===== Main ===== */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
-        <Tabs defaultValue="learning" className="w-full">
+        <Tabs defaultValue="today" className="w-full">
           <TabsList className="w-full sm:w-auto flex-wrap">
+            <TabsTrigger value="today" className="gap-1.5">
+              <Sun className="size-3.5" />
+              Today
+            </TabsTrigger>
+            <TabsTrigger value="memoryscreen" className="gap-1.5">
+              <Brain className="size-3.5" />
+              Memory
+            </TabsTrigger>
             <TabsTrigger value="day1" className="gap-1.5">
               <Shield className="size-3.5" />
               Day 1
@@ -1286,6 +1307,523 @@ export default function MuseDashboard() {
               Beat
             </TabsTrigger>
           </TabsList>
+
+          {/* ===== TODAY TAB (Day 12) ===== */}
+          <TabsContent value="today" className="space-y-6">
+            {/* Load Button */}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={async () => {
+                  setTodayScreenLoading(true);
+                  try {
+                    const res = await fetch('/api/dashboard/today');
+                    const json = await res.json();
+                    if (json.success) setTodayScreenData(json.data);
+                  } catch { /* silently fail */ }
+                  setTodayScreenLoading(false);
+                }}
+                disabled={todayScreenLoading}
+                className="gap-2"
+              >
+                <Sun className="size-4" />
+                {todayScreenLoading ? 'Loading…' : 'Load Today'}
+              </Button>
+              {todayScreenData && (
+                <Badge variant="secondary" className="text-xs">Live</Badge>
+              )}
+            </div>
+
+            {todayScreenLoading && (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <div className="animate-pulse flex items-center gap-2">
+                  <Sun className="size-5 animate-spin" />
+                  Loading today&apos;s brief…
+                </div>
+              </div>
+            )}
+
+            {todayScreenData && (
+              <>
+                {/* Morning Greeting */}
+                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      {todayScreenData.greeting?.timeOfDay === 'morning' ? (
+                        <Sunrise className="size-8 text-amber-400" />
+                      ) : todayScreenData.greeting?.timeOfDay === 'evening' || todayScreenData.greeting?.timeOfDay === 'night' ? (
+                        <Moon className="size-8 text-indigo-400" />
+                      ) : (
+                        <CloudSun className="size-8 text-sky-400" />
+                      )}
+                      <div>
+                        <h2 className="text-2xl font-bold tracking-tight">
+                          {todayScreenData.greeting?.text || 'Good day!'}
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {todayScreenData.creatorName ? `Your daily briefing, ${todayScreenData.creatorName}.` : 'Your daily briefing.'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Overnight Brief */}
+                {todayScreenData.overnightBrief && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Moon className="size-4 text-indigo-400" />
+                        Overnight Brief
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono text-lg font-bold text-emerald-400">{todayScreenData.overnightBrief.reviewedCount ?? 0}</p>
+                          <p className="text-xs text-muted-foreground">Reviewed</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono text-lg font-bold text-violet-400">{todayScreenData.overnightBrief.draftedCount ?? 0}</p>
+                          <p className="text-xs text-muted-foreground">Drafted</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono text-lg font-bold text-sky-400">{todayScreenData.overnightBrief.updatedCount ?? 0}</p>
+                          <p className="text-xs text-muted-foreground">Updated</p>
+                        </div>
+                      </div>
+                      {todayScreenData.overnightBrief.items?.length > 0 && (
+                        <ul className="space-y-1">
+                          {todayScreenData.overnightBrief.items.map((item: string, i: number) => (
+                            <li key={i} className="text-sm flex items-start gap-2">
+                              <span className="text-muted-foreground mt-0.5">•</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {todayScreenData.overnightBrief.source && (
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-semibold">SOURCE:</span> {todayScreenData.overnightBrief.source}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* 3 Quick-Stat Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Top Signals */}
+                  {todayScreenData.topSignals && todayScreenData.topSignals.length > 0 && (
+                    <Card className="rounded-xl">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                          <Zap className="size-4 text-amber-400" />
+                          Top Signals
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {todayScreenData.topSignals.map((sig: any, i: number) => (
+                          <div key={i} className="p-2 rounded-lg bg-muted/50">
+                            <p className="font-semibold text-sm">{sig.label}</p>
+                            <p className="font-mono text-xs text-violet-400">{sig.value}</p>
+                            {sig.evidence && (
+                              <p className="text-xs italic text-muted-foreground mt-1">{sig.evidence}</p>
+                            )}
+                            {sig.source && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                <span className="font-semibold">SRC:</span> {sig.source}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* New Data */}
+                  {todayScreenData.newData && (
+                    <Card className="rounded-xl">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                          <Database className="size-4 text-sky-400" />
+                          New Data
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <p className="font-semibold text-sm">{todayScreenData.newData.label}</p>
+                        <p className="font-mono text-2xl font-bold text-emerald-400">{todayScreenData.newData.value}</p>
+                        {todayScreenData.newData.source && (
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-semibold">SRC:</span> {todayScreenData.newData.source}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Try Next */}
+                  {todayScreenData.tryNext && (
+                    <Card className="rounded-xl">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                          <Lightbulb className="size-4 text-amber-400" />
+                          Try Next
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <p className="font-semibold text-sm">{todayScreenData.tryNext.label}</p>
+                        <p className="text-sm text-muted-foreground">{todayScreenData.tryNext.description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">{todayScreenData.tryNext.hookPattern}</Badge>
+                          <Badge variant="secondary" className="text-xs">{todayScreenData.tryNext.confidence} confidence</Badge>
+                        </div>
+                        {todayScreenData.tryNext.evidence && (
+                          <p className="text-xs italic text-muted-foreground">{todayScreenData.tryNext.evidence}</p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Pending Approvals */}
+                {todayScreenData.pendingApprovals && todayScreenData.pendingApprovals.length > 0 && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <CheckCircle2 className="size-4 text-emerald-400" />
+                        Pending Approvals
+                        <Badge variant="secondary" className="ml-1">{todayScreenData.pendingApprovals.length}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="max-h-64 overflow-y-auto space-y-3">
+                        {todayScreenData.pendingApprovals.map((draft: any, i: number) => (
+                          <div key={draft.draftId || i} className="p-3 rounded-lg border bg-muted/30 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm truncate">{draft.title}</p>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  {draft.hookType && <Badge variant="outline" className="text-xs">{draft.hookType}</Badge>}
+                                  {draft.source && <span className="text-xs text-muted-foreground">{draft.source}</span>}
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="font-mono text-sm font-bold">{draft.avgScore ?? '—'}</p>
+                                <p className="text-xs text-muted-foreground">avg score</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Button size="sm" variant="default" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700">
+                                <Check className="size-3" /> Approve
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+                                <Pencil className="size-3" /> Modify
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+                                <X className="size-3" /> Reject
+                              </Button>
+                            </div>
+                            {draft.evidenceCount !== undefined && (
+                              <p className="text-xs text-muted-foreground">{draft.evidenceCount} evidence items</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+
+            {!todayScreenLoading && !todayScreenData && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Sun className="size-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Click &quot;Load Today&quot; to fetch your daily briefing</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ===== MEMORY SCREEN TAB (Day 12) ===== */}
+          <TabsContent value="memoryscreen" className="space-y-6">
+            {/* Load Button */}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={async () => {
+                  setMemoryScreenLoading(true);
+                  try {
+                    const res = await fetch('/api/dashboard/memory');
+                    const json = await res.json();
+                    if (json.success) setMemoryScreenData(json.data);
+                  } catch { /* silently fail */ }
+                  setMemoryScreenLoading(false);
+                }}
+                disabled={memoryScreenLoading}
+                className="gap-2"
+              >
+                <Brain className="size-4" />
+                {memoryScreenLoading ? 'Loading…' : 'Load Memory'}
+              </Button>
+              {memoryScreenData && (
+                <Badge variant="secondary" className="text-xs">Live</Badge>
+              )}
+            </div>
+
+            {memoryScreenLoading && (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <div className="animate-pulse flex items-center gap-2">
+                  <Brain className="size-5 animate-bounce" />
+                  Loading memory…
+                </div>
+              </div>
+            )}
+
+            {memoryScreenData && (
+              <>
+                {/* Header: What Muse Knows About You */}
+                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <Brain className="size-8 text-violet-400" />
+                      <div>
+                        <h2 className="text-2xl font-bold tracking-tight">
+                          What Muse Knows About {memoryScreenData.creatorName || 'You'}
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {memoryScreenData.memoryEvents ?? 0} memory events recorded
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Identity Domain */}
+                {memoryScreenData.identity && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Fingerprint className="size-4 text-violet-400" />
+                        Identity
+                      </CardTitle>
+                      {memoryScreenData.identity.source && (
+                        <CardDescription className="text-xs text-muted-foreground">
+                          SRC: {memoryScreenData.identity.source}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="p-3 rounded-lg bg-muted/50">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Niche</p>
+                          <p className="text-sm font-semibold">{memoryScreenData.identity.niche}</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-muted/50">
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Audience</p>
+                          <p className="text-sm font-semibold">{memoryScreenData.identity.audience}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Tone</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {memoryScreenData.identity.tone?.map((t: string) => (
+                            <Badge key={t} variant="outline" className="text-xs border-violet-500/30 text-violet-300">{t}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Avoid</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {memoryScreenData.identity.avoid?.map((a: string) => (
+                            <Badge key={a} variant="outline" className="text-xs border-destructive/30 text-destructive">{a}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Voice Radar */}
+                {memoryScreenData.voiceRadar && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Radio className="size-4 text-sky-400" />
+                        Voice Radar
+                      </CardTitle>
+                      {memoryScreenData.voiceRadar.source && (
+                        <CardDescription className="text-xs text-muted-foreground">
+                          SRC: {memoryScreenData.voiceRadar.source}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {[
+                        { key: 'directness', label: 'Directness', color: 'bg-violet-500' },
+                        { key: 'technicalDepth', label: 'Technical Depth', color: 'bg-sky-500' },
+                        { key: 'storytelling', label: 'Storytelling', color: 'bg-amber-500' },
+                        { key: 'humor', label: 'Humor', color: 'bg-emerald-500' },
+                        { key: 'hype', label: 'Hype', color: 'bg-rose-500' },
+                        { key: 'sentenceLength', label: 'Sentence Length', color: 'bg-indigo-500' },
+                        { key: 'ctaIntensity', label: 'CTA Intensity', color: 'bg-orange-500' },
+                      ].map(({ key, label, color }) => {
+                        const val = memoryScreenData.voiceRadar[key] ?? 0;
+                        return (
+                          <div key={key} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium">{label}</span>
+                              <span className="font-mono text-xs text-muted-foreground">{val}%</span>
+                            </div>
+                            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${color} transition-all duration-500`}
+                                style={{ width: `${Math.min(100, Math.max(0, val))}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {memoryScreenData.voiceRadar.evidence && (
+                        <p className="text-xs italic text-muted-foreground pt-2">{memoryScreenData.voiceRadar.evidence}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Winning Hooks */}
+                {memoryScreenData.winningHooks && memoryScreenData.winningHooks.length > 0 && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Trophy className="size-4 text-amber-400" />
+                        Winning Hooks
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {memoryScreenData.winningHooks.map((hook: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">{hook.pattern}</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                n={hook.sampleSize ?? 0}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-sm font-bold text-amber-400">{hook.avgRetention}%</span>
+                              <Badge variant="secondary" className="text-xs">{hook.confidence}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Performance */}
+                {memoryScreenData.performance && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <TrendingUp className="size-4 text-emerald-400" />
+                        Performance
+                      </CardTitle>
+                      {memoryScreenData.performance.source && (
+                        <CardDescription className="text-xs text-muted-foreground">
+                          SRC: {memoryScreenData.performance.source}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {memoryScreenData.performance.topSignals?.length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Top Signals</p>
+                          <ul className="space-y-1">
+                            {memoryScreenData.performance.topSignals.map((sig: string, i: number) => (
+                              <li key={i} className="text-sm flex items-start gap-2">
+                                <Zap className="size-3 text-amber-400 mt-0.5 shrink-0" />
+                                {sig}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {memoryScreenData.performance.recentInsights?.length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Recent Insights</p>
+                          <ul className="space-y-1">
+                            {memoryScreenData.performance.recentInsights.map((ins: string, i: number) => (
+                              <li key={i} className="text-sm flex items-start gap-2">
+                                <Lightbulb className="size-3 text-sky-400 mt-0.5 shrink-0" />
+                                {ins}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Decisions */}
+                {memoryScreenData.decisions && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Scale className="size-4 text-violet-400" />
+                        Decisions
+                        <Badge variant="secondary" className="ml-1">{memoryScreenData.decisions.totalDecisions ?? 0}</Badge>
+                      </CardTitle>
+                      {memoryScreenData.decisions.source && (
+                        <CardDescription className="text-xs text-muted-foreground">
+                          SRC: {memoryScreenData.decisions.source}
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      {memoryScreenData.decisions.recentDecisions?.length > 0 ? (
+                        <div className="max-h-48 overflow-y-auto space-y-2">
+                          {memoryScreenData.decisions.recentDecisions.map((dec: any, i: number) => (
+                            <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-muted/50">
+                              {dec.type === 'accepted' ? (
+                                <CheckCircle2 className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+                              ) : dec.type === 'rejected' ? (
+                                <X className="size-4 text-destructive mt-0.5 shrink-0" />
+                              ) : (
+                                <Pencil className="size-4 text-amber-400 mt-0.5 shrink-0" />
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium">{dec.description}</p>
+                                <p className="text-xs text-muted-foreground">{dec.date}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No recent decisions</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Memory Events Summary */}
+                <Card className="rounded-xl">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <History className="size-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Total Memory Events</span>
+                    </div>
+                    <span className="font-mono text-lg font-bold">{memoryScreenData.memoryEvents ?? 0}</span>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {!memoryScreenLoading && !memoryScreenData && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Brain className="size-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Click &quot;Load Memory&quot; to explore what Muse knows</p>
+              </div>
+            )}
+          </TabsContent>
 
           {/* ===== DAY 1 TAB ===== */}
           <TabsContent value="day1" className="space-y-6">
@@ -6005,7 +6543,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Beat ✅ • Evaluation ✅ • Drafts ✅ • 🧊 Scope frozen</span>
+          <span>Today ✅ • Memory ✅ • Beat ✅ • Evaluation ✅ • Drafts ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
