@@ -918,3 +918,97 @@ Stage Summary:
 - Memory screen: 4 domains (Identity, Voice Radar, Winning Hooks, Performance) + Decisions, all with real DB data
 - Every data point shows SOURCE and EVIDENCE per blueprint key UX rule
 - Phase 5 continues on Day 13 (Screen 3 Learning, Screen 4 Overnight, Screen 5 Control)
+
+---
+Task ID: 13-1
+Agent: full-stack-developer
+Task: Day 13 — Build backend services for Learning, Overnight, and Control screens
+
+Work Log:
+- Read worklog.md and Prisma schema (FROZEN, 12 models) to understand existing codebase
+- Read existing services: learning-engine-service, autonomy-scheduler, today-screen-service, memory-screen-service, delegation-beat-service, evaluation-service, draft-pipeline
+- Created `/home/z/my-project/src/lib/learning-screen-service.ts` — Screen 3: LEARNING (timeline + insights)
+  - LearningScreenData type with timeline, currentInsight, loopStatus, honestyScore
+  - getLearningScreenData(creatorId) builds step-by-step timeline from published ContentItems
+  - Each timeline entry: Published → Performance → Hook Analysis → Comparison → Memory Updated → Strategy Changed
+  - "THE LOOP IS WORKING" step added when a later item uses a pattern from an earlier item
+  - Current insight from top-priority Recommendation or MemoryEvent
+  - Loop status from AuditEvent learn events + Recommendation count
+  - Honesty score with 5 checks: no inflated language, confidence matches data, memory confidence in range, no causation claims, pattern values valid
+  - getDefaultCreatorId() helper exported
+- Created `/home/z/my-project/src/lib/overnight-screen-service.ts` — Screen 4: OVERNIGHT (Mind Theatre)
+  - OvernightScreenData type with mindTheatre, theatreStatus, overnightOutput, schedule
+  - getOvernightScreenData(creatorId) builds Mind Theatre from AuditEvent records (last 24h)
+  - Theatre entries mapped from audit events with proper actor/action/phase formatting
+  - Theatre status derived from latest event (complete/running/sleeping/not_started)
+  - Overnight Output from most recent Draft with evaluation scores (voiceMatch, hookCompat, contentQuality, overallScore)
+  - Schedule from autonomy-scheduler DEFAULT_SCHEDULE (23:00/00:00/06:00)
+  - Simulated theatre generated when no audit data exists
+  - getDefaultCreatorId() helper exported
+- Created `/home/z/my-project/src/lib/control-screen-service.ts` — Screen 5: CREATOR CONTROL
+  - ControlScreenData type with autonomySettings, approvalQueue, auditLog, totalAuditEvents
+  - getControlScreenData(creatorId) with hard-coded autonomy settings (auto-publish ALWAYS OFF with lock)
+  - Approval Queue from Approval table (pending + recently decided) with draft title resolution
+  - Audit Log from last 50 AuditEvent records with formatted action/detail strings
+  - Total audit events count from AuditEvent table
+  - getDefaultCreatorId() helper exported
+- Created `/home/z/my-project/src/app/api/dashboard/learning/route.ts` — GET returns Learning screen data
+- Created `/home/z/my-project/src/app/api/dashboard/overnight/route.ts` — GET returns Overnight screen data
+- Created `/home/z/my-project/src/app/api/dashboard/control/route.ts` — GET returns Control screen data
+- All routes use try/catch with proper NextResponse.json error handling
+- Lint passes with zero errors
+- All 3 API endpoints tested and returning real database data successfully
+
+Stage Summary:
+- 3 service files created: learning-screen-service.ts, overnight-screen-service.ts, control-screen-service.ts
+- 3 API route files created: /api/dashboard/learning, /api/dashboard/overnight, /api/dashboard/control
+- All services use real DB queries via `import { db } from '@/lib/db'` — no mocks
+- Learning timeline correctly shows "THE LOOP IS WORKING" for patterns reused across content items
+- Overnight Mind Theatre renders audit events as step-by-step timeline with actor/action/phase
+- Control screen enforces auto-publish ALWAYS OFF with hardcoded settings
+- Prisma schema unchanged (FROZEN)
+
+---
+Task ID: 13-3
+Agent: frontend-styling-expert
+Task: Day 13 — Build Learning, Overnight, and Control screen UI tabs in page.tsx
+
+Work Log:
+- Read worklog.md to understand previous agent work (Day 12 dashboard screens, Day 13 backend APIs)
+- Read full page.tsx (6816→7260 lines) to understand existing structure, patterns, and style conventions
+- Added `Settings` icon import from lucide-react
+- Added 6 new state variables: learningScreenData/Loading, overnightScreenData/Loading, controlScreenData/Loading
+- Added 3 new TabsTrigger entries after "memoryscreen" tab: learningscreen (GraduationCap), overnightscreen (Moon), controlscreen (Settings)
+- Built Learning tab (value="learningscreen") — MOST IMPORTANT screen:
+  - "How Muse Is Learning" hero card with violet gradient
+  - Learning Timeline card with ScrollArea (max-h-96): content title header + step-by-step walkthrough with ↓ connectors
+  - Step type-specific icons/colors: 📢 published (green), 📊 performance, 🎣 hook_analysis, 📈 comparison (green/red delta), 🧠 memory_updated (violet), ⚡ strategy_changed (amber), ✅ loop_working (bold green highlight box)
+  - Current Insight card: italic text + evidence/confidence badges + data points count
+  - Honesty Score card: large ratio display + honest/dishonest badge + progress bar
+  - Loop Status card: 4-stat grid (total runs, recommendations, avg confidence, last run)
+  - Load Learning button → fetch /api/dashboard/learning
+- Built Overnight tab (value="overnightscreen"):
+  - "While You Were Offline" hero card with indigo gradient
+  - Schedule card: 3 time blocks (Offline→Draft→Brief) with ArrowRight connectors
+  - Mind Theatre card with ScrollArea (max-h-80): monospace time + actor emoji (👤/🧠/🎨) + action + phase badge + theatre status badge (✅/🔄/💤)
+  - Overnight Output card: draft title, voice match/hook compat/content quality progress bars, overall score badge, evaluation pass/fail badge, hook pattern badge
+  - Load Overnight button → fetch /api/dashboard/overnight
+- Built Control tab (value="controlscreen"):
+  - "You're In Control" hero card with emerald gradient
+  - Autonomy Settings card: 4 toggle rows with ON/OFF badges (emerald/red), Auto-Publish row with 🔒 lock + OFF hardcoded + amber warning banner: "Publishing ALWAYS requires your explicit approval."
+  - Approval Queue card: pending count badge, approve/reject buttons for items, empty state "No items pending your review ✅"
+  - Audit Log card: "Every action logged. Always." subtitle, ScrollArea (max-h-64), monospace timestamps, actor emojis (🧠/🎨/⚙️), truncated action+detail, total events badge
+  - Load Control button → fetch /api/dashboard/control
+- Updated header: "Muse — Day 13 All 5 Screens"
+- Updated footer: "Today ✅ • Memory ✅ • Learning ✅ • Overnight ✅ • Control ✅ • 🧊 Scope frozen"
+- Verified Next.js build compiles successfully with no errors
+
+Stage Summary:
+- Added ~700 lines of UI code to page.tsx (6816→7260 lines)
+- 3 new dashboard tabs fully implemented: Learning, Overnight, Control
+- All tabs follow existing code patterns: Card-based layouts, consistent spacing (space-y-6, gap-4), dark-themed Tailwind classes
+- All tabs have loading states, empty states, and live data rendering
+- Learning tab given visual weight as "MOST IMPORTANT" per blueprint (violet gradient hero, highlighted loop_working step)
+- Overnight Mind Theatre feels like a live timeline with monospace time + actor emojis
+- Control tab feels authoritative with emerald hero, auto-publish lock, amber warning
+- Build passes: all 3 new API routes confirmed in output (/api/dashboard/learning, /api/dashboard/overnight, /api/dashboard/control)

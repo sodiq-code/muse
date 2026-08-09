@@ -85,6 +85,7 @@ import {
   Check,
   RotateCcw,
   Trophy,
+  Settings,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -1000,6 +1001,14 @@ export default function MuseDashboard() {
   const [todayScreenLoading, setTodayScreenLoading] = useState(false);
   const [memoryScreenData, setMemoryScreenData] = useState<any>(null);
   const [memoryScreenLoading, setMemoryScreenLoading] = useState(false);
+
+  // Day 13: Learning, Overnight, Control screen state
+  const [learningScreenData, setLearningScreenData] = useState<any>(null);
+  const [learningScreenLoading, setLearningScreenLoading] = useState(false);
+  const [overnightScreenData, setOvernightScreenData] = useState<any>(null);
+  const [overnightScreenLoading, setOvernightScreenLoading] = useState(false);
+  const [controlScreenData, setControlScreenData] = useState<any>(null);
+  const [controlScreenLoading, setControlScreenLoading] = useState(false);
   const [beatLoading, setBeatLoading] = useState(false);
   const [beatHistory, setBeatHistory] = useState<BeatHistoryResponse | null>(null);
   const [beatHistoryLoading, setBeatHistoryLoading] = useState(false);
@@ -1196,7 +1205,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 12 Dashboard Screens
+                Muse — Day 13 All 5 Screens
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -1249,6 +1258,18 @@ export default function MuseDashboard() {
             <TabsTrigger value="memoryscreen" className="gap-1.5">
               <Brain className="size-3.5" />
               Memory
+            </TabsTrigger>
+            <TabsTrigger value="learningscreen" className="gap-1.5">
+              <GraduationCap className="size-3.5" />
+              Learning
+            </TabsTrigger>
+            <TabsTrigger value="overnightscreen" className="gap-1.5">
+              <Moon className="size-3.5" />
+              Overnight
+            </TabsTrigger>
+            <TabsTrigger value="controlscreen" className="gap-1.5">
+              <Settings className="size-3.5" />
+              Control
             </TabsTrigger>
             <TabsTrigger value="day1" className="gap-1.5">
               <Shield className="size-3.5" />
@@ -1821,6 +1842,691 @@ export default function MuseDashboard() {
               <div className="text-center py-12 text-muted-foreground">
                 <Brain className="size-12 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">Click &quot;Load Memory&quot; to explore what Muse knows</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ===== LEARNING SCREEN TAB (Day 13) — MOST IMPORTANT ===== */}
+          <TabsContent value="learningscreen" className="space-y-6">
+            {/* Load Button */}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={async () => {
+                  setLearningScreenLoading(true);
+                  try {
+                    const res = await fetch('/api/dashboard/learning');
+                    const json = await res.json();
+                    if (json.success) setLearningScreenData(json.data);
+                  } catch { /* silently fail */ }
+                  setLearningScreenLoading(false);
+                }}
+                disabled={learningScreenLoading}
+                className="gap-2"
+              >
+                <GraduationCap className="size-4" />
+                {learningScreenLoading ? 'Loading…' : 'Load Learning'}
+              </Button>
+              {learningScreenData && (
+                <Badge variant="secondary" className="text-xs">Live</Badge>
+              )}
+            </div>
+
+            {learningScreenLoading && (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <div className="animate-pulse flex items-center gap-2">
+                  <GraduationCap className="size-5 animate-bounce" />
+                  Loading learning data…
+                </div>
+              </div>
+            )}
+
+            {learningScreenData && (
+              <>
+                {/* How Muse Is Learning Header */}
+                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <GraduationCap className="size-8 text-violet-400" />
+                      <div>
+                        <h2 className="text-2xl font-bold tracking-tight">How Muse Is Learning</h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {learningScreenData.creatorName
+                            ? `${learningScreenData.creatorName}, every piece of content teaches something new.`
+                            : 'Every piece of content teaches something new.'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Learning Timeline */}
+                <Card className="rounded-xl">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <History className="size-4 text-violet-400" />
+                      Learning Timeline
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="max-h-96 overflow-y-auto">
+                      <div className="space-y-6">
+                        {learningScreenData.timeline?.map((entry: any, entryIdx: number) => (
+                          <div key={entryIdx} className="space-y-3">
+                            {/* Content Title */}
+                            <div className="p-3 rounded-lg bg-muted/50">
+                              <p className="font-semibold text-sm">{entry.contentTitle}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs">{entry.contentType}</Badge>
+                                {entry.publishedAt && (
+                                  <span className="text-xs text-muted-foreground font-mono">
+                                    {new Date(entry.publishedAt).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Steps */}
+                            {entry.steps?.map((step: any, stepIdx: number) => (
+                              <div key={stepIdx} className="ml-4 space-y-1">
+                                {/* Connector */}
+                                <div className="flex items-start gap-2">
+                                  <div className="flex flex-col items-center mt-1">
+                                    <div className="w-px h-3 bg-border" />
+                                    <span className="text-muted-foreground text-xs">↓</span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    {step.type === 'published' && (
+                                      <div className="flex items-center gap-2">
+                                        <span>📢</span>
+                                        <span className="text-sm text-emerald-400 font-medium">{step.label}</span>
+                                        <span className="text-xs text-muted-foreground">{step.detail}</span>
+                                      </div>
+                                    )}
+                                    {step.type === 'performance' && (
+                                      <div className="flex items-center gap-2">
+                                        <span>📊</span>
+                                        <span className="text-sm font-medium">{step.label}</span>
+                                        <span className="text-xs text-muted-foreground font-mono">{step.detail}</span>
+                                      </div>
+                                    )}
+                                    {step.type === 'hook_analysis' && (
+                                      <div className="flex items-center gap-2">
+                                        <span>🎣</span>
+                                        <span className="text-sm font-medium">{step.label}</span>
+                                        <span className="text-xs text-muted-foreground">{step.detail}</span>
+                                      </div>
+                                    )}
+                                    {step.type === 'comparison' && (
+                                      <div className="flex items-center gap-2">
+                                        <span>📈</span>
+                                        <span className="text-sm font-medium">{step.label}</span>
+                                        <span className={`text-xs font-mono ${
+                                          step.delta && step.delta.startsWith('-')
+                                            ? 'text-red-400'
+                                            : 'text-emerald-400'
+                                        }`}>
+                                          {step.detail}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {step.type === 'memory_updated' && (
+                                      <div className="flex items-center gap-2">
+                                        <span>🧠</span>
+                                        <span className="text-sm font-medium">{step.label}</span>
+                                        <span className="text-xs text-violet-400">{step.detail}</span>
+                                      </div>
+                                    )}
+                                    {step.type === 'strategy_changed' && (
+                                      <div className="flex items-center gap-2">
+                                        <span>⚡</span>
+                                        <span className="text-sm font-medium">{step.label}</span>
+                                        <span className="text-xs text-amber-400">{step.detail}</span>
+                                      </div>
+                                    )}
+                                    {step.type === 'loop_working' && (
+                                      <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                        <span>✅</span>
+                                        <span className="text-sm font-bold text-emerald-400">{step.label}</span>
+                                        <span className="text-xs text-emerald-300">{step.detail}</span>
+                                      </div>
+                                    )}
+                                    {/* Fallback for unknown step types */}
+                                    {!['published','performance','hook_analysis','comparison','memory_updated','strategy_changed','loop_working'].includes(step.type) && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium">{step.label}</span>
+                                        <span className="text-xs text-muted-foreground">{step.detail}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+
+                {/* Current Insight + Loop Status + Honesty Score — 2-col grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Current Insight */}
+                  {learningScreenData.currentInsight && (
+                    <Card className="rounded-xl">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                          <Lightbulb className="size-4 text-amber-400" />
+                          Current Insight
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm italic">{learningScreenData.currentInsight.text}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="text-xs">
+                            {learningScreenData.currentInsight.evidence} evidence
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {learningScreenData.currentInsight.confidence} confidence
+                          </Badge>
+                          <span className="text-xs text-muted-foreground font-mono">
+                            {learningScreenData.currentInsight.dataPoints} data points
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Honesty Score */}
+                  {learningScreenData.honestyScore && (
+                    <Card className="rounded-xl">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                          <Shield className="size-4 text-emerald-400" />
+                          Honesty Score
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-3xl font-bold">
+                            {learningScreenData.honestyScore.checksPassed}/{learningScreenData.honestyScore.checksTotal}
+                          </span>
+                          <Badge
+                            className={learningScreenData.honestyScore.isHonest
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-red-600 text-white border-red-600'
+                            }
+                          >
+                            {learningScreenData.honestyScore.isHonest ? '✅ Honest' : '❌ Dishonest'}
+                          </Badge>
+                        </div>
+                        <Progress
+                          value={(learningScreenData.honestyScore.checksPassed / learningScreenData.honestyScore.checksTotal) * 100}
+                          className="h-2"
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Loop Status */}
+                {learningScreenData.loopStatus && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <RotateCcw className="size-4 text-violet-400" />
+                        Loop Status
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono text-lg font-bold text-violet-400">{learningScreenData.loopStatus.totalRuns}</p>
+                          <p className="text-xs text-muted-foreground">Total Runs</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono text-lg font-bold text-amber-400">{learningScreenData.loopStatus.totalRecommendations}</p>
+                          <p className="text-xs text-muted-foreground">Recommendations</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono text-lg font-bold text-sky-400">{learningScreenData.loopStatus.avgConfidence}</p>
+                          <p className="text-xs text-muted-foreground">Avg Confidence</p>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono text-sm font-bold text-muted-foreground">
+                            {learningScreenData.loopStatus.lastRun
+                              ? new Date(learningScreenData.loopStatus.lastRun).toLocaleString()
+                              : '—'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Last Run</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+
+            {!learningScreenLoading && !learningScreenData && (
+              <div className="text-center py-12 text-muted-foreground">
+                <GraduationCap className="size-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Click &quot;Load Learning&quot; to see how Muse is learning</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ===== OVERNIGHT SCREEN TAB (Day 13) ===== */}
+          <TabsContent value="overnightscreen" className="space-y-6">
+            {/* Load Button */}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={async () => {
+                  setOvernightScreenLoading(true);
+                  try {
+                    const res = await fetch('/api/dashboard/overnight');
+                    const json = await res.json();
+                    if (json.success) setOvernightScreenData(json.data);
+                  } catch { /* silently fail */ }
+                  setOvernightScreenLoading(false);
+                }}
+                disabled={overnightScreenLoading}
+                className="gap-2"
+              >
+                <Moon className="size-4" />
+                {overnightScreenLoading ? 'Loading…' : 'Load Overnight'}
+              </Button>
+              {overnightScreenData && (
+                <Badge variant="secondary" className="text-xs">Live</Badge>
+              )}
+            </div>
+
+            {overnightScreenLoading && (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <div className="animate-pulse flex items-center gap-2">
+                  <Moon className="size-5 animate-pulse" />
+                  Loading overnight data…
+                </div>
+              </div>
+            )}
+
+            {overnightScreenData && (
+              <>
+                {/* While You Were Offline Header */}
+                <Card className="rounded-xl border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 to-transparent">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <Moon className="size-8 text-indigo-400" />
+                      <div>
+                        <h2 className="text-2xl font-bold tracking-tight">While You Were Offline</h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {overnightScreenData.creatorName
+                            ? `${overnightScreenData.creatorName}, Muse was working while you slept.`
+                            : 'Muse was working while you slept.'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Schedule */}
+                {overnightScreenData.schedule && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Clock className="size-4 text-sky-400" />
+                        Schedule
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-center gap-3 text-sm">
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono font-bold text-indigo-400">{overnightScreenData.schedule.wakeTime}</p>
+                          <p className="text-xs text-muted-foreground">Offline</p>
+                        </div>
+                        <ArrowRight className="size-4 text-muted-foreground" />
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono font-bold text-violet-400">{overnightScreenData.schedule.draftTime}</p>
+                          <p className="text-xs text-muted-foreground">Draft</p>
+                        </div>
+                        <ArrowRight className="size-4 text-muted-foreground" />
+                        <div className="text-center p-3 rounded-lg bg-muted/50">
+                          <p className="font-mono font-bold text-emerald-400">{overnightScreenData.schedule.briefTime}</p>
+                          <p className="text-xs text-muted-foreground">Brief</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Mind Theatre */}
+                <Card className="rounded-xl">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Brain className="size-4 text-violet-400" />
+                        Mind Theatre
+                      </CardTitle>
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${
+                          overnightScreenData.theatreStatus === 'complete'
+                            ? 'border-emerald-500/30 text-emerald-400'
+                            : overnightScreenData.theatreStatus === 'running'
+                              ? 'border-amber-500/30 text-amber-400'
+                              : 'border-indigo-500/30 text-indigo-400'
+                        }`}
+                      >
+                        {overnightScreenData.theatreStatus === 'complete' && '✅ Complete'}
+                        {overnightScreenData.theatreStatus === 'running' && '🔄 Running'}
+                        {overnightScreenData.theatreStatus === 'sleeping' && '💤 Sleeping'}
+                        {!['complete','running','sleeping'].includes(overnightScreenData.theatreStatus) && overnightScreenData.theatreStatus}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="max-h-80 overflow-y-auto">
+                      <div className="space-y-2">
+                        {overnightScreenData.mindTheatre?.map((entry: any, i: number) => (
+                          <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30">
+                            <span className="font-mono text-xs text-muted-foreground w-12 shrink-0">
+                              {entry.time}
+                            </span>
+                            <span className="text-sm shrink-0">
+                              {entry.actor === 'creator' && '👤'}
+                              {entry.actor === 'muse' && '🧠'}
+                              {entry.actor === 'maker' && '🎨'}
+                              {!['creator','muse','maker'].includes(entry.actor) && '⚙️'}
+                            </span>
+                            <span className="text-sm flex-1">{entry.action}</span>
+                            <Badge variant="outline" className="text-[10px] shrink-0">
+                              {entry.phase}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                    {overnightScreenData.lastRunTime && (
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Last run: {new Date(overnightScreenData.lastRunTime).toLocaleString()}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Overnight Output */}
+                {overnightScreenData.overnightOutput && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Sparkles className="size-4 text-emerald-400" />
+                        Overnight Output
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="font-semibold text-sm">{overnightScreenData.overnightOutput.draftTitle}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {overnightScreenData.overnightOutput.hookPattern && (
+                            <Badge variant="outline" className="text-xs">
+                              {overnightScreenData.overnightOutput.hookPattern}
+                            </Badge>
+                          )}
+                          <Badge
+                            className={overnightScreenData.overnightOutput.evaluationPassed
+                              ? 'bg-emerald-600 text-white border-emerald-600 text-xs'
+                              : 'bg-red-600 text-white border-red-600 text-xs'
+                            }
+                          >
+                            {overnightScreenData.overnightOutput.evaluationPassed ? '✅ Passed' : '❌ Failed'}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            Score: {overnightScreenData.overnightOutput.overallScore}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-muted-foreground">Voice Match</span>
+                            <span className="font-mono font-bold">{overnightScreenData.overnightOutput.voiceMatch}%</span>
+                          </div>
+                          <Progress value={overnightScreenData.overnightOutput.voiceMatch} className="h-2" />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-muted-foreground">Hook Compat</span>
+                            <span className="font-mono font-bold">{overnightScreenData.overnightOutput.hookCompat}%</span>
+                          </div>
+                          <Progress value={overnightScreenData.overnightOutput.hookCompat} className="h-2" />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-muted-foreground">Content Quality</span>
+                            <span className="font-mono font-bold">{overnightScreenData.overnightOutput.contentQuality}%</span>
+                          </div>
+                          <Progress value={overnightScreenData.overnightOutput.contentQuality} className="h-2" />
+                        </div>
+                      </div>
+
+                      {overnightScreenData.overnightOutput.createdAt && (
+                        <p className="text-xs text-muted-foreground">
+                          Created: {new Date(overnightScreenData.overnightOutput.createdAt).toLocaleString()}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+
+            {!overnightScreenLoading && !overnightScreenData && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Moon className="size-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Click &quot;Load Overnight&quot; to see what happened while you were offline</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ===== CONTROL SCREEN TAB (Day 13) ===== */}
+          <TabsContent value="controlscreen" className="space-y-6">
+            {/* Load Button */}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={async () => {
+                  setControlScreenLoading(true);
+                  try {
+                    const res = await fetch('/api/dashboard/control');
+                    const json = await res.json();
+                    if (json.success) setControlScreenData(json.data);
+                  } catch { /* silently fail */ }
+                  setControlScreenLoading(false);
+                }}
+                disabled={controlScreenLoading}
+                className="gap-2"
+              >
+                <Settings className="size-4" />
+                {controlScreenLoading ? 'Loading…' : 'Load Control'}
+              </Button>
+              {controlScreenData && (
+                <Badge variant="secondary" className="text-xs">Live</Badge>
+              )}
+            </div>
+
+            {controlScreenLoading && (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <div className="animate-pulse flex items-center gap-2">
+                  <Settings className="size-5 animate-spin" />
+                  Loading control settings…
+                </div>
+              </div>
+            )}
+
+            {controlScreenData && (
+              <>
+                {/* You're In Control Header */}
+                <Card className="rounded-xl border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <Settings className="size-8 text-emerald-400" />
+                      <div>
+                        <h2 className="text-2xl font-bold tracking-tight">You&apos;re In Control</h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {controlScreenData.creatorName
+                            ? `${controlScreenData.creatorName}, you decide what Muse can and cannot do.`
+                            : 'You decide what Muse can and cannot do.'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Autonomy Settings */}
+                {controlScreenData.autonomySettings && (
+                  <Card className="rounded-xl">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <Shield className="size-4 text-sky-400" />
+                        Autonomy Settings
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                        <span className="text-sm font-medium">Overnight Analysis</span>
+                        <Badge className={controlScreenData.autonomySettings.overnightAnalysis
+                          ? 'bg-emerald-600 text-white border-emerald-600 text-xs'
+                          : 'bg-red-600 text-white border-red-600 text-xs'
+                        }>
+                          {controlScreenData.autonomySettings.overnightAnalysis ? 'ON' : 'OFF'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                        <span className="text-sm font-medium">Draft Creation</span>
+                        <Badge className={controlScreenData.autonomySettings.draftCreation
+                          ? 'bg-emerald-600 text-white border-emerald-600 text-xs'
+                          : 'bg-red-600 text-white border-red-600 text-xs'
+                        }>
+                          {controlScreenData.autonomySettings.draftCreation ? 'ON' : 'OFF'}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">Auto-Publish</span>
+                          <span className="text-amber-400" title="Publishing requires explicit approval">🔒</span>
+                        </div>
+                        <Badge className="bg-red-600 text-white border-red-600 text-xs">OFF</Badge>
+                      </div>
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="size-4 text-amber-400" />
+                          <p className="text-sm text-amber-300 font-medium">
+                            Publishing ALWAYS requires your explicit approval.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                        <span className="text-sm font-medium">Community Monitoring</span>
+                        <Badge className={controlScreenData.autonomySettings.communityMonitoring
+                          ? 'bg-emerald-600 text-white border-emerald-600 text-xs'
+                          : 'bg-red-600 text-white border-red-600 text-xs'
+                        }>
+                          {controlScreenData.autonomySettings.communityMonitoring ? 'ON' : 'OFF'}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Approval Queue */}
+                <Card className="rounded-xl">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-400" />
+                      Approval Queue
+                      <Badge variant="secondary" className="text-xs ml-1">
+                        {controlScreenData.pendingCount ?? 0} pending
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {controlScreenData.approvalQueue && controlScreenData.approvalQueue.length > 0 ? (
+                      <div className="space-y-3">
+                        {controlScreenData.approvalQueue.map((item: any, i: number) => (
+                          <div key={i} className="p-3 rounded-lg border bg-muted/30 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm truncate">{item.title || item.type || 'Pending item'}</p>
+                                {item.type && <Badge variant="outline" className="text-xs mt-1">{item.type}</Badge>}
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Button size="sm" variant="default" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700">
+                                  <Check className="size-3" /> Approve
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+                                  <X className="size-3" /> Reject
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <CheckCircle2 className="size-8 mx-auto mb-2 text-emerald-400 opacity-50" />
+                        <p className="text-sm">No items pending your review ✅</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Audit Log */}
+                <Card className="rounded-xl">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <History className="size-4 text-violet-400" />
+                        Audit Log
+                      </CardTitle>
+                      {controlScreenData.totalAuditEvents !== undefined && (
+                        <Badge variant="outline" className="text-xs">
+                          {controlScreenData.totalAuditEvents} total events
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Every action logged. Always.</p>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="max-h-64 overflow-y-auto">
+                      <div className="space-y-2">
+                        {controlScreenData.auditLog?.map((entry: any, i: number) => (
+                          <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30">
+                            <span className="font-mono text-[10px] text-muted-foreground w-14 shrink-0 mt-0.5">
+                              {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                            </span>
+                            <span className="text-sm shrink-0 mt-0.5">
+                              {entry.actor === 'muse' && '🧠'}
+                              {entry.actor === 'maker' && '🎨'}
+                              {entry.actor === 'system' && '⚙️'}
+                              {!['muse','maker','system'].includes(entry.actor) && '⚙️'}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{entry.action}</p>
+                              {entry.detail && (
+                                <p className="text-xs text-muted-foreground truncate">{entry.detail}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {!controlScreenLoading && !controlScreenData && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Settings className="size-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Click &quot;Load Control&quot; to view your autonomy settings</p>
               </div>
             )}
           </TabsContent>
@@ -6543,7 +7249,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Today ✅ • Memory ✅ • Beat ✅ • Evaluation ✅ • Drafts ✅ • 🧊 Scope frozen</span>
+          <span>Today ✅ • Memory ✅ • Learning ✅ • Overnight ✅ • Control ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
