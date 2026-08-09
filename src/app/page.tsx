@@ -86,6 +86,7 @@ import {
   RotateCcw,
   Trophy,
   Settings,
+  ShieldCheck,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -1063,6 +1064,12 @@ export default function MuseDashboard() {
   const [approvalHistoryData, setApprovalHistoryData] = useState<any>(null);
   const [approvalHistoryLoading, setApprovalHistoryLoading] = useState(false);
 
+  // Day 16: Validation state
+  const [e2eValidationResult, setE2eValidationResult] = useState<any>(null);
+  const [e2eValidationLoading, setE2eValidationLoading] = useState(false);
+  const [honestyReport, setHonestyReport] = useState<any>(null);
+  const [honestyLoading, setHonestyLoading] = useState(false);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -1287,6 +1294,8 @@ export default function MuseDashboard() {
     { id: 'd14-2', label: 'Overnight API Routes — /run-overnight, /approve, /reject', done: true },
     { id: 'd15-1', label: 'Approval Gate Refinement — expiry logic, CreatorDecision on approve, wired approve/reject buttons, rejection reason', done: true },
     { id: 'd15-2', label: 'Audit Logging Polish — stats, filters, search, expandable delta, export CSV, actor distribution', done: true },
+    { id: 'd16-1', label: 'E2E Validation Pipeline — Ingest → Learn → Delegate → Evaluate → Draft → Approve → Brief', done: true },
+    { id: 'd16-2', label: 'Statistical Honesty Verifier — 7 checks: evidence, confidence, source, audit, approval, metrics, evidence chain', done: true },
     { id: 'd2-6', label: 'Creator Recruitment — outreach templates + onboarding conversation', done: true },
     { id: 'd2-7', label: 'API Routes — draft, analyze, hooks, autonomy, recruit', done: true },
     { id: 'd2-8', label: 'Dashboard V2 — Day 2 status with live data', done: true },
@@ -1325,7 +1334,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 15 Approval + Audit Engine
+                Muse — Day 16 Validation Engine
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -1446,6 +1455,10 @@ export default function MuseDashboard() {
             <TabsTrigger value="beat" className="gap-1.5">
               <Workflow className="size-3.5" />
               Beat
+            </TabsTrigger>
+            <TabsTrigger value="validation" className="gap-1.5">
+              <ShieldCheck className="size-3.5" />
+              Validation
             </TabsTrigger>
           </TabsList>
 
@@ -7907,13 +7920,277 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
               </Card>
             )}
           </TabsContent>
+
+          {/* ===== VALIDATION TAB (Day 16) ===== */}
+          <TabsContent value="validation" className="space-y-6">
+            <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="size-8 text-violet-400" />
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Phase 7: Validation</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Run the creator through the full MUSE flow. Verify every insight is genuine.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* E2E Validation Pipeline */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Target className="size-4 text-emerald-400" />
+                    End-to-End Validation
+                  </CardTitle>
+                  <Button
+                    onClick={async () => {
+                      setE2eValidationLoading(true);
+                      setE2eValidationResult(null);
+                      try {
+                        const res = await fetch('/api/validation/run', { method: 'POST' });
+                        const json = await res.json();
+                        if (json.success) setE2eValidationResult(json.result);
+                      } catch { /* fail */ }
+                      setE2eValidationLoading(false);
+                    }}
+                    disabled={e2eValidationLoading}
+                    className="gap-2"
+                    size="sm"
+                  >
+                    <Zap className="size-3" />
+                    {e2eValidationLoading ? 'Running…' : 'Run Full Pipeline'}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {e2eValidationLoading && (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    <div className="animate-pulse flex items-center gap-2">
+                      <Target className="size-5 animate-spin" />
+                      Running full validation pipeline…
+                    </div>
+                  </div>
+                )}
+
+                {e2eValidationResult && (
+                  <div className="space-y-4">
+                    {/* Overall result */}
+                    <div className={`p-4 rounded-xl border ${
+                      e2eValidationResult.overallPass
+                        ? 'bg-emerald-500/10 border-emerald-500/30'
+                        : 'bg-amber-500/10 border-amber-500/30'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {e2eValidationResult.overallPass
+                            ? <CheckCircle2 className="size-5 text-emerald-400" />
+                            : <AlertTriangle className="size-5 text-amber-400" />
+                          }
+                          <span className="font-bold">
+                            {e2eValidationResult.overallPass ? 'ALL STEPS PASSED' : 'SOME STEPS FAILED'}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {e2eValidationResult.steps?.length ?? 0} steps · {e2eValidationResult.totalDurationMs}ms
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Pipeline steps */}
+                    <div className="space-y-2">
+                      {e2eValidationResult.steps?.map((step: any, i: number) => (
+                        <div key={i} className={`flex items-center gap-3 p-3 rounded-lg border ${
+                          step.status === 'pass' ? 'bg-emerald-500/5 border-emerald-500/20' :
+                          step.status === 'fail' ? 'bg-red-500/5 border-red-500/20' :
+                          'bg-muted/30 border-muted'
+                        }`}>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="font-mono text-xs text-muted-foreground w-6">{step.step}.</span>
+                            {step.status === 'pass' && <CheckCircle2 className="size-4 text-emerald-400" />}
+                            {step.status === 'fail' && <X className="size-4 text-red-400" />}
+                            {step.status === 'skip' && <CircleDashed className="size-4 text-muted-foreground" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold">{step.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{step.evidence}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant="outline" className="text-[10px]">{step.durationMs}ms</Badge>
+                            <Badge className={`text-[10px] ${
+                              step.status === 'pass' ? 'bg-emerald-600 text-white' :
+                              step.status === 'fail' ? 'bg-red-600 text-white' :
+                              'bg-gray-500 text-white'
+                            }`}>{step.status.toUpperCase()}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Summary */}
+                    {e2eValidationResult.summary && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 rounded-lg bg-muted/20">
+                        <div className="text-center">
+                          <p className="text-sm font-bold">{e2eValidationResult.summary.contentItemsLoaded}</p>
+                          <p className="text-[10px] text-muted-foreground">Content Items</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-bold">{e2eValidationResult.summary.insightsGenerated}</p>
+                          <p className="text-[10px] text-muted-foreground">Insights</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-bold">{e2eValidationResult.summary.evaluationScore ?? '—'}</p>
+                          <p className="text-[10px] text-muted-foreground">Eval Score</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-bold">{e2eValidationResult.summary.confidenceLevel ?? '—'}</p>
+                          <p className="text-[10px] text-muted-foreground">Confidence</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!e2eValidationLoading && !e2eValidationResult && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Target className="size-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Click &quot;Run Full Pipeline&quot; to validate the entire MUSE flow</p>
+                    <p className="text-xs mt-1">Ingest → Learn → Delegate → Evaluate → Draft → Approve → Brief</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Statistical Honesty Report */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Scale className="size-4 text-violet-400" />
+                    Statistical Honesty
+                  </CardTitle>
+                  <Button
+                    onClick={async () => {
+                      setHonestyLoading(true);
+                      setHonestyReport(null);
+                      try {
+                        const res = await fetch('/api/validation/honesty');
+                        const json = await res.json();
+                        if (json.success) setHonestyReport(json.report);
+                      } catch { /* fail */ }
+                      setHonestyLoading(false);
+                    }}
+                    disabled={honestyLoading}
+                    className="gap-2"
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Scale className="size-3" />
+                    {honestyLoading ? 'Verifying…' : 'Verify Honesty'}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {honestyLoading && (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    <div className="animate-pulse flex items-center gap-2">
+                      <Scale className="size-5 animate-spin" />
+                      Verifying statistical honesty…
+                    </div>
+                  </div>
+                )}
+
+                {honestyReport && (
+                  <div className="space-y-4">
+                    {/* Overall score */}
+                    <div className={`p-4 rounded-xl border ${
+                      honestyReport.overallHonest
+                        ? 'bg-emerald-500/10 border-emerald-500/30'
+                        : 'bg-amber-500/10 border-amber-500/30'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {honestyReport.overallHonest
+                            ? <ShieldCheck className="size-5 text-emerald-400" />
+                            : <AlertTriangle className="size-5 text-amber-400" />
+                          }
+                          <span className="font-bold">
+                            {honestyReport.overallHonest ? 'STATISTICALLY HONEST' : 'HONESTY ISSUES FOUND'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={honestyReport.score} className="w-20 h-2" />
+                          <Badge variant="outline" className="text-xs">{honestyReport.score}/100</Badge>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {honestyReport.passing} passing · {honestyReport.failing} failing · {honestyReport.warnings} warnings
+                      </p>
+                    </div>
+
+                    {/* Individual checks */}
+                    <div className="space-y-2">
+                      {honestyReport.checks?.map((check: any, i: number) => (
+                        <div key={i} className={`p-3 rounded-lg border ${
+                          check.status === 'pass' ? 'bg-emerald-500/5 border-emerald-500/20' :
+                          check.status === 'fail' ? 'bg-red-500/5 border-red-500/20' :
+                          'bg-amber-500/5 border-amber-500/20'
+                        }`}>
+                          <div className="flex items-start gap-2">
+                            {check.status === 'pass' && <CheckCircle2 className="size-4 text-emerald-400 mt-0.5 shrink-0" />}
+                            {check.status === 'fail' && <X className="size-4 text-red-400 mt-0.5 shrink-0" />}
+                            {check.status === 'warning' && <AlertTriangle className="size-4 text-amber-400 mt-0.5 shrink-0" />}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-[10px]">{check.category}</Badge>
+                                <p className="text-sm font-medium">{check.description}</p>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">{check.evidence}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Summary stats */}
+                    {honestyReport.summary && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 rounded-lg bg-muted/20">
+                        <div className="text-center">
+                          <p className="text-sm font-bold">{honestyReport.summary.recommendationsChecked}</p>
+                          <p className="text-[10px] text-muted-foreground">Recs Checked</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-bold">{honestyReport.summary.memoryEventsChecked}</p>
+                          <p className="text-[10px] text-muted-foreground">Memory Events</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-bold">{honestyReport.summary.auditEventsChecked}</p>
+                          <p className="text-[10px] text-muted-foreground">Audit Events</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!honestyLoading && !honestyReport && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Scale className="size-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Click &quot;Verify Honesty&quot; to audit all insights for statistical integrity</p>
+                    <p className="text-xs mt-1">Checks evidence, confidence, source, audit trail, approval gate, metrics</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • Expiry ✅ • CSV Export ✅ • 🧊 Scope frozen</span>
+          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • E2E Validation ✅ • Honesty ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
