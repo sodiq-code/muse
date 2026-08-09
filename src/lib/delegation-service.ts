@@ -338,6 +338,59 @@ export async function runDelegation(
 }
 
 // ---------------------------------------------------------------------------
+// Step 5: Full pipeline with evaluation + draft storage (Day 10)
+// Muse → Maker → Evaluate → Store Draft
+// ---------------------------------------------------------------------------
+
+export interface DelegationWithEvaluationResult extends DelegationResult {
+  evaluation?: import('@/lib/evaluation-service').EvaluationResult;
+  draft?: import('@/lib/draft-pipeline').DraftCreationResult;
+}
+
+export async function runDelegationWithEvaluation(
+  creatorId: string,
+  topic?: string,
+  objective?: string,
+  storeDraft: boolean = true
+): Promise<DelegationWithEvaluationResult> {
+  // Step 1: Run delegation (Muse→Maker)
+  const delegationResult = await runDelegation(creatorId, topic, objective);
+
+  // Step 2: Load context for evaluation
+  const context = await loadDelegationContext(creatorId, topic, objective);
+
+  // Step 3: Evaluate Maker output
+  const { evaluateMakerOutput } = await import('@/lib/evaluation-service');
+  const evaluation = evaluateMakerOutput(
+    delegationResult.makerOutput,
+    context.voiceProfile,
+    context.bestHookPatterns,
+    context.recentWinners
+  );
+
+  // Step 4: Store draft if evaluation passes
+  let draft: import('@/lib/draft-pipeline').DraftCreationResult | undefined;
+  if (storeDraft) {
+    const { storeDraftFromEvaluation } = await import('@/lib/draft-pipeline');
+    draft = await storeDraftFromEvaluation({
+      creatorId,
+      evaluation,
+      makerOutput: delegationResult.makerOutput,
+      topic: context.topic,
+      objective: context.objective,
+      instructionId: delegationResult.instruction.instructionId,
+      mode: delegationResult.mode,
+    });
+  }
+
+  return {
+    ...delegationResult,
+    evaluation,
+    draft,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
