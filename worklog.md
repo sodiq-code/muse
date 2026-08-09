@@ -1306,3 +1306,70 @@ Stage Summary:
 - 2 new API routes: /api/validation/run, /api/validation/honesty
 - 2 new services: e2e-validation-service.ts, honesty-verifier-service.ts
 - Schema unchanged (12 models, still frozen)
+
+---
+Task ID: 17
+Agent: main
+Task: Day 17 — Phase 7: VALIDATION (Creator Feedback Collection + Disclosed Simulation)
+
+Work Log:
+- Read blueprint Day 17 spec: Phase 7 VALIDATION — Collect creator feedback → Creator corrections logged, Refine based on feedback → Memory updated from real feedback, Real Creator Gate: pivot to disclosed simulation
+- Built creator-feedback-service.ts: full feedback → memory refinement pipeline
+  - 5 feedback types: correction, approval, rejection, refinement, preference
+  - submitCreatorFeedback() — 7-step pipeline: CreatorDecision → MemoryEvent → Confidence Adjustment → Pattern Correction → Preference Update → Count Affected Recs → Audit Event
+  - computeConfidenceAdjustment() — approval +0.05, rejection -0.15, correction -0.10, refinement +0.02, preference +0.10
+  - getFeedbackSummary() — by-type, by-target, by-category breakdowns, correction patterns, recent feedback
+  - getRefinementTimeline() — feedback → memory → improvement chain with timestamps and confidence shifts
+  - submitBatchFeedback() — for simulation mode
+  - Foreign key safety: contentItemId/recommendationId only set if targetId references existing records
+- Built disclosed-simulation-service.ts: simulated creator with methodological rigor
+  - SIMULATION_METHODOLOGY constant: version, assumptions (7), limitations (6), reproducibility, ethical notes (5)
+  - 5 realistic scenarios: hook corrections (3 items), voice refinements (2), timing rejections (1), draft approvals (1), preference updates (2)
+  - runDisclosedSimulation() — rate-based filtering, all items marked isSimulation=true, master audit event
+  - checkRealCreatorGate() — Day 17 checkpoint: PASS or PIVOT_TO_SIMULATION
+  - getDefaultSimulationConfig() — mid-tier archetype, 30% correction, 15% rejection, 20% refinement, 80% consistency
+- Created 6 new API routes:
+  - POST /api/feedback/submit — submit creator feedback with required field validation
+  - POST /api/feedback/simulate — run disclosed simulation
+  - GET /api/feedback/simulate — get simulation scenarios
+  - GET /api/feedback/summary — feedback summary with breakdowns
+  - GET /api/feedback/refinements — refinement timeline
+  - GET /api/feedback/gate — Real Creator Gate check
+- Added Feedback tab to page.tsx:
+  - Phase 7: Creator Feedback Loop header card
+  - Real Creator Gate section: Check Gate button, PASS/PIVOT status, real vs simulation counts, methodology notes
+  - Disclosed Simulation section: SIMULATED badge, Run Simulation button, disclosed banner, results summary grid, simulation parameters, feedback details with refinements, methodology audit trail
+  - Feedback Summary section: total feedback, memory refinements, confidence shifts, SIMULATED/REAL badge, by-type breakdown (5 color-coded types), top correction patterns, recent feedback with type badges and SIM flags
+  - Refinement Timeline section: Load Timeline button, entries with color-coded feedback types, before→after values, confidence shift badges, SIM flags, timestamps
+  - Manual Feedback Submit section: feedback type/target dropdowns, original/corrected value inputs, reason textarea, demo submit button with result display
+- Added 9 new state variables for Day 17 features
+- Added 4 new icon imports: MessageCircle, RefreshCw, ClipboardCheck, AlertCircle
+- Updated header to "Day 17 Creator Feedback Loop"
+- Updated footer to include "Feedback Loop ✅ • Disclosed Sim ✅"
+- Added Day 17 checklist items (d17-1, d17-2, d17-3)
+- API verification:
+  - GET /api/feedback/gate: 200, PIVOT_TO_SIMULATION (before simulation), then PASS (after manual feedback)
+  - POST /api/feedback/simulate: 200, simulation complete with feedback results, refinements, methodology notes
+  - GET /api/feedback/simulate: 200, 5 scenarios returned
+  - GET /api/feedback/summary: 200, 28 total feedback, by-type breakdown, correction patterns, recent feedback
+  - GET /api/feedback/refinements: 200, 30+ timeline entries with feedback→memory→improvement chain
+  - POST /api/feedback/submit: 200, 3 refinements (memory_update, confidence_adjustment, pattern_correction)
+- Browser verification: All features working, no errors
+  - Real Creator Gate: correctly detects PIVOT_TO_SIMULATION then PASS
+  - Disclosed Simulation: runs successfully with SIMULATED badge clearly visible
+  - Feedback Summary: loads with all breakdowns and patterns
+  - Refinement Timeline: shows full feedback → memory → improvement chain
+  - Manual feedback submit: works with result display
+  - Validation tab still works correctly
+- Lint: 0 errors, 0 warnings
+- Schema unchanged (12 models, still frozen)
+- Pushed to GitHub: commit 3c1ade1
+
+Stage Summary:
+- Day 17 (Phase 7: Creator Feedback Loop) COMPLETE
+- Feedback → Memory Refinement Pipeline: 5 feedback types, 7-step pipeline, confidence adjustments, pattern corrections
+- Disclosed Simulation: methodological rigor with documented assumptions, limitations, ethical notes
+- Real Creator Gate: Day 17 checkpoint — PIVOT_TO_SIMULATION when no real creator, PASS when feedback detected
+- All simulation data clearly labeled as SIMULATED (NEVER hidden)
+- 6 new API routes, 2 new services
+- Schema unchanged (12 models, still frozen)
