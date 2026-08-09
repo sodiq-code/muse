@@ -584,3 +584,54 @@ Stage Summary:
 - Evidence chain: 6 steps with proper types (observed → correlation → correlation → correlation → correlation/statistical)
 - 8 memory events stored, 2 recommendations generated, audit trail maintained
 - Schema remains frozen (12 models, no changes)
+---
+Task ID: 8
+Agent: full-stack-developer
+Task: Day 8 — Build "Why Muse chose this" explanation system + Run 7-day proof experiment + SCOPE FREEZE
+
+Work Log:
+- Created src/lib/explanation-service.ts — Full evidence chain system
+  - buildExplanationForRecommendation() — builds 5-step evidence chain (OBSERVE→COMPARE→INFER→UPDATE→RECOMMEND)
+  - buildAllExplanationsForCreator() — builds explanations for all pending recommendations
+  - buildNarrative() — human-readable story of why Muse chose this
+  - buildCreatorContext() — personalized explanation for the creator
+  - verifyExplanationHonesty() — checks no inflated language, confidence matches data, bare "100%" detection
+  - buildQuickExplanation() — lightweight version for dashboard preview
+  - Honest confidence enforcement: computeConfidence(recDataPoints) corrects any stored mismatches
+- Created src/lib/proof-experiment.ts — 7-day proof experiment runner
+  - runProofExperiment() — simulates 7 days of learning on real creator content
+  - 4 insight types: pattern_emergence, performance_signal, recommendation_with_evidence, confidence_upgrade
+  - Day-by-day accumulation: each day adds content, runs learning loop, extracts insights
+  - Honesty report: allInsightsGenuine, noFabricatedData, evidenceChainsComplete, confidenceHonest
+  - Fixed recommendation insight confidence: uses computeConfidence(rec.dataPoints) for honesty
+- Created src/app/api/learning/explain/route.ts — GET /api/learning/explain API
+- Created src/app/api/learning/proof/route.ts — GET/POST /api/learning/proof API
+- Created SCOPE_FREEZE_DAY8.md — Formal scope freeze declaration
+  - Tier 1 features listed with status
+  - Tier 2 and Tier 3 cut priority
+  - 10 scope freeze rules (no new Minds, integrations, features, models)
+  - Remaining work plan (Days 9-20)
+- Enhanced src/app/page.tsx dashboard with Day 8 features
+  - Header: 'Muse — Day 8 Evidence & Proof' + '🧊 Scope Frozen' badge
+  - Tab 9: 'Why Chose This' — Load Explanations button, evidence chain cards with 5-step visualization, narrative, creator context, honesty badge
+  - Tab 10: '7-Day Proof' — Run Proof Experiment button, day-by-day timeline, genuine insights list, honesty report
+  - Footer: 'Evidence chains ✅ • Proof experiment ✅ • 🧊 Scope frozen'
+- API verification:
+  - /api/learning/explain: 200, 2 explanations, all honest (confidence corrected), 5-step chains complete
+  - /api/learning/proof: 200, 79 genuine insights, meets ≥3 threshold, all honesty checks pass
+- Browser verification:
+  - Page renders correctly with Day 8 header and 🧊 Scope Frozen badge
+  - 'Why Chose This' tab: explanations load, evidence chains expand, narratives display, honesty badges show ✅
+  - '7-Day Proof' tab: experiment runs, 7-day timeline shows confidence progression (low→medium→high), insights display
+  - Footer shows all three Day 8 indicators
+- Lint: 0 errors, 0 warnings
+- Schema unchanged (12 models, still frozen)
+- Pushed to GitHub: commit f023327
+
+Stage Summary:
+- Day 8 (Phase 3: LEARNING) complete — SCOPE FREEZE declared
+- "Why Muse chose this" explanation system: full 5-step evidence chain from raw data → inference → recommendation
+- 7-day proof experiment: 79 genuine insights on real creator content (far exceeding ≥3 threshold)
+- Honesty verified: all explanations honest, all insights genuine, no fabricated data, confidence honest
+- SCOPE FREEZE: no new Minds, integrations, or features from Day 9 onward — only polish and reliability
+- Phase 3 (LEARNING) complete — moving to Phase 4 (DELEGATION) on Day 9
