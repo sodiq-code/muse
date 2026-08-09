@@ -1012,3 +1012,77 @@ Stage Summary:
 - Overnight Mind Theatre feels like a live timeline with monospace time + actor emojis
 - Control tab feels authoritative with emerald hero, auto-publish lock, amber warning
 - Build passes: all 3 new API routes confirmed in output (/api/dashboard/learning, /api/dashboard/overnight, /api/dashboard/control)
+---
+Task ID: 13
+Agent: main
+Task: Day 13 — Screen 3: Learning (timeline + insights), Screen 4: Overnight (Mind Theatre), Screen 5: Control (autonomy + approvals + audit log)
+
+Work Log:
+- Read blueprint Day 13 spec: "Screen 3: Learning (timeline + insights) | Screen 4: Overnight (Mind Theatre) | Screen 5: Control (autonomy + approvals)"
+- Phase 5: DASHBOARD (Days 12-13) — completing all 5 dashboard screens
+- Created src/lib/learning-screen-service.ts — Learning screen data service
+  - getLearningScreenData(creatorId): timeline, current insight, loop status, honesty score
+  - Timeline: step-by-step walkthrough from published content items with hooks + metrics
+  - Each entry: Published → Performance → Hook Analysis → Comparison → Memory Updated → Strategy Changed
+  - "THE LOOP IS WORKING" indicator when later content uses a pattern recommended from earlier
+  - Current Insight: from top-priority Recommendation
+  - Loop Status: total runs, recommendations, avg confidence from MemoryEvent
+  - Honesty Score: confidence levels checked for inflated metrics
+- Created src/lib/overnight-screen-service.ts — Overnight screen data service
+  - getOvernightScreenData(creatorId): mind theatre, theatre status, overnight output, schedule
+  - Mind Theatre: AuditEvent records from last 24h formatted as timeline entries
+  - Theatre Status: derived from latest audit events (complete/running/sleeping)
+  - Overnight Output: most recent Draft with evaluation scores
+  - Schedule: 23:00 → 00:00 → 06:00 from autonomy-scheduler
+- Created src/lib/control-screen-service.ts — Control screen data service
+  - getControlScreenData(creatorId): autonomy settings, approval queue, audit log
+  - Autonomy Settings: overnight ON, draft ON, auto-publish ALWAYS OFF 🔒, community ON
+  - Approval Queue: pending Approval records with draft title resolution
+  - Audit Log: last 50 AuditEvent records with formatted actions
+  - Total audit events count
+- Created /api/dashboard/learning API route (GET)
+- Created /api/dashboard/overnight API route (GET)
+- Created /api/dashboard/control API route (GET)
+- Built "Learning" tab in page.tsx — "MOST IMPORTANT" screen per blueprint:
+  - Violet gradient hero: "How Muse Is Learning"
+  - Learning Timeline with ScrollArea: step-by-step walkthrough with ↓ connectors
+  - Type-specific icons: 📢 Published, 📊 Performance, 🎣 Hook, 📈 Comparison, 🧠 Memory, ⚡ Strategy, ✅ LOOP WORKING
+  - "THE LOOP IS WORKING" step highlighted in emerald box
+  - Current Insight card + Honesty Score + Loop Status (4-stat grid)
+- Built "Overnight" tab in page.tsx — Mind Theatre:
+  - Indigo gradient hero: "While You Were Offline"
+  - Schedule: Offline → Draft → Brief with arrow connectors
+  - Mind Theatre: monospace timestamps + actor emojis (👤/🧠/🎨) + phase badges + status badge
+  - Overnight Output: draft title + 3 progress bars (voice/hook/quality) + score badges
+- Built "Control" tab in page.tsx — Creator Control:
+  - Emerald gradient hero: "You're In Control"
+  - Autonomy Settings: 4 toggle rows, Auto-Publish locked 🔒 OFF
+  - Amber warning banner: "Publishing ALWAYS requires your explicit approval."
+  - Approval Queue: pending count + empty state ✅
+  - Audit Log: "Every action logged. Always." + ScrollArea with 23 entries
+- Updated header to "Day 13 All 5 Screens"
+- Updated footer to "Today ✅ • Memory ✅ • Learning ✅ • Overnight ✅ • Control ✅ • 🧊 Scope frozen"
+- API verification:
+  - GET /api/dashboard/learning: 200, 20 timeline entries, insight, 3 loop runs, honesty 5/5
+  - GET /api/dashboard/overnight: 200, 18 mind theatre entries, status running, output Voice 82% Hook 67% Quality 94%
+  - GET /api/dashboard/control: 200, auto-publish=false 🔒, 0 pending, 23 audit events
+- Browser verification:
+  - Learning tab: timeline with 20 entries, pattern steps, "LOOP WORKING" indicators ✅
+  - Overnight tab: Mind Theatre with timestamps, schedule, overnight output with scores ✅
+  - Control tab: autonomy settings, auto-publish locked, approval queue, audit log ✅
+  - Header "Day 13 All 5 Screens" ✅
+  - Footer correct ✅
+  - No console errors ✅
+- Lint: 0 errors, 0 warnings
+- Schema unchanged (12 models, still frozen)
+- Pushed to GitHub: commit 085d10c
+
+Stage Summary:
+- Day 13 (Phase 5: DASHBOARD) complete — ALL 5 dashboard screens working
+- Screen 1 (Today): morning brief + overnight activity + pending approvals ✅
+- Screen 2 (Memory): 4 domains + voice radar ✅
+- Screen 3 (Learning): timeline + insights + "LOOP IS WORKING" ✅ (MOST IMPORTANT)
+- Screen 4 (Overnight): Mind Theatre + overnight output ✅
+- Screen 5 (Control): autonomy settings + approval queue + audit log ✅
+- Phase 5 COMPLETE — all dashboard screens delivered
+- Next: Phase 6: AUTONOMY (Days 14-15)
