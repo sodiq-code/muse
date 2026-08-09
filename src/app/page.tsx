@@ -1086,6 +1086,17 @@ export default function MuseDashboard() {
   const [feedbackSubmitResult, setFeedbackSubmitResult] = useState<any>(null);
   const [feedbackSubmitLoading, setFeedbackSubmitLoading] = useState(false);
 
+  // Day 19: Demo Reliability state
+  const [demoHealth, setDemoHealth] = useState<any>(null);
+  const [demoHealthLoading, setDemoHealthLoading] = useState(false);
+  const [demoSceneList, setDemoSceneList] = useState<any>(null);
+  const [demoSceneListLoading, setDemoSceneListLoading] = useState(false);
+  const [demoCurrentScene, setDemoCurrentScene] = useState<any>(null);
+  const [demoCurrentSceneLoading, setDemoCurrentSceneLoading] = useState(false);
+  const [demoSelectedScene, setDemoSelectedScene] = useState<number>(1);
+  const [demoRehearsalStatus, setDemoRehearsalStatus] = useState<any>(null);
+  const [demoRehearsalRunning, setDemoRehearsalRunning] = useState(false);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -1485,6 +1496,10 @@ export default function MuseDashboard() {
             <TabsTrigger value="beat" className="gap-1 shrink-0">
               <Workflow className="size-3.5" />
               <span className="hidden md:inline">Beat</span><span className="md:hidden">Beat</span>
+            </TabsTrigger>
+            <TabsTrigger value="demo" className="gap-1 shrink-0">
+              <Radio className="size-3.5" />
+              <span className="hidden sm:inline">Demo</span><span className="sm:hidden">Demo</span>
             </TabsTrigger>
           </TabsList>
 
@@ -8774,6 +8789,432 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
                     <p className="text-sm">Click &quot;Verify Honesty&quot; to audit all insights for statistical integrity</p>
                     <p className="text-xs mt-1">Checks evidence, confidence, source, audit trail, approval gate, metrics</p>
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ===== DEMO TAB (Day 19) ===== */}
+          <TabsContent value="demo" className="space-y-6">
+            {/* Health Status */}
+            <Card className="border-emerald-500/20 shadow-md">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Radio className="size-5 text-emerald-500" />
+                    <div>
+                      <CardTitle className="text-base">Demo Reliability</CardTitle>
+                      <CardDescription className="text-xs">Simulator fallback &amp; pre-recorded turns — Day 19</CardDescription>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      setDemoHealthLoading(true);
+                      try {
+                        const res = await fetch('/api/demo/health');
+                        const json = await res.json();
+                        setDemoHealth(json);
+                      } catch { /* silently fail */ }
+                      setDemoHealthLoading(false);
+                    }}
+                    disabled={demoHealthLoading}
+                    className="gap-1"
+                  >
+                    <RefreshCw className={`size-3 ${demoHealthLoading ? 'animate-spin' : ''}`} />
+                    Check Health
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* API Health Indicator */}
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">API Status:</span>
+                    {demoHealth ? (
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${
+                          demoHealth.health?.status === 'healthy'
+                            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                            : demoHealth.health?.status === 'degraded'
+                              ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                              : 'bg-red-500/10 text-red-600 border-red-500/30'
+                        }`}
+                      >
+                        {demoHealth.health?.status === 'healthy' && <CheckCircle2 className="size-3 mr-1" />}
+                        {demoHealth.health?.status === 'degraded' && <AlertTriangle className="size-3 mr-1" />}
+                        {demoHealth.health?.status === 'down' && <AlertCircle className="size-3 mr-1" />}
+                        {demoHealth.health?.status?.toUpperCase() ?? 'UNKNOWN'}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs text-muted-foreground">—</Badge>
+                    )}
+                  </div>
+                  {demoHealth?.health?.latencyMs !== undefined && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="size-3" />
+                      {demoHealth.health.latencyMs}ms
+                      {demoHealth.health.cached && ' (cached)'}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Fallback:</span>
+                    {demoHealth?.fallback ? (
+                      <Badge
+                        variant="outline"
+                        className={`text-xs ${
+                          demoHealth.fallback.mode === 'live'
+                            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                            : demoHealth.fallback.mode === 'simulated'
+                              ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                              : 'bg-sky-500/10 text-sky-600 border-sky-500/30'
+                        }`}
+                      >
+                        {demoHealth.fallback.mode === 'live' && <Zap className="size-3 mr-1" />}
+                        {demoHealth.fallback.mode === 'simulated' && <Cpu className="size-3 mr-1" />}
+                        {demoHealth.fallback.mode === 'prerecorded' && <FileText className="size-3 mr-1" />}
+                        {demoHealth.fallback.mode.toUpperCase()}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs text-muted-foreground">—</Badge>
+                    )}
+                  </div>
+                </div>
+                {demoHealth?.fallback?.reason && (
+                  <p className="text-xs text-muted-foreground">{demoHealth.fallback.reason}</p>
+                )}
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Eye className="size-3" />
+                  <span>All demo data is clearly labeled <code className="bg-muted px-1 rounded text-[10px]">isSimulation: true</code> and <code className="bg-muted px-1 rounded text-[10px]">source: &quot;prerecorded&quot;</code> — never hidden</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Rehearsal Controls */}
+            <Card className="border-amber-500/20 shadow-md">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Flame className="size-5 text-amber-500" />
+                    <div>
+                      <CardTitle className="text-base">Demo Rehearsal</CardTitle>
+                      <CardDescription className="text-xs">Auto-play through all 10 scenes with timing</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={async () => {
+                        setDemoRehearsalRunning(true);
+                        try {
+                          const res = await fetch('/api/demo/rehearsal', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'start' }),
+                          });
+                          const json = await res.json();
+                          setDemoRehearsalStatus(json);
+                          if (json.error) setDemoRehearsalRunning(false);
+                        } catch { /* silently fail */ }
+                        // Poll for completion
+                        const pollInterval = setInterval(async () => {
+                          try {
+                            const statusRes = await fetch('/api/demo/rehearsal');
+                            const statusJson = await statusRes.json();
+                            setDemoRehearsalStatus(statusJson);
+                            if (!statusJson.isRunning) {
+                              setDemoRehearsalRunning(false);
+                              clearInterval(pollInterval);
+                            }
+                          } catch { clearInterval(pollInterval); setDemoRehearsalRunning(false); }
+                        }, 2000);
+                      }}
+                      disabled={demoRehearsalRunning}
+                      className="gap-1"
+                    >
+                      {demoRehearsalRunning ? (
+                        <><RefreshCw className="size-3 animate-spin" /> Running…</>
+                      ) : (
+                        <><Zap className="size-3" /> Play Rehearsal</>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await fetch('/api/demo/rehearsal', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'reset' }),
+                          });
+                          setDemoRehearsalStatus(null);
+                          setDemoRehearsalRunning(false);
+                        } catch { /* silently fail */ }
+                      }}
+                      className="gap-1"
+                    >
+                      <RotateCcw className="size-3" /> Reset
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {demoRehearsalStatus && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-4 flex-wrap text-xs">
+                      <span className="text-muted-foreground">
+                        Status: <span className="font-semibold">{demoRehearsalStatus.isRunning ? 'Running' : 'Complete'}</span>
+                      </span>
+                      {demoRehearsalStatus.lastResult && (
+                        <>
+                          <span className="text-muted-foreground">
+                            Scenes: <span className="font-semibold">{demoRehearsalStatus.lastResult.completedScenes}/{demoRehearsalStatus.lastResult.totalScenes}</span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            Duration: <span className="font-semibold">{(demoRehearsalStatus.lastResult.actualDurationMs / 1000).toFixed(1)}s</span>
+                          </span>
+                          <span className="text-muted-foreground">
+                            Mode: <span className="font-semibold">{demoRehearsalStatus.lastResult.fallbackMode}</span>
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {demoRehearsalStatus.lastResult?.sceneResults && (
+                      <div className="flex gap-1 mt-2">
+                        {demoRehearsalStatus.lastResult.sceneResults.map((sr: any) => (
+                          <div
+                            key={sr.sceneNumber}
+                            className="flex-1 h-2 rounded-full bg-emerald-500"
+                            title={`${sr.sceneName}: ${sr.turnsPlayed} turns`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!demoRehearsalStatus && !demoRehearsalRunning && (
+                  <p className="text-xs text-muted-foreground text-center py-2">
+                    Click &quot;Play Rehearsal&quot; to auto-play through all 10 demo scenes
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Scene Selector + Timeline */}
+            <Card className="border-violet-500/20 shadow-md">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers className="size-5 text-violet-500" />
+                    <div>
+                      <CardTitle className="text-base">Demo Scenes</CardTitle>
+                      <CardDescription className="text-xs">90-second demo script — 10 scenes</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        setDemoSceneListLoading(true);
+                        try {
+                          const res = await fetch('/api/demo/scene');
+                          const json = await res.json();
+                          setDemoSceneList(json);
+                        } catch { /* silently fail */ }
+                        setDemoSceneListLoading(false);
+                      }}
+                      disabled={demoSceneListLoading}
+                      className="gap-1"
+                    >
+                      <Database className="size-3" /> Load Scenes
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Scene Timeline */}
+                <div className="flex gap-1 items-end">
+                  {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => {
+                    const isSelected = num === demoSelectedScene;
+                    const sceneInfo = demoSceneList?.scenes?.find((s: any) => s.sceneNumber === num);
+                    return (
+                      <button
+                        key={num}
+                        onClick={() => setDemoSelectedScene(num)}
+                        className={`flex-1 rounded-md transition-all flex flex-col items-center justify-end py-1.5 gap-0.5 ${
+                          isSelected
+                            ? 'bg-violet-500/20 border border-violet-500/40 text-violet-400'
+                            : 'bg-muted/50 border border-transparent hover:bg-muted text-muted-foreground'
+                        }`}
+                      >
+                        <span className="text-[10px] font-medium">{num}</span>
+                        {sceneInfo && (
+                          <div
+                            className={`w-1 rounded-full ${isSelected ? 'bg-violet-500' : 'bg-muted-foreground/30'}`}
+                            style={{ height: `${Math.min(24, sceneInfo.turnCount * 4)}px` }}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Scene Selector Dropdown */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Scene:</span>
+                  <Select
+                    value={String(demoSelectedScene)}
+                    onValueChange={(v) => setDemoSelectedScene(Number(v))}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
+                        <SelectItem key={num} value={String(num)}>
+                          Scene {num}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      setDemoCurrentSceneLoading(true);
+                      try {
+                        const res = await fetch(`/api/demo/scene?scene=${demoSelectedScene}`);
+                        const json = await res.json();
+                        setDemoCurrentScene(json.scene);
+                      } catch { /* silently fail */ }
+                      setDemoCurrentSceneLoading(false);
+                    }}
+                    disabled={demoCurrentSceneLoading}
+                    className="gap-1"
+                  >
+                    {demoCurrentSceneLoading ? (
+                      <RefreshCw className="size-3 animate-spin" />
+                    ) : (
+                      <Eye className="size-3" />
+                    )}
+                    View
+                  </Button>
+                </div>
+
+                {/* Current Scene Display */}
+                {demoCurrentSceneLoading && (
+                  <div className="space-y-2">
+                    <div className="h-6 w-48 bg-muted rounded animate-pulse" />
+                    <div className="h-4 w-full bg-muted rounded animate-pulse" />
+                    <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
+                  </div>
+                )}
+                {demoCurrentScene && !demoCurrentSceneLoading && (
+                  <div className="space-y-4">
+                    {/* Scene Header */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Badge variant="outline" className="text-xs border-violet-500/30 text-violet-400">
+                        Scene {demoCurrentScene.sceneNumber}
+                      </Badge>
+                      <Badge variant="outline" className={`text-xs ${
+                        demoCurrentScene.emotionalArc === 'triumphant' ? 'border-emerald-500/30 text-emerald-400' :
+                        demoCurrentScene.emotionalArc === 'hopeful' ? 'border-sky-500/30 text-sky-400' :
+                        demoCurrentScene.emotionalArc === 'tense' ? 'border-red-500/30 text-red-400' :
+                        demoCurrentScene.emotionalArc === 'inspiring' ? 'border-amber-500/30 text-amber-400' :
+                        'border-muted text-muted-foreground'
+                      }`}>
+                        {demoCurrentScene.emotionalArc}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs border-sky-500/30 text-sky-400">
+                        <Clock className="size-3 mr-1" />
+                        {(demoCurrentScene.durationMs / 1000).toFixed(1)}s
+                      </Badge>
+                      <Badge variant="outline" className="text-xs border-muted text-muted-foreground">
+                        isSimulation: true
+                      </Badge>
+                    </div>
+                    <h3 className="text-sm font-semibold">{demoCurrentScene.sceneName}</h3>
+                    <p className="text-xs text-muted-foreground italic">{demoCurrentScene.narration}</p>
+
+                    {/* Conversation Turns */}
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {demoCurrentScene.conversationTurns?.map((turn: any, idx: number) => (
+                        <div key={idx} className={`flex gap-2 text-xs ${
+                          turn.role === 'user' ? 'justify-end' : 'justify-start'
+                        }`}>
+                          <div className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                            turn.role === 'user'
+                              ? 'bg-sky-500/10 text-sky-700 dark:text-sky-300'
+                              : turn.role === 'muse'
+                                ? 'bg-violet-500/10 text-violet-700 dark:text-violet-300'
+                                : turn.role === 'maker'
+                                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                  : 'bg-muted text-muted-foreground italic'
+                          }`}>
+                            <div className="flex items-center gap-1 mb-0.5">
+                              <span className="font-semibold text-[10px] uppercase opacity-70">
+                                {turn.role === 'narrator' ? '🎬' : turn.role === 'muse' ? '🧠 Muse' : turn.role === 'maker' ? '🤖 Maker' : '👤 Jules'}
+                              </span>
+                              <span className="text-[9px] opacity-50">{turn.timestamp}</span>
+                            </div>
+                            <div className="whitespace-pre-wrap">{turn.message}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Data Snapshot */}
+                    {demoCurrentScene.dataSnapshot && (
+                      <div className="border rounded-lg p-3 space-y-2">
+                        <p className="text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">Data Snapshot at Scene {demoCurrentScene.sceneNumber}</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-violet-500">{demoCurrentScene.dataSnapshot.memoryEvents}</p>
+                            <p className="text-[9px] text-muted-foreground">Memories</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-emerald-500">{demoCurrentScene.dataSnapshot.voiceScore}%</p>
+                            <p className="text-[9px] text-muted-foreground">Voice</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-amber-500">{demoCurrentScene.dataSnapshot.hookScore}%</p>
+                            <p className="text-[9px] text-muted-foreground">Hook</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-sky-500">{demoCurrentScene.dataSnapshot.draftsCompleted}</p>
+                            <p className="text-[9px] text-muted-foreground">Drafts</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div className="text-center">
+                            <p className="text-sm font-semibold">{demoCurrentScene.dataSnapshot.learningCycles}</p>
+                            <p className="text-[9px] text-muted-foreground">Learn Cycles</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-semibold">{demoCurrentScene.dataSnapshot.overnightRuns}</p>
+                            <p className="text-[9px] text-muted-foreground">O/N Runs</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-semibold">{demoCurrentScene.dataSnapshot.approvalRate}%</p>
+                            <p className="text-[9px] text-muted-foreground">Approval</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-semibold">{demoCurrentScene.dataSnapshot.recommendations}</p>
+                            <p className="text-[9px] text-muted-foreground">Recommendations</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!demoCurrentScene && !demoCurrentSceneLoading && (
+                  <p className="text-xs text-muted-foreground text-center py-4">
+                    Select a scene and click &quot;View&quot; to see the pre-recorded demo data
+                  </p>
                 )}
               </CardContent>
             </Card>
