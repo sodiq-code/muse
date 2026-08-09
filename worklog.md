@@ -1086,3 +1086,47 @@ Stage Summary:
 - Screen 5 (Control): autonomy settings + approval queue + audit log ✅
 - Phase 5 COMPLETE — all dashboard screens delivered
 - Next: Phase 6: AUTONOMY (Days 14-15)
+
+---
+Task ID: 14-1
+Agent: full-stack-developer
+Task: Day 14 — Implement DB-backed overnight scheduler + full overnight loop
+
+Work Log:
+- Created `/src/lib/overnight-scheduler-service.ts` — full DB-backed overnight scheduler replacing the in-memory autonomy-scheduler from Day 2
+  - `runOvernightCycle(creatorId)`: 5-step overnight loop (Wake → Review Signals → Delegate → Request Approval → Generate Brief) with AutonomousRun, AuditEvent, and Approval records in DB
+  - `getOvernightSchedule(creatorId)`: returns schedule info, run history, pending approvals, running status
+  - `approveAction(approvalId, creatorId)`: approves pending action, creates audit events, logs draft approval
+  - `rejectAction(approvalId, creatorId, reason?)`: rejects pending action, creates CreatorDecision, audit events
+  - `getApprovalQueue(creatorId)`: returns pending approvals with resolved draft titles
+  - `getDefaultCreatorId()`: helper for default creator lookup
+  - NON-NEGOTIABLE: Never auto-publishes — approval gate enforced at DB level
+- Created `/src/app/api/autonomy/run-overnight/route.ts` — POST runs overnight cycle, GET returns schedule info
+- Created `/src/app/api/autonomy/approve/route.ts` — POST approves a pending action
+- Created `/src/app/api/autonomy/reject/route.ts` — POST rejects a pending action with optional reason
+- Updated `/src/app/api/autonomy/status/route.ts` — GET returns DB-backed status with approval queue, schedule info, recent audit events; POST runs overnight cycle
+- Updated `/src/app/page.tsx`:
+  - Added OvernightCycleResponse interface and Day 14 state variables (overnightCycleRunning, overnightCycleResult, approvalActionLoading, rejectReason, showRejectInput)
+  - Added runOvernightCycleAction, approveActionHandler, rejectActionHandler callback functions
+  - Completely rebuilt Autonomy tab UI with:
+    - Schedule display (Wake/Draft/Brief times from DB)
+    - "Run Overnight Cycle Now" button with loading states
+    - Overnight cycle result display with steps, morning brief, duration
+    - Phase timeline with status indicators
+    - Approval gate banner
+    - Interactive approval queue with Approve/Reject buttons
+    - Reject flow with optional reason input
+    - Run history from DB
+    - Draft list and audit trail
+  - Added Day 14 validation checklist entries (d14-1, d14-2)
+- All lint checks pass, all API endpoints tested and working
+
+Stage Summary:
+- Core artifact: `/src/lib/overnight-scheduler-service.ts` — DB-backed overnight scheduler with full overnight loop
+- API routes: `/api/autonomy/run-overnight`, `/api/autonomy/approve`, `/api/autonomy/reject`, updated `/api/autonomy/status`
+- Every step creates AuditEvent records in DB
+- Approval gate is DB-enforced — NEVER auto-publishes
+- Full delegation beat integration via `runDelegationBeat` from delegation-beat-service
+- Learning engine integration via `runLearningEngineOnCreatorData` for signal review step
+- Morning brief includes draft title, score, recommendations, and insights
+- UI provides interactive approve/reject workflow with real-time status updates

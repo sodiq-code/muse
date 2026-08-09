@@ -431,11 +431,40 @@ interface AutonomyStatusResponse {
     phase: string;
     equipped: boolean;
     pendingApprovals: number;
+    isRunning: boolean;
+    totalRuns: number;
     drafts: { id: string; title: string; approvalStatus: string; hookPattern: string }[];
     briefs: { id: string; date: string }[];
     auditLog: { id: string; timestamp: string; actor: string; action: string; detail: string }[];
     creditBurnEstimate: number;
+    approvalQueue?: { id: string; itemType: string; itemId: string | null; action: string; status: string; createdAt: string; title?: string }[];
   };
+  scheduleInfo?: {
+    schedule: { wakeTime: string; draftTime: string; briefTime: string };
+    lastRun: { id: string; status: string; startedAt: string; completedAt: string | null; taskType: string; trigger: string } | null;
+    lastRunTime: string | null;
+    totalRuns: number;
+    pendingApprovals: number;
+    isRunning: boolean;
+    recentRuns: { id: string; status: string; startedAt: string; completedAt: string | null; taskType: string }[];
+  };
+}
+
+interface OvernightCycleResponse {
+  success: boolean;
+  result?: {
+    runId: string;
+    creatorId: string;
+    success: boolean;
+    steps: { step: number; name: string; status: string; duration: number; auditEventId: string; data: Record<string, unknown> }[];
+    delegationBeat: any;
+    approvalId: string | null;
+    morningBrief: { id: string; date: string; summary: string; draftTitle: string | null; draftScore: number | null; recommendationsCount: number; newInsights: string[]; generatedAt: string };
+    startedAt: string;
+    completedAt: string;
+    totalDuration: number;
+  };
+  message?: string;
 }
 
 interface HookClassResponse {
@@ -1016,6 +1045,13 @@ export default function MuseDashboard() {
   const [beatObjective, setBeatObjective] = useState('');
   const [activeBeatStep, setActiveBeatStep] = useState<number | null>(null);
 
+  // Day 14: DB-backed overnight scheduler state
+  const [overnightCycleRunning, setOvernightCycleRunning] = useState(false);
+  const [overnightCycleResult, setOvernightCycleResult] = useState<OvernightCycleResponse | null>(null);
+  const [approvalActionLoading, setApprovalActionLoading] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -1076,6 +1112,67 @@ export default function MuseDashboard() {
       // silently fail
     } finally {
       setDecisionsLoading(false);
+    }
+  }, []);
+
+  // Day 14: Run overnight cycle
+  const runOvernightCycleAction = useCallback(async () => {
+    setOvernightCycleRunning(true);
+    try {
+      const res = await fetch('/api/autonomy/run-overnight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json();
+      setOvernightCycleResult(json);
+      // Refresh autonomy status
+      const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
+      if (statusRes) setAutonomyData(statusRes);
+    } catch (e) {
+      setOvernightCycleResult({ success: false, message: String(e) });
+    } finally {
+      setOvernightCycleRunning(false);
+    }
+  }, []);
+
+  // Day 14: Approve an action
+  const approveActionHandler = useCallback(async (approvalId: string) => {
+    setApprovalActionLoading(approvalId);
+    try {
+      await fetch('/api/autonomy/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvalId }),
+      });
+      // Refresh autonomy status
+      const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
+      if (statusRes) setAutonomyData(statusRes);
+    } catch {
+      // silently fail
+    } finally {
+      setApprovalActionLoading(null);
+    }
+  }, []);
+
+  // Day 14: Reject an action
+  const rejectActionHandler = useCallback(async (approvalId: string, reason?: string) => {
+    setApprovalActionLoading(approvalId);
+    try {
+      await fetch('/api/autonomy/reject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvalId, reason }),
+      });
+      // Refresh autonomy status
+      const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
+      if (statusRes) setAutonomyData(statusRes);
+      setShowRejectInput(null);
+      setRejectReason('');
+    } catch {
+      // silently fail
+    } finally {
+      setApprovalActionLoading(null);
     }
   }, []);
 
@@ -1167,6 +1264,8 @@ export default function MuseDashboard() {
     { id: 'd2-3', label: 'Hook Classifier — 8-pattern taxonomy with confidence scoring', done: true },
     { id: 'd2-4', label: 'SSE Events Hook — real-time streaming with simulated fallback', done: true },
     { id: 'd2-5', label: 'Autonomy Scheduler — overnight pipeline with approval gates', done: true },
+    { id: 'd14-1', label: 'DB-Backed Overnight Scheduler — full overnight loop with delegation beat + approval gates', done: true },
+    { id: 'd14-2', label: 'Overnight API Routes — /run-overnight, /approve, /reject', done: true },
     { id: 'd2-6', label: 'Creator Recruitment — outreach templates + onboarding conversation', done: true },
     { id: 'd2-7', label: 'API Routes — draft, analyze, hooks, autonomy, recruit', done: true },
     { id: 'd2-8', label: 'Dashboard V2 — Day 2 status with live data', done: true },
@@ -1205,7 +1304,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 13 All 5 Screens
+                Muse — Day 14 Autonomy Engine
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -3378,43 +3477,146 @@ export default function MuseDashboard() {
             <section>
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Moon className="size-4" />
-                Overnight Autonomy Pipeline
+                Overnight Autonomy Pipeline (DB-Backed)
               </h2>
-              <Card>
+
+              {/* Run Overnight Cycle Card */}
+              <Card className="border-violet-500/30 shadow-md mb-4">
                 <CardHeader>
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <CardTitle>Autonomy Status</CardTitle>
-                    <Badge className={autonomyData?.status?.equipped ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-600 text-white border-amber-600'}>
-                      {autonomyData?.status?.equipped ? 'Passive Autonomous Soul ✓' : 'Not Equipped'}
-                    </Badge>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="size-5 text-violet-400" />
+                      Run Overnight Cycle
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge className={autonomyData?.status?.isRunning ? 'bg-amber-600 text-white border-amber-600' : autonomyData?.status?.equipped ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-600 text-white border-amber-600'}>
+                        {autonomyData?.status?.isRunning ? '🔄 Running' : autonomyData?.status?.equipped ? 'Passive Autonomous Soul ✓' : 'Not Equipped'}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {autonomyData?.scheduleInfo?.totalRuns ?? 0} runs
+                      </Badge>
+                    </div>
                   </div>
                   <CardDescription>
-                    23:00 wake → review signals → delegate → 00:00 draft → 06:00 morning brief
+                    22:00 offline → 23:00 wake → review signals → delegate → 00:00 draft → 06:00 morning brief
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {/* Phase timeline */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {['waking', 'reviewing_signals', 'delegating', 'drafting', 'waiting_approval', 'brief_ready', 'idle'].map((phase, i) => {
-                        const currentPhase = autonomyData?.status?.phase ?? 'idle';
-                        const isActive = currentPhase === phase;
-                        const isPast = ['idle', 'brief_ready'].includes(currentPhase) && i < 6;
-                        return (
-                          <div key={phase} className="flex items-center gap-1">
-                            <div className={`size-2 rounded-full ${
-                              isActive ? 'bg-violet-500 animate-pulse' : isPast ? 'bg-emerald-500' : 'bg-muted-foreground/30'
-                            }`} />
-                            <span className={`text-xs ${isActive ? 'text-violet-400 font-medium' : isPast ? 'text-emerald-400' : 'text-muted-foreground'}`}>
-                              {phase.replace(/_/g, ' ').slice(0, 12)}
-                            </span>
-                            {i < 6 && <ArrowRight className="size-3 text-muted-foreground/30" />}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {/* Schedule Display */}
+                    {autonomyData?.scheduleInfo?.schedule && (
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-center">
+                          <p className="text-xs text-muted-foreground">Wake</p>
+                          <p className="font-mono font-bold text-violet-400">{autonomyData.scheduleInfo.schedule.wakeTime}</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                          <p className="text-xs text-muted-foreground">Draft</p>
+                          <p className="font-mono font-bold text-emerald-400">{autonomyData.scheduleInfo.schedule.draftTime}</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-center">
+                          <p className="text-xs text-muted-foreground">Brief</p>
+                          <p className="font-mono font-bold text-amber-400">{autonomyData.scheduleInfo.schedule.briefTime}</p>
+                        </div>
+                      </div>
+                    )}
 
+                    {/* Run Button */}
+                    <Button
+                      onClick={runOvernightCycleAction}
+                      disabled={overnightCycleRunning || autonomyData?.status?.isRunning}
+                      className="w-full bg-gradient-to-r from-violet-600 to-emerald-600 hover:from-violet-500 hover:to-emerald-500 text-white"
+                    >
+                      {overnightCycleRunning ? (
+                        <span className="flex items-center gap-2">
+                          <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Running Overnight Cycle...
+                        </span>
+                      ) : autonomyData?.status?.isRunning ? (
+                        <span className="flex items-center gap-2">
+                          <Clock className="size-4" />
+                          Cycle Already Running
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Moon className="size-4" />
+                          Run Overnight Cycle Now
+                        </span>
+                      )}
+                    </Button>
+
+                    {/* Overnight Cycle Result */}
+                    {overnightCycleResult && (
+                      <div className="space-y-3">
+                        <Separator />
+                        <div className={`p-3 rounded-lg border ${overnightCycleResult.success ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20'}`}>
+                          <p className={`text-sm font-medium ${overnightCycleResult.success ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {overnightCycleResult.success ? '✅ Overnight Cycle Complete' : '❌ Overnight Cycle Failed'}
+                          </p>
+                          {overnightCycleResult.result && (
+                            <div className="mt-2 space-y-2 text-xs">
+                              <p className="text-muted-foreground">
+                                Duration: {(overnightCycleResult.result.totalDuration / 1000).toFixed(1)}s | Steps: {overnightCycleResult.result.steps.length} | Run ID: {overnightCycleResult.result.runId.slice(0, 12)}…
+                              </p>
+
+                              {/* Steps Summary */}
+                              <div className="space-y-1">
+                                {overnightCycleResult.result.steps.map((step) => (
+                                  <div key={step.step} className="flex items-center gap-2 p-1.5 rounded bg-muted/30">
+                                    <div className={`size-2 rounded-full ${step.status === 'complete' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                    <span className="flex-1">{step.step}. {step.name}</span>
+                                    <span className="text-muted-foreground font-mono">{step.duration}ms</span>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Morning Brief */}
+                              {overnightCycleResult.result.morningBrief && (
+                                <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                                  <p className="font-medium text-amber-400 flex items-center gap-1">
+                                    <Sunrise className="size-3" />
+                                    Morning Brief
+                                  </p>
+                                  <p className="mt-1 text-muted-foreground">{overnightCycleResult.result.morningBrief.summary}</p>
+                                  {overnightCycleResult.result.morningBrief.newInsights.length > 0 && (
+                                    <ul className="mt-1 space-y-0.5">
+                                      {overnightCycleResult.result.morningBrief.newInsights.map((insight, i) => (
+                                        <li key={i} className="text-muted-foreground">• {insight}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">{overnightCycleResult.message}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Phase Timeline */}
                     <Separator />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Phase Timeline</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {['waking', 'reviewing_signals', 'delegating', 'drafting', 'waiting_approval', 'brief_ready', 'idle'].map((phase, i) => {
+                          const currentPhase = autonomyData?.status?.phase ?? 'idle';
+                          const isActive = currentPhase === phase;
+                          const isPast = ['idle', 'brief_ready'].includes(currentPhase) && i < 6;
+                          return (
+                            <div key={phase} className="flex items-center gap-1">
+                              <div className={`size-2 rounded-full ${
+                                isActive ? 'bg-violet-500 animate-pulse' : isPast ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+                              }`} />
+                              <span className={`text-xs ${isActive ? 'text-violet-400 font-medium' : isPast ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+                                {phase.replace(/_/g, ' ').slice(0, 12)}
+                              </span>
+                              {i < 6 && <ArrowRight className="size-3 text-muted-foreground/30" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
                     {/* Approval Gate */}
                     <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
@@ -3426,6 +3628,86 @@ export default function MuseDashboard() {
                         Pending approvals: {autonomyData?.status?.pendingApprovals ?? 0}
                       </p>
                     </div>
+
+                    {/* Approval Queue */}
+                    {autonomyData?.status?.approvalQueue && autonomyData.status.approvalQueue.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                          <Shield className="size-3" />
+                          Approval Queue ({autonomyData.status.approvalQueue.length})
+                        </p>
+                        <div className="space-y-2">
+                          {autonomyData.status.approvalQueue.map((item) => (
+                            <div key={item.id} className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <FileText className="size-4 text-amber-400 shrink-0" />
+                                  <span className="text-sm font-medium truncate">
+                                    {item.title ?? `${item.itemType} ${item.action}`}
+                                  </span>
+                                </div>
+                                <Badge variant="outline" className="text-xs shrink-0">{item.status}</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mb-2">
+                                {item.itemType} → {item.action} | Created: {new Date(item.createdAt).toLocaleString()}
+                              </p>
+                              {showRejectInput === item.id ? (
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Input
+                                    placeholder="Reason for rejection (optional)"
+                                    value={rejectReason}
+                                    onChange={(e) => setRejectReason(e.target.value)}
+                                    className="text-xs h-8"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => rejectActionHandler(item.id, rejectReason || undefined)}
+                                    disabled={approvalActionLoading === item.id}
+                                    className="h-8 text-xs shrink-0"
+                                  >
+                                    Confirm
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => { setShowRejectInput(null); setRejectReason(''); }}
+                                    className="h-8 text-xs shrink-0"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => approveActionHandler(item.id)}
+                                    disabled={approvalActionLoading === item.id}
+                                    className="h-7 text-xs bg-emerald-600 hover:bg-emerald-500 text-white shrink-0"
+                                  >
+                                    <CheckCircle2 className="size-3 mr-1" />
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => setShowRejectInput(item.id)}
+                                    disabled={approvalActionLoading === item.id}
+                                    className="h-7 text-xs shrink-0"
+                                  >
+                                    <X className="size-3 mr-1" />
+                                    Reject
+                                  </Button>
+                                  {approvalActionLoading === item.id && (
+                                    <span className="size-3 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Drafts */}
                     {autonomyData?.status?.drafts && autonomyData.status.drafts.length > 0 && (
@@ -3452,6 +3734,29 @@ export default function MuseDashboard() {
                               <div key={entry.id} className="flex items-start gap-2 text-xs p-1.5 rounded bg-muted/30">
                                 <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">{entry.actor}</Badge>
                                 <span className="text-muted-foreground truncate">{entry.action}: {entry.detail.slice(0, 80)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
+
+                    {/* Run History */}
+                    {autonomyData?.scheduleInfo?.recentRuns && autonomyData.scheduleInfo.recentRuns.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                          <History className="size-3" />
+                          Recent Runs
+                        </p>
+                        <ScrollArea className="max-h-32">
+                          <div className="space-y-1 pr-3">
+                            {autonomyData.scheduleInfo.recentRuns.map((run) => (
+                              <div key={run.id} className="flex items-center justify-between text-xs p-1.5 rounded bg-muted/30">
+                                <span className="font-mono text-muted-foreground">{run.id.slice(0, 12)}…</span>
+                                <Badge variant={run.status === 'completed' ? 'secondary' : run.status === 'failed' ? 'destructive' : 'outline'} className="text-[10px] px-1 py-0">
+                                  {run.status}
+                                </Badge>
+                                <span className="text-muted-foreground">{new Date(run.startedAt).toLocaleString()}</span>
                               </div>
                             ))}
                           </div>
@@ -7249,7 +7554,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Today ✅ • Memory ✅ • Learning ✅ • Overnight ✅ • Control ✅ • 🧊 Scope frozen</span>
+          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
