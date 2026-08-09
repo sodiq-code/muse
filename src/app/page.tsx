@@ -76,6 +76,8 @@ import {
   ChevronDown,
   ChevronUp,
   Link2,
+  Send,
+  SendHorizontal,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -148,6 +150,83 @@ interface DraftResponse {
     hookPatternsAvailable: number;
     creditsUsed: number;
   };
+}
+
+interface DelegationPreviewResponse {
+  success: boolean;
+  preview: boolean;
+  context: {
+    creatorName: string;
+    platform: string;
+    niche: string | null;
+    audience: string | null;
+    voiceProfile: {
+      tone: string;
+      pace: string;
+      vocabulary: string;
+      avoidTopics: string[];
+      strengths: string[];
+      directness?: number;
+      technicalDepth?: number;
+      humor?: number;
+      storytelling?: number;
+    };
+    bestHookPatterns: Array<{
+      pattern: string;
+      avgEffectiveness: number;
+      sampleSize: number;
+      confidence: string;
+    }>;
+    recentWinners: string[];
+    performanceSignals: string[];
+    topic: string;
+    objective: string;
+  };
+  instruction: {
+    instructionId: string;
+    from: string;
+    to: string;
+    timestamp: string;
+    makerInput: {
+      creator: string;
+      topic: string;
+      objective: string;
+      audience: string;
+      voice: {
+        tone: string;
+        pace: string;
+        vocabulary: string;
+        avoidTopics: string[];
+        strengths: string[];
+      };
+      historicalWinners: string[];
+      instruction: string;
+    };
+    reasoning: string;
+    evidenceUsed: string[];
+    confidenceLevel: string;
+    dataPointsUsed: number;
+  };
+}
+
+interface DelegationExecuteResponse {
+  success: boolean;
+  instruction: DelegationPreviewResponse['instruction'];
+  makerOutput: {
+    title: string;
+    caption: string;
+    cta: string;
+    script: string;
+    alternativeHooks: string[];
+    thumbnailConcept?: string;
+    voiceMatch: number;
+    hookCompat: number;
+    source: string;
+  };
+  mode: 'live' | 'simulated';
+  delegationTime: number;
+  auditEventId: string;
+  timestamp: string;
 }
 
 interface AutonomyStatusResponse {
@@ -702,6 +781,15 @@ export default function MuseDashboard() {
   const [proofResult, setProofResult] = useState<ProofResponse | null>(null);
   const [proofLoading, setProofLoading] = useState(false);
 
+  // Day 9: Delegation State
+  const [delegationPreview, setDelegationPreview] = useState<DelegationPreviewResponse | null>(null);
+  const [delegationResult, setDelegationResult] = useState<DelegationExecuteResponse | null>(null);
+  const [delegationTopic, setDelegationTopic] = useState('');
+  const [delegationObjective, setDelegationObjective] = useState('');
+  const [delegationPreviewLoading, setDelegationPreviewLoading] = useState(false);
+  const [delegationExecuteLoading, setDelegationExecuteLoading] = useState(false);
+  const [scriptExpanded, setScriptExpanded] = useState(false);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -891,7 +979,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 8 Evidence & Proof
+                Muse — Day 9 Delegation
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -946,8 +1034,8 @@ export default function MuseDashboard() {
               Day 2
             </TabsTrigger>
             <TabsTrigger value="draft" className="gap-1.5">
-              <FileText className="size-3.5" />
-              Draft
+              <SendHorizontal className="size-3.5" />
+              Delegation
             </TabsTrigger>
             <TabsTrigger value="autonomy" className="gap-1.5">
               <Moon className="size-3.5" />
@@ -1364,76 +1452,465 @@ export default function MuseDashboard() {
             </section>
           </TabsContent>
 
-          {/* ===== DRAFT TAB ===== */}
+          {/* ===== DELEGATION TAB (Day 9) ===== */}
           <TabsContent value="draft" className="space-y-6">
             <section>
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
-                <FileText className="size-4" />
-                Latest Generated Draft
+                <Send className="size-4" />
+                Muse→Maker Delegation
               </h2>
+
+              {/* Input Controls */}
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <CardTitle className="text-base">
-                      {draftData?.draft?.title ?? 'Generating draft…'}
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-400">
-                        <Sparkles className="size-3" />
-                        Simulated
-                      </Badge>
-                      {draftData?.draft && (
-                        <Badge variant="outline" className="gap-1">
-                          Voice Match: {(draftData.draft.voiceMatch * 100).toFixed(0)}%
-                        </Badge>
-                      )}
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <SendHorizontal className="size-4" />
+                    Delegation Controls
+                  </CardTitle>
+                  <CardDescription>
+                    Override inferred topic & objective, then preview or execute the Muse→Maker delegation pipeline
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Topic (optional override)</label>
+                      <Input
+                        placeholder="Leave empty to use inferred topic"
+                        value={delegationTopic}
+                        onChange={(e) => setDelegationTopic(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Objective (optional override)</label>
+                      <Input
+                        placeholder="Leave empty to use inferred objective"
+                        value={delegationObjective}
+                        onChange={(e) => setDelegationObjective(e.target.value)}
+                      />
                     </div>
                   </div>
-                  {draftData?.draft && (
-                    <CardDescription>{draftData.draft.caption}</CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {draftData?.draft ? (
-                    <div className="space-y-4">
-                      {/* CTA */}
-                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <p className="text-xs font-medium text-emerald-400 mb-1">CTA</p>
-                        <p className="text-sm">{draftData.draft.cta}</p>
-                      </div>
-
-                      {/* Alternative Hooks */}
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Alternative Hooks (7 patterns)</p>
-                        <ScrollArea className="max-h-48">
-                          <div className="space-y-2 pr-3">
-                            {draftData.draft.alternativeHooks.map((hook, i) => (
-                              <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-muted/50 text-xs">
-                                <MessageSquare className="size-3 mt-0.5 text-muted-foreground shrink-0" />
-                                <span>{hook}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </div>
-
-                      {/* Metadata */}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                        <span>Hook patterns: {draftData.metadata?.hookPatternsAvailable ?? 8}</span>
-                        <span>Credits used: {draftData.metadata?.creditsUsed ?? 0}</span>
-                        <span>Hook compat: {(draftData.draft.hookCompat * 100).toFixed(0)}%</span>
-                        <span>Source: {draftData.draft.source}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="h-8 bg-muted rounded animate-pulse" />
-                      <div className="h-20 bg-muted rounded animate-pulse" />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      disabled={delegationPreviewLoading}
+                      onClick={async () => {
+                        setDelegationPreviewLoading(true);
+                        setDelegationPreview(null);
+                        try {
+                          const res = await fetch('/api/delegation/send');
+                          const data = await res.json();
+                          if (data.success) setDelegationPreview(data);
+                        } catch (e) {
+                          console.error('Preview error:', e);
+                        } finally {
+                          setDelegationPreviewLoading(false);
+                        }
+                      }}
+                    >
+                      <Eye className="size-4" />
+                      {delegationPreviewLoading ? 'Loading…' : 'Preview Instruction'}
+                    </Button>
+                    <Button
+                      className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+                      disabled={delegationExecuteLoading}
+                      onClick={async () => {
+                        setDelegationExecuteLoading(true);
+                        setDelegationResult(null);
+                        try {
+                          const body: Record<string, string> = {};
+                          if (delegationTopic) body.topic = delegationTopic;
+                          if (delegationObjective) body.objective = delegationObjective;
+                          const res = await fetch('/api/delegation/send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body),
+                          });
+                          const data = await res.json();
+                          if (data.success) setDelegationResult(data);
+                        } catch (e) {
+                          console.error('Execute error:', e);
+                        } finally {
+                          setDelegationExecuteLoading(false);
+                        }
+                      }}
+                    >
+                      <Send className="size-4" />
+                      {delegationExecuteLoading ? 'Delegating…' : 'Execute Delegation'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </section>
+
+            {/* Preview Results */}
+            {delegationPreview && (
+              <section className="space-y-4">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Eye className="size-4" />
+                  Delegation Preview
+                </h2>
+
+                {/* Creator Context Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="size-4" />
+                      Creator Context
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Name</p>
+                        <p className="text-sm font-medium">{delegationPreview.context.creatorName}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Platform</p>
+                        <p className="text-sm font-medium">{delegationPreview.context.platform}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Niche</p>
+                        <p className="text-sm font-medium">{delegationPreview.context.niche ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Audience</p>
+                        <p className="text-sm font-medium">{delegationPreview.context.audience ?? '—'}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Voice Profile Card */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Mic className="size-4" />
+                      Voice Profile
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Tone</p>
+                        <p className="text-sm font-medium">{delegationPreview.context.voiceProfile.tone}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Pace</p>
+                        <p className="text-sm font-medium">{delegationPreview.context.voiceProfile.pace}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Vocabulary</p>
+                        <p className="text-sm font-medium">{delegationPreview.context.voiceProfile.vocabulary}</p>
+                      </div>
+                    </div>
+                    {delegationPreview.context.voiceProfile.avoidTopics.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs text-muted-foreground mb-1">Avoid Topics</p>
+                        <div className="flex flex-wrap gap-1">
+                          {delegationPreview.context.voiceProfile.avoidTopics.map((t) => (
+                            <Badge key={t} variant="outline" className="text-xs border-rose-500/30 text-rose-400">{t}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {delegationPreview.context.voiceProfile.strengths.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-xs text-muted-foreground mb-1">Strengths</p>
+                        <div className="flex flex-wrap gap-1">
+                          {delegationPreview.context.voiceProfile.strengths.map((s) => (
+                            <Badge key={s} variant="outline" className="text-xs border-emerald-500/30 text-emerald-400">{s}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Best Hook Patterns */}
+                {delegationPreview.context.bestHookPatterns.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Target className="size-4" />
+                        Best Hook Patterns
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {delegationPreview.context.bestHookPatterns.map((p, i) => (
+                          <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">{p.pattern}</span>
+                              <Badge variant="outline" className={`text-xs ${confidenceColor(p.confidence)}`}>
+                                {p.confidence}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span>{(p.avgEffectiveness * 100).toFixed(0)}% avg</span>
+                              <span>n={p.sampleSize}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Recent Winners */}
+                {delegationPreview.context.recentWinners.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Award className="size-4" />
+                        Recent Winners
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1.5">
+                        {delegationPreview.context.recentWinners.map((w, i) => (
+                          <div key={i} className="flex items-center gap-2 p-2 rounded-md bg-muted/50 text-sm">
+                            <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
+                            <span>{w}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Performance Signals */}
+                {delegationPreview.context.performanceSignals.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Activity className="size-4" />
+                        Performance Signals
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1.5">
+                        {delegationPreview.context.performanceSignals.map((s, i) => (
+                          <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-muted/50 text-sm">
+                            <Zap className="size-3.5 text-amber-400 shrink-0 mt-0.5" />
+                            <span>{s}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Structured Instruction Card */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Radio className="size-4" />
+                        Structured Instruction
+                      </CardTitle>
+                      <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
+                        {delegationPreview.instruction.instructionId}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      From: <span className="font-medium text-violet-400">{delegationPreview.instruction.from}</span> → To: <span className="font-medium text-emerald-400">{delegationPreview.instruction.to}</span>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">Topic</p>
+                        <p className="text-sm font-medium mt-1">{delegationPreview.instruction.makerInput.topic}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">Objective</p>
+                        <p className="text-sm font-medium mt-1">{delegationPreview.instruction.makerInput.objective}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-xs text-muted-foreground">Audience</p>
+                        <p className="text-sm font-medium mt-1">{delegationPreview.instruction.makerInput.audience}</p>
+                      </div>
+                    </div>
+
+                    {/* Instruction Text */}
+                    <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                      <p className="text-xs font-medium text-violet-400 mb-1.5">Instruction</p>
+                      <p className="text-sm leading-relaxed">{delegationPreview.instruction.makerInput.instruction}</p>
+                    </div>
+
+                    {/* Reasoning */}
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                      <p className="text-xs font-medium text-amber-400 mb-1.5 flex items-center gap-1">
+                        <Lightbulb className="size-3" />
+                        Reasoning
+                      </p>
+                      <p className="text-sm leading-relaxed">{delegationPreview.instruction.reasoning}</p>
+                    </div>
+
+                    {/* Evidence Used */}
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5">Evidence Used</p>
+                      <div className="space-y-1">
+                        {delegationPreview.instruction.evidenceUsed.map((ev, i) => (
+                          <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <span className="text-emerald-400 mt-0.5">•</span>
+                            <span>{ev}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Confidence + Data Points */}
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <Badge variant="outline" className={`gap-1 ${confidenceColor(delegationPreview.instruction.confidenceLevel)}`}>
+                        Confidence: {delegationPreview.instruction.confidenceLevel}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Database className="size-3" />
+                        {delegationPreview.instruction.dataPointsUsed} data points
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {/* Execution Results */}
+            {delegationResult && (
+              <section className="space-y-4">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Zap className="size-4" />
+                  Delegation Result
+                </h2>
+
+                {/* Maker Output Card */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Sparkles className="size-4" />
+                        {delegationResult.makerOutput.title}
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Badge className={delegationResult.mode === 'live' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-600 text-white border-amber-600'}>
+                          {delegationResult.mode === 'live' ? 'Live' : 'Simulated'}
+                        </Badge>
+                        <Badge variant="outline" className="gap-1">
+                          <Clock className="size-3" />
+                          {delegationResult.delegationTime}ms
+                        </Badge>
+                      </div>
+                    </div>
+                    <CardDescription>{delegationResult.makerOutput.caption}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* CTA */}
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                      <p className="text-xs font-medium text-emerald-400 mb-1">CTA</p>
+                      <p className="text-sm">{delegationResult.makerOutput.cta}</p>
+                    </div>
+
+                    {/* Scores */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium">Voice Match</span>
+                          <span className="text-violet-400">{(delegationResult.makerOutput.voiceMatch * 100).toFixed(0)}%</span>
+                        </div>
+                        <Progress value={delegationResult.makerOutput.voiceMatch * 100} className="h-2" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium">Hook Compatibility</span>
+                          <span className="text-emerald-400">{(delegationResult.makerOutput.hookCompat * 100).toFixed(0)}%</span>
+                        </div>
+                        <Progress value={delegationResult.makerOutput.hookCompat * 100} className="h-2" />
+                      </div>
+                    </div>
+
+                    {/* Source badge + delegation time */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Badge variant="outline" className={delegationResult.makerOutput.source === 'live' ? 'gap-1 border-emerald-500/40 text-emerald-400' : 'gap-1 border-amber-500/40 text-amber-400'}>
+                        {delegationResult.makerOutput.source === 'live' ? <CheckCircle2 className="size-3" /> : <CircleDashed className="size-3" />}
+                        {delegationResult.makerOutput.source}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="size-3" />
+                        Delegated in {delegationResult.delegationTime}ms
+                      </span>
+                    </div>
+
+                    {/* Script (collapsible) */}
+                    <div className="rounded-lg border border-border">
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-between p-3 text-sm font-medium hover:bg-muted/50 transition-colors"
+                        onClick={() => setScriptExpanded(!scriptExpanded)}
+                      >
+                        <span className="flex items-center gap-2">
+                          <FileText className="size-4" />
+                          Generated Script
+                        </span>
+                        {scriptExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                      </button>
+                      {scriptExpanded && (
+                        <div className="px-3 pb-3 border-t border-border">
+                          <ScrollArea className="max-h-64">
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap pr-3 pt-3">{delegationResult.makerOutput.script}</p>
+                          </ScrollArea>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Alternative Hooks */}
+                    {delegationResult.makerOutput.alternativeHooks.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Alternative Hooks</p>
+                        <div className="space-y-1.5">
+                          {delegationResult.makerOutput.alternativeHooks.map((hook, i) => (
+                            <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-muted/50 text-xs">
+                              <MessageSquare className="size-3 mt-0.5 text-muted-foreground shrink-0" />
+                              <span>{hook}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Thumbnail Concept */}
+                    {delegationResult.makerOutput.thumbnailConcept && (
+                      <div className="p-3 rounded-lg bg-sky-500/10 border border-sky-500/20">
+                        <p className="text-xs font-medium text-sky-400 mb-1 flex items-center gap-1">
+                          <Layers className="size-3" />
+                          Thumbnail Concept
+                        </p>
+                        <p className="text-sm">{delegationResult.makerOutput.thumbnailConcept}</p>
+                      </div>
+                    )}
+
+                    {/* Audit Event ID */}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Shield className="size-3" />
+                      <span>Audit: {delegationResult.auditEventId}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {/* Empty state when no preview or result */}
+            {!delegationPreview && !delegationResult && (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <SendHorizontal className="size-10 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    Click <strong>Preview Instruction</strong> to see the delegation context, or <strong>Execute Delegation</strong> to run the full Muse→Maker pipeline.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* ===== AUTONOMY TAB ===== */}
@@ -4290,7 +4767,7 @@ export default function MuseDashboard() {
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Evidence chains ✅ • Proof experiment ✅ • 🧊 Scope frozen</span>
+          <span>Muse→Maker delegation ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
