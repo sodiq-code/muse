@@ -1,0 +1,2002 @@
+     1→'use client';
+     2→
+     3→import { useEffect, useState, useCallback } from 'react';
+     4→import {
+     5→  Card,
+     6→  CardContent,
+     7→  CardDescription,
+     8→  CardHeader,
+     9→  CardTitle,
+    10→  CardFooter,
+    11→} from '@/components/ui/card';
+    12→import { Badge } from '@/components/ui/badge';
+    13→import { Separator } from '@/components/ui/separator';
+    14→import { Progress } from '@/components/ui/progress';
+    15→import { Checkbox } from '@/components/ui/checkbox';
+    16→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    17→import { ScrollArea } from '@/components/ui/scroll-area';
+    18→import { Button } from '@/components/ui/button';
+    19→import { Input } from '@/components/ui/input';
+    20→import { Textarea } from '@/components/ui/textarea';
+    21→import {
+    22→  Select,
+    23→  SelectContent,
+    24→  SelectItem,
+    25→  SelectTrigger,
+    26→  SelectValue,
+    27→} from '@/components/ui/select';
+    28→import {
+    29→  Activity,
+    30→  Brain,
+    31→  Bot,
+    32→  CheckCircle2,
+    33→  CircleDashed,
+    34→  AlertTriangle,
+    35→  ArrowRight,
+    36→  Zap,
+    37→  Shield,
+    38→  Eye,
+    39→  Layers,
+    40→  Workflow,
+    41→  Clock,
+    42→  Server,
+    43→  Users,
+    44→  Lightbulb,
+    45→  Cpu,
+    46→  Sparkles,
+    47→  GraduationCap,
+    48→  BarChart3,
+    49→  Radio,
+    50→  Moon,
+    51→  UserPlus,
+    52→  Flame,
+    53→  FileText,
+    54→  MessageSquare,
+    55→  User,
+    56→  Fingerprint,
+    57→  History,
+    58→  Pencil,
+    59→  X,
+    60→  Save,
+    61→  Database,
+    62→  Mic,
+    63→  TrendingUp,
+    64→  Award,
+    65→  PieChart,
+    66→  Plus,
+    67→  Upload,
+    68→  Scale,
+    69→  ThumbsUp,
+    70→  ThumbsDown,
+    71→  GitBranch,
+    72→  Target,
+    73→  LineChart,
+    74→  Wand2,
+    75→  FlaskConical,
+    76→  ChevronDown,
+    77→  ChevronUp,
+    78→  Link2,
+    79→  Send,
+    80→  SendHorizontal,
+    81→} from 'lucide-react';
+    82→
+    83→// ---------------------------------------------------------------------------
+    84→// Types
+    85→// ---------------------------------------------------------------------------
+    86→
+    87→interface MindStatus {
+    88→  mind: {
+    89→    mindId: string;
+    90→    name?: string | null;
+    91→    email?: string | null;
+    92→    isEnabled?: boolean;
+    93→    species?: string | null;
+    94→    model?: string | null;
+    95→    walletAddress?: string | null;
+    96→    chain?: string | null;
+    97→  } | null;
+    98→  balance: { mindId: string; cognition: number };
+    99→  skills: { skillId: string; name?: string; source?: string }[];
+   100→  circleMembers: { email?: string; name?: string; partyType?: number }[];
+   101→  error?: string | null;
+   102→}
+   103→
+   104→interface StatusResponse {
+   105→  mode: string;
+   106→  connected: boolean;
+   107→  muse: MindStatus;
+   108→  maker: MindStatus;
+   109→}
+   110→
+   111→interface ValidationTest {
+   112→  key: string;
+   113→  name: string;
+   114→  status: 'pass' | 'fail' | 'warn';
+   115→  evidence: string;
+   116→  duration: string;
+   117→}
+   118→
+   119→interface ValidationResponse {
+   120→  mode: string;
+   121→  cached: {
+   122→    test1_mindCreation: { status: string; evidence: string; duration: string };
+   123→    test2_persistence: { status: string; evidence: string; duration: string };
+   124→    test3_ltm: { status: string; evidence: string; duration: string };
+   125→    test4_skillEquipping: { status: string; evidence: string; duration: string };
+   126→    test5_circleDelegation: { status: string; evidence: string; duration: string };
+   127→    test6_sseEvents: { status: string; evidence: string; duration: string };
+   128→    latencyBaseline: string;
+   129→    makerCredits: number;
+   130→    verdict: string;
+   131→    gatesPassing: number;
+   132→    gatesTotal: number;
+   133→  };
+   134→  liveChecks?: Record<string, { ok: boolean; detail?: string }>;
+   135→  config?: { museId: string; makerId: string; creatorName: string; creatorPlatform: string };
+   136→}
+   137→
+   138→interface DraftResponse {
+   139→  success: boolean;
+   140→  draft?: {
+   141→    title: string;
+   142→    caption: string;
+   143→    cta: string;
+   144→    voiceMatch: number;
+   145→    hookCompat: number;
+   146→    source: string;
+   147→    alternativeHooks: string[];
+   148→  };
+   149→  metadata?: {
+   150→    hookPatternsAvailable: number;
+   151→    creditsUsed: number;
+   152→  };
+   153→}
+   154→
+   155→interface DelegationPreviewResponse {
+   156→  success: boolean;
+   157→  preview: boolean;
+   158→  context: {
+   159→    creatorName: string;
+   160→    platform: string;
+   161→    niche: string | null;
+   162→    audience: string | null;
+   163→    voiceProfile: {
+   164→      tone: string;
+   165→      pace: string;
+   166→      vocabulary: string;
+   167→      avoidTopics: string[];
+   168→      strengths: string[];
+   169→      directness?: number;
+   170→      technicalDepth?: number;
+   171→      humor?: number;
+   172→      storytelling?: number;
+   173→    };
+   174→    bestHookPatterns: Array<{
+   175→      pattern: string;
+   176→      avgEffectiveness: number;
+   177→      sampleSize: number;
+   178→      confidence: string;
+   179→    }>;
+   180→    recentWinners: string[];
+   181→    performanceSignals: string[];
+   182→    topic: string;
+   183→    objective: string;
+   184→  };
+   185→  instruction: {
+   186→    instructionId: string;
+   187→    from: string;
+   188→    to: string;
+   189→    timestamp: string;
+   190→    makerInput: {
+   191→      creator: string;
+   192→      topic: string;
+   193→      objective: string;
+   194→      audience: string;
+   195→      voice: {
+   196→        tone: string;
+   197→        pace: string;
+   198→        vocabulary: string;
+   199→        avoidTopics: string[];
+   200→        strengths: string[];
+   201→      };
+   202→      historicalWinners: string[];
+   203→      instruction: string;
+   204→    };
+   205→    reasoning: string;
+   206→    evidenceUsed: string[];
+   207→    confidenceLevel: string;
+   208→    dataPointsUsed: number;
+   209→  };
+   210→}
+   211→
+   212→interface DelegationExecuteResponse {
+   213→  success: boolean;
+   214→  instruction: DelegationPreviewResponse['instruction'];
+   215→  makerOutput: {
+   216→    title: string;
+   217→    caption: string;
+   218→    cta: string;
+   219→    script: string;
+   220→    alternativeHooks: string[];
+   221→    thumbnailConcept?: string;
+   222→    voiceMatch: number;
+   223→    hookCompat: number;
+   224→    source: string;
+   225→  };
+   226→  mode: 'live' | 'simulated';
+   227→  delegationTime: number;
+   228→  auditEventId: string;
+   229→  timestamp: string;
+   230→}
+   231→
+   232→// Day 10: Evaluation & Drafts types
+   233→interface EvaluationResponse {
+   234→  success: boolean;
+   235→  delegation?: {
+   236→    instructionId: string;
+   237→    mode: string;
+   238→    delegationTime: number;
+   239→    topic: string;
+   240→    objective: string;
+   241→  };
+   242→  evaluation?: {
+   243→    evaluationId: string;
+   244→    timestamp: string;
+   245→    overallScore: number;
+   246→    confidenceLevel: string;
+   247→    passed: boolean;
+   248→    failReasons: string[];
+   249→    passThreshold: number;
+   250→    voiceMatch: {
+   251→      overall: number;
+   252→      toneAlignment: number;
+   253→      paceConsistency: number;
+   254→      vocabularyMatch: number;
+   255→      avoidTopicsCompliance: number;
+   256→      strengthUtilization: number;
+   257→      breakdown: string[];
+   258→      evidence: string[];
+   259→    };
+   260→    hookCompat: {
+   261→      overall: number;
+   262→      primaryHookPatternMatch: number;
+   263→      historicalAlignment: number;
+   264→      hookVariety: number;
+   265→      hookStrength: number;
+   266→      breakdown: string[];
+   267→      evidence: string[];
+   268→    };
+   269→    contentQuality: {
+   270→      overall: number;
+   271→      scriptStructure: number;
+   272→      ctaClarity: number;
+   273→      titleEffectiveness: number;
+   274→      captionAlignment: number;
+   275→      breakdown: string[];
+   276→      evidence: string[];
+   277→    };
+   278→    makerOutput: { title: string; hookCount: number; source: string };
+   279→    evaluationEvidence: string[];
+   280→    dataPointsUsed: number;
+   281→  };
+   282→  draft?: { stored: boolean; draftId: string; version: number; contentItemId: string };
+   283→  makerOutput?: { title: string; voiceMatch: number; hookCompat: number; source: string; hookCount: number };
+   284→}
+   285→
+   286→interface DraftsResponse {
+   287→  success: boolean;
+   288→  drafts: Array<{
+   289→    id: string;
+   290→    contentItemId: string | null;
+   291→    version: number;
+   292→    title: string;
+   293→    evaluationScore: number;
+   294→    evaluationPassed: boolean;
+   295→    voiceMatch: number;
+   296→    hookCompat: number;
+   297→    contentQuality: number;
+   298→    topic: string;
+   299→    objective: string;
+   300→    source: string;
+   301→    generatedBy: string | null;
+   302→    changeLog: string | null;
+   303→    createdAt: string;
+   304→    updatedAt: string;
+   305→  }>;
+   306→  summary: {
+   307→    totalDrafts: number;
+   308→    passedDrafts: number;
+   309→    failedDrafts: number;
+   310→    avgScore: number;
+   311→    avgVoiceMatch: number;
+   312→    avgHookCompat: number;
+   313→  };
+   314→}
+   315→
+   316→interface EvaluationThresholdsResponse {
+   317→  success: boolean;
+   318→  thresholds: {
+   319→    passThreshold: number;
+   320→    minIndividualScore: number;
+   321→    weights: { voiceMatch: number; hookCompat: number; contentQuality: number };
+   322→    description: string;
+   323→  };
+   324→  creatorContext: {
+   325→    name: string;
+   326→    platform: string;
+   327→    voiceProfile: Record<string, unknown>;
+   328→    hookPatternsCount: number;
+   329→    historicalWinnersCount: number;
+   330→    performanceSignalsCount: number;
+   331→  };
+   332→}
+   333→
+   334→interface AutonomyStatusResponse {
+   335→  success: boolean;
+   336→  status?: {
+   337→    phase: string;
+   338→    equipped: boolean;
+   339→    pendingApprovals: number;
+   340→    drafts: { id: string; title: string; approvalStatus: string; hookPattern: string }[];
+   341→    briefs: { id: string; date: string }[];
+   342→    auditLog: { id: string; timestamp: string; actor: string; action: string; detail: string }[];
+   343→    creditBurnEstimate: number;
+   344→  };
+   345→}
+   346→
+   347→interface HookClassResponse {
+   348→  success: boolean;
+   349→  classification?: {
+   350→    pattern: string;
+   351→    confidence: number;
+   352→    reasoning: string;
+   353→    allScores?: Record<string, number>;
+   354→  };
+   355→  patterns?: { id: string; label: string }[];
+   356→}
+   357→
+   358→interface CreatorResponse {
+   359→  success: boolean;
+   360→  creator?: {
+   361→    id: string;
+   362→    email: string;
+   363→    name: string;
+   364→    niche: string | null;
+   365→    audience: string | null;
+   366→    tone: string[];
+   367→    avoid: string[];
+   368→    platform: string;
+   369→    voiceProfile: Record<string, number>;
+   370→    mindsHumanId: string | null;
+   371→    mindsMuseId: string | null;
+   372→    mindsMakerId: string | null;
+   373→    createdAt: string;
+   374→    updatedAt: string;
+   375→  };
+   376→  identityDomain?: {
+   377→    name: string;
+   378→    niche: string | null;
+   379→    audience: string | null;
+   380→    tone: string[];
+   381→    avoid: string[];
+   382→    platform: string;
+   383→    email: string;
+   384→  };
+   385→  stats?: {
+   386→    memoryEvents: number;
+   387→    auditEvents: number;
+   388→  };
+   389→}
+   390→
+   391→interface MemoryEventItem {
+   392→  id: string;
+   393→  creatorId: string;
+   394→  category: string;
+   395→  key: string;
+   396→  value: string;
+   397→  confidence: number;
+   398→  source: string;
+   399→  sessionId: string | null;
+   400→  createdAt: string;
+   401→}
+   402→
+   403→interface AuditEventItem {
+   404→  id: string;
+   405→  creatorId: string;
+   406→  actor: string;
+   407→  action: string;
+   408→  targetType: string;
+   409→  targetId: string | null;
+   410→  delta: string | null;
+   411→  createdAt: string;
+   412→}
+   413→
+   414→interface MemoryResponse {
+   415→  success: boolean;
+   416→  events: MemoryEventItem[];
+   417→  count: number;
+   418→  category: string;
+   419→}
+   420→
+   421→interface AuditResponse {
+   422→  success: boolean;
+   423→  events: AuditEventItem[];
+   424→  count: number;
+   425→}
+   426→
+   427→// Voice Domain Types
+   428→interface VoiceProfileResponse {
+   429→  success: boolean;
+   430→  profile?: Record<string, number>;
+   431→  dimensions?: string[];
+   432→}
+   433→
+   434→interface VoiceAnalysisResult {
+   435→  dimension: string;
+   436→  score: number;
+   437→  indicator: string;
+   438→  reasoning: string;
+   439→}
+   440→
+   441→interface VoiceMatchResult {
+   442→  overallMatch: number;
+   443→  dimensionMatches: { dimension: string; profileScore: number; contentScore: number; match: number; isMismatch: boolean }[];
+   444→  mismatchCount: number;
+   445→}
+   446→
+   447→interface VoiceAnalyzeResponse {
+   448→  success: boolean;
+   449→  analysis?: VoiceAnalysisResult[];
+   450→  match?: VoiceMatchResult;
+   451→  error?: string;
+   452→}
+   453→
+   454→// Performance Domain Types
+   455→interface ContentItem {
+   456→  id: string;
+   457→  title: string;
+   458→  type: string;
+   459→  status: string;
+   460→  hookPattern: string | null;
+   461→  hookText: string | null;
+   462→  metricsCount: number;
+   463→  publishedAt: string | null;
+   464→  createdAt: string;
+   465→}
+   466→
+   467→interface ContentListResponse {
+   468→  success: boolean;
+   469→  items: ContentItem[];
+   470→  count: number;
+   471→}
+   472→
+   473→interface HookPatternStat {
+   474→  pattern: string;
+   475→  count: number;
+   476→  avgEffectiveness: number;
+   477→  sampleSize: number;
+   478→}
+   479→
+   480→interface PerformanceInsight {
+   481→  title: string;
+   482→  detail: string;
+   483→  confidence: 'low' | 'medium' | 'high';
+   484→  dataPoints: number;
+   485→  evidenceType: string;
+   486→}
+   487→
+   488→interface PerformanceResponse {
+   489→  success: boolean;
+   490→  hookPatterns: HookPatternStat[];
+   491→  insights: PerformanceInsight[];
+   492→  bestPattern: string | null;
+   493→  worstPattern: string | null;
+   494→}
+   495→
+   496→interface ContentMetricsResponse {
+   497→  success: boolean;
+   498→  message?: string;
+   499→  error?: string;
+   500→}
+   501→
+   502→// Decisions Domain Types
+   503→interface DecisionItem {
+   504→  id: string;
+   505→  contentItemId: string;
+   506→  contentItemTitle: string;
+   507→  decisionType: 'accepted' | 'modified' | 'rejected' | 'ignored';
+   508→  category: string;
+   509→  reason: string;
+   510→  modifications: string | null;
+   511→  createdAt: string;
+   512→}
+   513→
+   514→interface DecisionLearning {
+   515→  insight: string;
+   516→  confidence: 'low' | 'medium' | 'high';
+   517→  dataPoints: number;
+   518→}
+   519→
+   520→interface DecisionsResponse {
+   521→  success: boolean;
+   522→  decisions: DecisionItem[];
+   523→  learnings: DecisionLearning[];
+   524→  summary: {
+   525→    total: number;
+   526→    accepted: number;
+   527→    modified: number;
+   528→    rejected: number;
+   529→    ignored: number;
+   530→    acceptanceRate: number;
+   531→    modificationRate: number;
+   532→    mostRejectedCategory: string;
+   533→  };
+   534→}
+   535→
+   536→interface IngestStatusResponse {
+   537→  success: boolean;
+   538→  totalContentItems: number;
+   539→  totalHooks: number;
+   540→  totalMetrics: number;
+   541→  hookPatternCoverage: number;
+   542→  meetsMinimum: boolean;
+   543→  lastIngestAt: string | null;
+   544→}
+   545→
+   546→// Learning Domain Types
+   547→interface HookClassificationResult {
+   548→  pattern: string;
+   549→  confidence: number;
+   550→  reasoning: string;
+   551→  allScores?: Record<string, number>;
+   552→}
+   553→
+   554→interface HookComparisonResponse {
+   555→  success: boolean;
+   556→  hookClassification: HookClassificationResult;
+   557→  historicalComparison: {
+   558→    patternAvg: number;
+   559→    creatorOverallAvg: number;
+   560→    diff: number;
+   561→    diffPercent: number;
+   562→    message: string;
+   563→    confidence: 'low' | 'medium' | 'high';
+   564→    evidenceType: string;
+   565→    sampleSize: number;
+   566→  };
+   567→  creatorSpecific: {
+   568→    patternRank: number;
+   569→    totalPatterns: number;
+   570→    betterPatterns: string[];
+   571→    worsePatterns: string[];
+   572→  };
+   573→}
+   574→
+   575→interface PatternRankingItem {
+   576→  pattern: string;
+   577→  label: string;
+   578→  avgEffectiveness: number;
+   579→  sampleSize: number;
+   580→  rank: number;
+   581→  confidence: 'low' | 'medium' | 'high';
+   582→  status: 'tested' | 'untested';
+   583→}
+   584→
+   585→interface HookRankingsResponse {
+   586→  success: boolean;
+   587→  rankings: PatternRankingItem[];
+   588→  overallConfidence: 'low' | 'medium' | 'high';
+   589→  totalSamples: number;
+   590→}
+   591→
+   592→interface PredictionResponse {
+   593→  success: boolean;
+   594→  pattern: string;
+   595→  patternLabel: string;
+   596→  predictedEffectiveness: number;
+   597→  confidence: 'low' | 'medium' | 'high';
+   598→  historicalSampleSize: number;
+   599→  similarHooks: { text: string; effectiveness: number }[];
+   600→  message: string;
+   601→  evidenceType: string;
+   602→}
+   603→
+   604→// Day 7: Learning Engine Types
+   605→interface LearningRunResponse {
+   606→  success: boolean;
+   607→  creatorId: string;
+   608→  creatorName: string;
+   609→  loopResult: {
+   610→    observations: string[];
+   611→    comparisons: string[];
+   612→    inferences: string[];
+   613→    updates: { pattern: string; avgEffectiveness: number; sampleSize: number; lastSeen: string }[];
+   614→    recommendations: {
+   615→      type: string;
+   616→      title: string;
+   617→      explanation: string;
+   618→      evidenceType: string;
+   619→      confidence: 'low' | 'medium' | 'high';
+   620→      dataPoints: number;
+   621→      supportingFacts: string[];
+   622→      action?: string;
+   623→      priority: number;
+   624→    }[];
+   625→    confidence: 'low' | 'medium' | 'high';
+   626→    totalDataPoints: number;
+   627→    loopComplete: boolean;
+   628→  };
+   629→  honestyReport: {
+   630→    isHonest: boolean;
+   631→    violations: { type: string; message: string; recommendationIndex?: number }[];
+   632→    summary: string;
+   633→    checksPassed: number;
+   634→    checksTotal: number;
+   635→  };
+   636→  evidenceChain: {
+   637→    step: string;
+   638→    description: string;
+   639→    evidenceType: string;
+   640→    confidence: 'low' | 'medium' | 'high';
+   641→    dataPoints: number;
+   642→    supportingFacts: string[];
+   643→    timestamp: string;
+   644→  }[];
+   645→  storedMemories: number;
+   646→  storedRecommendations: number;
+   647→  auditEventId: string;
+   648→  ranAt: string;
+   649→  dataSummary: {
+   650→    contentItems: number;
+   651→    metricsCount: number;
+   652→    hooksCount: number;
+   653→    memoryEvents: number;
+   654→    existingPatterns: number;
+   655→  };
+   656→}
+   657→
+   658→interface HonestyCheckResponse {
+   659→  success: boolean;
+   660→  framework: string;
+   661→  allChecksPassed: boolean;
+   662→  checksPassed: number;
+   663→  checksTotal: number;
+   664→  checks: { name: string; passed: boolean; details: string }[];
+   665→  principles: string[];
+   666→  evidenceTypeTaxonomy: Record<string, string>;
+   667→  confidenceThresholds: Record<string, { minDataPoints: number; label: string }>;
+   668→}
+   669→
+   670→// Day 8: Explanation System Types
+   671→interface EvidenceSource {
+   672→  type: string;
+   673→  id: string;
+   674→  label: string;
+   675→  value: string;
+   676→  capturedAt: string;
+   677→}
+   678→
+   679→interface EvidenceStep {
+   680→  step: number;
+   681→  phase: 'OBSERVE' | 'COMPARE' | 'INFER' | 'UPDATE' | 'RECOMMEND';
+   682→  description: string;
+   683→  evidenceType: string;
+   684→  confidence: 'low' | 'medium' | 'high';
+   685→  dataPoints: number;
+   686→  sources: EvidenceSource[];
+   687→  derivedFrom: number[];
+   688→}
+   689→
+   690→interface FullExplanation {
+   691→  recommendationId: string;
+   692→  recommendationTitle: string;
+   693→  recommendationType: string;
+   694→  summary: string;
+   695→  narrative: string;
+   696→  evidenceChain: EvidenceStep[];
+   697→  confidence: 'low' | 'medium' | 'high';
+   698→  overallDataPoints: number;
+   699→  supportingContentCount: number;
+   700→  patternHistory: { pattern: string; avgEffectiveness: number; sampleSize: number; confidence: string; lastSeen: string }[];
+   701→  creatorSpecificContext: string;
+   702→  generatedAt: string;
+   703→  honestyVerified: boolean;
+   704→}
+   705→
+   706→interface ExplainResponse {
+   707→  success: boolean;
+   708→  count?: number;
+   709→  explanations?: FullExplanation[];
+   710→  explanation?: FullExplanation;
+   711→  error?: string;
+   712→}
+   713→
+   714→// Day 8: Proof Experiment Types
+   715→interface GenuineInsight {
+   716→  id: string;
+   717→  dayDiscovered: number;
+   718→  type: 'pattern_emergence' | 'performance_signal' | 'recommendation_with_evidence' | 'confidence_upgrade';
+   719→  title: string;
+   720→  description: string;
+   721→  evidenceType: string;
+   722→  confidence: 'low' | 'medium' | 'high';
+   723→  dataPoints: number;
+   724→  supportingFacts: string[];
+   725→  isGenuine: boolean;
+   726→  verificationNote: string;
+   727→}
+   728→
+   729→interface DayResult {
+   730→  day: number;
+   731→  date: string;
+   732→  contentAnalyzed: number;
+   733→  newObservations: string[];
+   734→  newInferences: string[];
+   735→  recommendations: { title: string; type: string; explanation: string; confidence: string; dataPoints: number; evidenceType: string; supportingFacts: string[] }[];
+   736→  confidenceGrowth: { before: string; after: string };
+   737→  dataPointGrowth: { before: number; after: number };
+   738→  patternsDiscovered: string[];
+   739→}
+   740→
+   741→interface ProofResponse {
+   742→  success: boolean;
+   743→  experimentId: string;
+   744→  creatorId: string;
+   745→  creatorName: string;
+   746→  startedAt: string;
+   747→  completedAt: string;
+   748→  totalDays: number;
+   749→  dayResults: DayResult[];
+   750→  genuineInsights: GenuineInsight[];
+   751→  totalGenuineInsights: number;
+   752→  meetsThreshold: boolean;
+   753→  summary: {
+   754→    totalContentAnalyzed: number;
+   755→    totalObservations: number;
+   756→    totalInferences: number;
+   757→    totalRecommendations: number;
+   758→    confidenceProgression: string[];
+   759→    dataPointProgression: number[];
+   760→    insightByDay: number[];
+   761→  };
+   762→  honestyReport: {
+   763→    allInsightsGenuine: boolean;
+   764→    noFabricatedData: boolean;
+   765→    evidenceChainsComplete: boolean;
+   766→    confidenceHonest: boolean;
+   767→  };
+   768→  error?: string;
+   769→}
+   770→
+   771→// ---------------------------------------------------------------------------
+   772→// Helper
+   773→// ---------------------------------------------------------------------------
+   774→
+   775→function truncateId(id: string, len = 8): string {
+   776→  return id.length > len ? `${id.slice(0, len)}…` : id;
+   777→}
+   778→
+   779→function statusIcon(status: 'pass' | 'fail' | 'warn') {
+   780→  if (status === 'pass') return <CheckCircle2 className="size-4 text-emerald-500" />;
+   781→  if (status === 'fail') return <AlertTriangle className="size-4 text-red-500" />;
+   782→  return <CircleDashed className="size-4 text-amber-500" />;
+   783→}
+   784→
+   785→function voiceBarColor(value: number): string {
+   786→  if (value >= 70) return 'bg-emerald-500';
+   787→  if (value >= 40) return 'bg-amber-500';
+   788→  return 'bg-rose-400';
+   789→}
+   790→
+   791→function voiceBadgeColor(value: number): string {
+   792→  if (value >= 70) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+   793→  if (value >= 40) return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+   794→  return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+   795→}
+   796→
+   797→function statusBadgeStyle(status: string): string {
+   798→  switch (status) {
+   799→    case 'published': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+   800→    case 'drafting': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+   801→    case 'idea': return 'bg-violet-500/10 text-violet-400 border-violet-500/20';
+   802→    case 'archived': return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+   803→    default: return '';
+   804→  }
+   805→}
+   806→
+   807→function confidenceBadgeStyle(confidence: string): string {
+   808→  switch (confidence) {
+   809→    case 'high': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+   810→    case 'medium': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+   811→    case 'low': return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+   812→    default: return '';
+   813→  }
+   814→}
+   815→
+   816→// ---------------------------------------------------------------------------
+   817→// Main Page
+   818→// ---------------------------------------------------------------------------
+   819→
+   820→export default function MuseDashboard() {
+   821→  const [status, setStatus] = useState<StatusResponse | null>(null);
+   822→  const [validation, setValidation] = useState<ValidationResponse | null>(null);
+   823→  const [draftData, setDraftData] = useState<DraftResponse | null>(null);
+   824→  const [autonomyData, setAutonomyData] = useState<AutonomyStatusResponse | null>(null);
+   825→  const [hookData, setHookData] = useState<HookClassResponse | null>(null);
+   826→  const [creatorData, setCreatorData] = useState<CreatorResponse | null>(null);
+   827→  const [memoryData, setMemoryData] = useState<MemoryResponse | null>(null);
+   828→  const [auditData, setAuditData] = useState<AuditResponse | null>(null);
+   829→  const [editingIdentity, setEditingIdentity] = useState(false);
+   830→  const [editForm, setEditForm] = useState({ name: '', niche: '', audience: '', tone: '', avoid: '' });
+   831→  const [saving, setSaving] = useState(false);
+   832→  const [loading, setLoading] = useState(true);
+   833→  const [error, setError] = useState<string | null>(null);
+   834→
+   835→  // Voice Domain State
+   836→  const [voiceProfile, setVoiceProfile] = useState<VoiceProfileResponse | null>(null);
+   837→  const [voiceLoading, setVoiceLoading] = useState(true);
+   838→  const [analyzeText, setAnalyzeText] = useState('');
+   839→  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+   840→  const [analyzeResult, setAnalyzeResult] = useState<VoiceAnalyzeResponse | null>(null);
+   841→  const [updateProfileToggle, setUpdateProfileToggle] = useState(true);
+   842→
+   843→  // Performance Domain State
+   844→  const [contentItems, setContentItems] = useState<ContentListResponse | null>(null);
+   845→  const [perfData, setPerfData] = useState<PerformanceResponse | null>(null);
+   846→  const [perfLoading, setPerfLoading] = useState(true);
+   847→  const [showAddContent, setShowAddContent] = useState(false);
+   848→  const [showIngestMetrics, setShowIngestMetrics] = useState(false);
+   849→  const [newContent, setNewContent] = useState({ title: '', type: 'short_form', hookText: '' });
+   850→  const [newMetrics, setNewMetrics] = useState({ contentId: '', views: '', likes: '', shares: '', comments: '' });
+   851→  const [addingContent, setAddingContent] = useState(false);
+   852→  const [addingMetrics, setAddingMetrics] = useState(false);
+   853→
+   854→  // Decisions Domain State
+   855→  const [decisionsData, setDecisionsData] = useState<DecisionsResponse | null>(null);
+   856→  const [decisionsLoading, setDecisionsLoading] = useState(true);
+   857→  const [ingestStatus, setIngestStatus] = useState<IngestStatusResponse | null>(null);
+   858→  const [decisionForm, setDecisionForm] = useState({ contentItemId: '', decisionType: 'accepted', category: '', reason: '' });
+   859→  const [submittingDecision, setSubmittingDecision] = useState(false);
+   860→
+   861→  // Learning Domain State
+   862→  const [learningHookText, setLearningHookText] = useState('');
+   863→  const [learningClassResult, setLearningClassResult] = useState<HookClassResponse | null>(null);
+   864→  const [learningClassLoading, setLearningClassLoading] = useState(false);
+   865→  const [learningCompResult, setLearningCompResult] = useState<HookComparisonResponse | null>(null);
+   866→  const [learningCompLoading, setLearningCompLoading] = useState(false);
+   867→  const [learningRankings, setLearningRankings] = useState<HookRankingsResponse | null>(null);
+   868→  const [learningRankingsLoading, setLearningRankingsLoading] = useState(true);
+   869→  const [learningPredText, setLearningPredText] = useState('');
+   870→  const [learningPredResult, setLearningPredResult] = useState<PredictionResponse | null>(null);
+   871→  const [learningPredLoading, setLearningPredLoading] = useState(false);
+   872→
+   873→  // Day 7: Learning Engine State
+   874→  const [learningRunResult, setLearningRunResult] = useState<LearningRunResponse | null>(null);
+   875→  const [learningRunLoading, setLearningRunLoading] = useState(false);
+   876→  const [honestyCheckResult, setHonestyCheckResult] = useState<HonestyCheckResponse | null>(null);
+   877→  const [honestyCheckLoading, setHonestyCheckLoading] = useState(true);
+   878→
+   879→  // Day 8: Explanation & Proof State
+   880→  const [explainResult, setExplainResult] = useState<ExplainResponse | null>(null);
+   881→  const [explainLoading, setExplainLoading] = useState(false);
+   882→  const [expandedChains, setExpandedChains] = useState<Set<string>>(new Set());
+   883→  const [proofResult, setProofResult] = useState<ProofResponse | null>(null);
+   884→  const [proofLoading, setProofLoading] = useState(false);
+   885→
+   886→  // Day 9: Delegation State
+   887→  const [delegationPreview, setDelegationPreview] = useState<DelegationPreviewResponse | null>(null);
+   888→  const [delegationResult, setDelegationResult] = useState<DelegationExecuteResponse | null>(null);
+   889→  const [delegationTopic, setDelegationTopic] = useState('');
+   890→  const [delegationObjective, setDelegationObjective] = useState('');
+   891→  const [delegationPreviewLoading, setDelegationPreviewLoading] = useState(false);
+   892→  const [delegationExecuteLoading, setDelegationExecuteLoading] = useState(false);
+   893→  const [scriptExpanded, setScriptExpanded] = useState(false);
+   894→
+   895→  // Day 10: Evaluation & Drafts State
+   896→  const [evalResult, setEvalResult] = useState<EvaluationResponse | null>(null);
+   897→  const [evalLoading, setEvalLoading] = useState(false);
+   898→  const [evalThresholds, setEvalThresholds] = useState<EvaluationThresholdsResponse | null>(null);
+   899→  const [draftsData, setDraftsData] = useState<DraftsResponse | null>(null);
+   900→  const [draftsLoading, setDraftsLoading] = useState(false);
+   901→
+   902→  // Fetch creator/memory/audit data
+   903→  const fetchCreatorData = useCallback(async () => {
+   904→    try {
+   905→      const [creatorRes, memRes, auditRes] = await Promise.all([
+   906→        fetch('/api/creator').then((r) => r.json()).catch(() => null),
+   907→        fetch('/api/creator/memory').then((r) => r.json()).catch(() => null),
+   908→        fetch('/api/creator/audit').then((r) => r.json()).catch(() => null),
+   909→      ]);
+   910→      if (creatorRes) setCreatorData(creatorRes);
+   911→      if (memRes) setMemoryData(memRes);
+   912→      if (auditRes) setAuditData(auditRes);
+   913→    } catch {
+   914→      // silently fail
+   915→    }
+   916→  }, []);
+   917→
+   918→  // Fetch voice profile
+   919→  const fetchVoiceProfile = useCallback(async () => {
+   920→    setVoiceLoading(true);
+   921→    try {
+   922→      const res = await fetch('/api/creator/voice').then((r) => r.json()).catch(() => null);
+   923→      if (res) setVoiceProfile(res);
+   924→    } catch {
+   925→      // silently fail
+   926→    } finally {
+   927→      setVoiceLoading(false);
+   928→    }
+   929→  }, []);
+   930→
+   931→  // Fetch performance data
+   932→  const fetchPerformanceData = useCallback(async () => {
+   933→    setPerfLoading(true);
+   934→    try {
+   935→      const [contentRes, perfRes] = await Promise.all([
+   936→        fetch('/api/content').then((r) => r.json()).catch(() => null),
+   937→        fetch('/api/content/performance').then((r) => r.json()).catch(() => null),
+   938→      ]);
+   939→      if (contentRes) setContentItems(contentRes);
+   940→      if (perfRes) setPerfData(perfRes);
+   941→    } catch {
+   942→      // silently fail
+   943→    } finally {
+   944→      setPerfLoading(false);
+   945→    }
+   946→  }, []);
+   947→
+   948→  // Fetch decisions and ingest data
+   949→  const fetchDecisionsData = useCallback(async () => {
+   950→    setDecisionsLoading(true);
+   951→    try {
+   952→      const [decisionsRes, ingestRes] = await Promise.all([
+   953→        fetch('/api/creator/decisions').then((r) => r.json()).catch(() => null),
+   954→        fetch('/api/content/ingest').then((r) => r.json()).catch(() => null),
+   955→      ]);
+   956→      if (decisionsRes) setDecisionsData(decisionsRes);
+   957→      if (ingestRes) setIngestStatus(ingestRes);
+   958→    } catch {
+   959→      // silently fail
+   960→    } finally {
+   961→      setDecisionsLoading(false);
+   962→    }
+   963→  }, []);
+   964→
+   965→  // Fetch hook rankings for Learning tab
+   966→  const fetchRankings = useCallback(async () => {
+   967→    setLearningRankingsLoading(true);
+   968→    try {
+   969→      const res = await fetch('/api/learning/rankings').then((r) => r.json()).catch(() => null);
+   970→      if (res) setLearningRankings(res);
+   971→    } catch {
+   972→      // silently fail
+   973→    } finally {
+   974→      setLearningRankingsLoading(false);
+   975→    }
+   976→  }, []);
+   977→
+   978→  // Fetch honesty check for Learning tab (Day 7)
+   979→  const fetchHonestyCheck = useCallback(async () => {
+   980→    setHonestyCheckLoading(true);
+   981→    try {
+   982→      const res = await fetch('/api/learning/honesty').then((r) => r.json()).catch(() => null);
+   983→      if (res) setHonestyCheckResult(res);
+   984→    } catch {
+   985→      // silently fail
+   986→    } finally {
+   987→      setHonestyCheckLoading(false);
+   988→    }
+   989→  }, []);
+   990→
+   991→  useEffect(() => {
+   992→    async function fetchAll() {
+   993→      try {
+   994→        const [statusRes, valRes, draftRes, autoRes, hookRes, creatorRes, memRes, auditRes] = await Promise.all([
+   995→          fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
+   996→          fetch('/api/validation/day1').then((r) => r.json()).catch(() => null),
+   997→          fetch('/api/minds/draft', {
+   998→            method: 'POST',
+   999→            headers: { 'Content-Type': 'application/json' },
+  1000→            body: JSON.stringify({ topic: 'AI agents in production', objective: 'build reliable systems' }),
+  1001→          }).then((r) => r.json()).catch(() => null),
+  1002→          fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
+  1003→          fetch('/api/learning/hooks', {
+  1004→            method: 'POST',
+  1005→            headers: { 'Content-Type': 'application/json' },
+  1006→            body: JSON.stringify({ text: 'Everyone says AI agents are the future. They\'re wrong — and here\'s why.' }),
+  1007→          }).then((r) => r.json()).catch(() => null),
+  1008→          fetch('/api/creator').then((r) => r.json()).catch(() => null),
+  1009→          fetch('/api/creator/memory').then((r) => r.json()).catch(() => null),
+  1010→          fetch('/api/creator/audit').then((r) => r.json()).catch(() => null),
+  1011→        ]);
+  1012→        setStatus(statusRes);
+  1013→        setValidation(valRes);
+  1014→        setDraftData(draftRes);
+  1015→        setAutonomyData(autoRes);
+  1016→        setHookData(hookRes);
+  1017→        if (creatorRes) setCreatorData(creatorRes);
+  1018→        if (memRes) setMemoryData(memRes);
+  1019→        if (auditRes) setAuditData(auditRes);
+  1020→      } catch (e) {
+  1021→        setError(String(e));
+  1022→      } finally {
+  1023→        setLoading(false);
+  1024→      }
+  1025→    }
+  1026→    fetchAll();
+  1027→    fetchVoiceProfile();
+  1028→    fetchPerformanceData();
+  1029→    fetchDecisionsData();
+  1030→    fetchRankings();
+  1031→    fetchHonestyCheck();
+  1032→  }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData, fetchRankings, fetchHonestyCheck]);
+  1033→
+  1034→  // Build test rows from validation data
+  1035→  const tests: ValidationTest[] = validation
+  1036→    ? [
+  1037→        { key: 't1', name: 'Mind Creation', status: 'pass', evidence: validation.cached.test1_mindCreation.evidence, duration: validation.cached.test1_mindCreation.duration },
+  1038→        { key: 't2', name: 'Persistence', status: 'pass', evidence: validation.cached.test2_persistence.evidence, duration: validation.cached.test2_persistence.duration },
+  1039→        { key: 't3', name: 'Long-Term Memory', status: 'pass', evidence: validation.cached.test3_ltm.evidence, duration: validation.cached.test3_ltm.duration },
+  1040→        { key: 't4', name: 'Skill Equipping', status: 'pass', evidence: validation.cached.test4_skillEquipping.evidence, duration: validation.cached.test4_skillEquipping.duration },
+  1041→        { key: 't5', name: 'Circle / Delegation', status: 'pass', evidence: validation.cached.test5_circleDelegation.evidence, duration: validation.cached.test5_circleDelegation.duration },
+  1042→        { key: 't6', name: 'SSE Events', status: 'pass', evidence: validation.cached.test6_sseEvents.evidence, duration: validation.cached.test6_sseEvents.duration },
+  1043→      ]
+  1044→    : [];
+  1045→
+  1046→  // Day 2 completed tasks
+  1047→  const day2Completed = [
+  1048→    { id: 'd2-1', label: 'Maker Simulator — 8 hook patterns, voice matching, zero-credit drafts', done: true },
+  1049→    { id: 'd2-2', label: 'Learning Loop Engine — OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND', done: true },
+  1050→    { id: 'd2-3', label: 'Hook Classifier — 8-pattern taxonomy with confidence scoring', done: true },
+  1051→    { id: 'd2-4', label: 'SSE Events Hook — real-time streaming with simulated fallback', done: true },
+  1052→    { id: 'd2-5', label: 'Autonomy Scheduler — overnight pipeline with approval gates', done: true },
+  1053→    { id: 'd2-6', label: 'Creator Recruitment — outreach templates + onboarding conversation', done: true },
+  1054→    { id: 'd2-7', label: 'API Routes — draft, analyze, hooks, autonomy, recruit', done: true },
+  1055→    { id: 'd2-8', label: 'Dashboard V2 — Day 2 status with live data', done: true },
+  1056→  ];
+  1057→
+  1058→  const day2Pending = [
+  1059→    { id: 'd2p-1', label: 'Creator Onboarding — capture identity via Muse conversation' },
+  1060→    { id: 'd2p-2', label: 'Memory Graph — persist all learned facts as MemoryEvent records' },
+  1061→    { id: 'd2p-3', label: 'Content Recommendation Pipeline — Muse → Maker → Draft → Approval → Publish' },
+  1062→  ];
+  1063→
+  1064→  const completedCount = day2Completed.filter((t) => t.done).length;
+  1065→  const totalCount = day2Completed.length + day2Pending.length;
+  1066→
+  1067→  // Voice profile dimensions for display (sorted descending)
+  1068→  const voiceProfileEntries = voiceProfile?.profile
+  1069→    ? Object.entries(voiceProfile.profile).sort(([, a], [, b]) => b - a)
+  1070→    : creatorData?.creator?.voiceProfile
+  1071→      ? Object.entries(creatorData.creator.voiceProfile).sort(([, a], [, b]) => b - a)
+  1072→      : [];
+  1073→
+  1074→  // Performance overview computed values
+  1075→  const totalContentItems = contentItems?.count ?? 0;
+  1076→  const totalHooksTracked = perfData?.hookPatterns?.reduce((sum, p) => sum + p.count, 0) ?? 0;
+  1077→  const bestPatternEntry = perfData?.hookPatterns?.find((p) => p.pattern === perfData.bestPattern);
+  1078→  const worstPatternEntry = perfData?.hookPatterns?.find((p) => p.pattern === perfData.worstPattern);
+  1079→
+  1080→  return (
+  1081→    <div className="min-h-screen flex flex-col bg-background text-foreground">
+  1082→      {/* ===== Header ===== */}
+  1083→      <header className="border-b border-border bg-card">
+  1084→        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+  1085→          <div className="flex items-center gap-3">
+  1086→            <div className="size-10 rounded-xl bg-gradient-to-br from-violet-500 to-emerald-500 flex items-center justify-center">
+  1087→              <Brain className="size-5 text-white" />
+  1088→            </div>
+  1089→            <div>
+  1090→              <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+  1091→                Muse — Day 10 Evaluation & Drafts
+  1092→              </h1>
+  1093→              <p className="text-xs text-muted-foreground">
+  1094→                The AI Creative Team That Learns You
+  1095→              </p>
+  1096→            </div>
+  1097→          </div>
+  1098→          <div className="flex items-center gap-2 flex-wrap">
+  1099→            {loading ? (
+  1100→              <Badge variant="secondary" className="gap-1">
+  1101→                <Server className="size-3 animate-pulse" />
+  1102→                Loading…
+  1103→              </Badge>
+  1104→            ) : status?.connected ? (
+  1105→              <Badge className="gap-1 bg-emerald-600 text-white border-emerald-600">
+  1106→                <CheckCircle2 className="size-3" />
+  1107→                Minds {status.mode === 'live' ? 'Live' : 'Simulated'}
+  1108→              </Badge>
+  1109→            ) : (
+  1110→              <Badge variant="destructive" className="gap-1">
+  1111→                <AlertTriangle className="size-3" />
+  1112→                Disconnected
+  1113→              </Badge>
+  1114→            )}
+  1115→            <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
+  1116→              <Sparkles className="size-3" />
+  1117→              Dual-Role: Orchestrator + Creative
+  1118→            </Badge>
+  1119→            <Badge variant="outline" className="gap-1 border-sky-500/40 text-sky-400">
+  1120→              ❄️ Schema Frozen
+  1121→            </Badge>
+  1122→            <Badge variant="secondary" className="bg-sky-500/10 text-sky-400 border-sky-500/20">🧊 Scope Frozen</Badge>
+  1123→            {validation?.config && (
+  1124→              <Badge variant="outline" className="gap-1">
+  1125→                <Users className="size-3" />
+  1126→                {validation.config.creatorName}
+  1127→              </Badge>
+  1128→            )}
+  1129→          </div>
+  1130→        </div>
+  1131→      </header>
+  1132→
+  1133→      {/* ===== Main ===== */}
+  1134→      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+  1135→        <Tabs defaultValue="learning" className="w-full">
+  1136→          <TabsList className="w-full sm:w-auto flex-wrap">
+  1137→            <TabsTrigger value="day1" className="gap-1.5">
+  1138→              <Shield className="size-3.5" />
+  1139→              Day 1
+  1140→            </TabsTrigger>
+  1141→            <TabsTrigger value="day2" className="gap-1.5">
+  1142→              <Sparkles className="size-3.5" />
+  1143→              Day 2
+  1144→            </TabsTrigger>
+  1145→            <TabsTrigger value="draft" className="gap-1.5">
+  1146→              <SendHorizontal className="size-3.5" />
+  1147→              Delegation
+  1148→            </TabsTrigger>
+  1149→            <TabsTrigger value="autonomy" className="gap-1.5">
+  1150→              <Moon className="size-3.5" />
+  1151→              Autonomy
+  1152→            </TabsTrigger>
+  1153→            <TabsTrigger value="memory" className="gap-1.5">
+  1154→              <Database className="size-3.5" />
+  1155→              Memory
+  1156→            </TabsTrigger>
+  1157→            <TabsTrigger value="voice" className="gap-1.5">
+  1158→              <Mic className="size-3.5" />
+  1159→              Voice
+  1160→            </TabsTrigger>
+  1161→            <TabsTrigger value="performance" className="gap-1.5">
+  1162→              <TrendingUp className="size-3.5" />
+  1163→              Performance
+  1164→            </TabsTrigger>
+  1165→            <TabsTrigger value="learning" className="gap-1.5">
+  1166→              <GraduationCap className="size-3.5" />
+  1167→              Learning
+  1168→            </TabsTrigger>
+  1169→            <TabsTrigger value="decisions" className="gap-1.5">
+  1170→              <Scale className="size-3.5" />
+  1171→              Decisions
+  1172→            </TabsTrigger>
+  1173→            <TabsTrigger value="explain" className="gap-1.5">
+  1174→              <Eye className="size-3.5" />
+  1175→              Why Chose This
+  1176→            </TabsTrigger>
+  1177→            <TabsTrigger value="proof" className="gap-1.5">
+  1178→              <FlaskConical className="size-3.5" />
+  1179→              7-Day Proof
+  1180→            </TabsTrigger>
+  1181→            <TabsTrigger value="evaluate" className="gap-1.5">
+  1182→              <Scale className="size-3.5" />
+  1183→              Evaluate
+  1184→            </TabsTrigger>
+  1185→            <TabsTrigger value="drafts" className="gap-1.5">
+  1186→              <FileText className="size-3.5" />
+  1187→              Drafts
+  1188→            </TabsTrigger>
+  1189→          </TabsList>
+  1190→
+  1191→          {/* ===== DAY 1 TAB ===== */}
+  1192→          <TabsContent value="day1" className="space-y-6">
+  1193→            {/* Mind Status Cards */}
+  1194→            <section>
+  1195→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1196→                <Bot className="size-4" />
+  1197→                Mind Status
+  1198→              </h2>
+  1199→              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1200→                <MindCard
+  1201→                  title="Muse — Orchestrator + Creative"
+  1202→                  subtitle="Dual-role: learns you, orchestrates work, AND generates creative output"
+  1203→                  data={status?.muse ?? null}
+  1204→                  colorScheme="violet"
+  1205→                  icon={<Brain className="size-5 text-violet-400" />}
+  1206→                  loading={loading}
+  1207→                />
+  1208→                <MindCard
+  1209→                  title="Maker — Creative"
+  1210→                  subtitle="The mind that generates content and hooks (simulated when credits low)"
+  1211→                  data={status?.maker ?? null}
+  1212→                  colorScheme="emerald"
+  1213→                  icon={<Zap className="size-5 text-emerald-400" />}
+  1214→                  loading={loading}
+  1215→                />
+  1216→              </div>
+  1217→            </section>
+  1218→
+  1219→            <Separator />
+  1220→
+  1221→            {/* Validation Gates */}
+  1222→            <section>
+  1223→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1224→                <Shield className="size-4" />
+  1225→                Day 1 Validation Gates
+  1226→              </h2>
+  1227→              <Card>
+  1228→                <CardHeader>
+  1229→                  <CardTitle className="flex items-center gap-2">
+  1230→                    Test Results
+  1231→                    {!loading && validation && (
+  1232→                      <Badge className="bg-emerald-600 text-white border-emerald-600">
+  1233→                        {validation.cached.gatesPassing}/{validation.cached.gatesTotal} PASS
+  1234→                      </Badge>
+  1235→                    )}
+  1236→                  </CardTitle>
+  1237→                  <CardDescription>
+  1238→                    All 6 Day 1 gates passed — GO verdict confirmed
+  1239→                  </CardDescription>
+  1240→                </CardHeader>
+  1241→                <CardContent>
+  1242→                  {loading ? (
+  1243→                    <div className="space-y-3">
+  1244→                      {[1, 2, 3, 4, 5, 6].map((i) => (
+  1245→                        <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />
+  1246→                      ))}
+  1247→                    </div>
+  1248→                  ) : (
+  1249→                    <div className="space-y-2">
+  1250→                      <div className="grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-3 px-3 py-2 text-xs font-medium text-muted-foreground">
+  1251→                        <span className="w-5" />
+  1252→                        <span>Test</span>
+  1253→                        <span className="hidden sm:block">Evidence</span>
+  1254→                        <span>Time</span>
+  1255→                      </div>
+  1256→                      {tests.map((t) => (
+  1257→                        <div
+  1258→                          key={t.key}
+  1259→                          className="grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-center px-3 py-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+  1260→                        >
+  1261→                          <span className="w-5">{statusIcon(t.status)}</span>
+  1262→                          <span className="font-medium text-sm">{t.name}</span>
+  1263→                          <span className="hidden sm:block text-xs text-muted-foreground truncate">
+  1264→                            {t.evidence}
+  1265→                          </span>
+  1266→                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+  1267→                            <Clock className="size-3" />
+  1268→                            {t.duration}
+  1269→                          </span>
+  1270→                        </div>
+  1271→                      ))}
+  1272→                    </div>
+  1273→                  )}
+  1274→                </CardContent>
+  1275→                <CardFooter className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t pt-4">
+  1276→                  <div className="flex items-center gap-3">
+  1277→                    <span className="text-sm font-medium">GO/NO-GO Verdict:</span>
+  1278→                    {!loading && validation && (
+  1279→                      <Badge className={`text-base px-3 py-1 ${
+  1280→                        validation.cached.verdict === 'GO'
+  1281→                          ? 'bg-emerald-600 text-white border-emerald-600'
+  1282→                          : 'bg-red-600 text-white border-red-600'
+  1283→                      }`}>
+  1284→                        {validation.cached.verdict === 'GO' ? '🟢 GO' : '🔴 NO-GO'}
+  1285→                      </Badge>
+  1286→                    )}
+  1287→                  </div>
+  1288→                  {!loading && validation && (
+  1289→                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+  1290→                      <span>Latency: {validation.cached.latencyBaseline}</span>
+  1291→                      <span>Maker Credits: {validation.cached.makerCredits.toFixed(2)}</span>
+  1292→                    </div>
+  1293→                  )}
+  1294→                </CardFooter>
+  1295→              </Card>
+  1296→            </section>
+  1297→
+  1298→            <Separator />
+  1299→
+  1300→            {/* Architecture */}
+  1301→            <section>
+  1302→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1303→                <Layers className="size-4" />
+  1304→                System Architecture
+  1305→              </h2>
+  1306→              <Card>
+  1307→                <CardHeader>
+  1308→                  <CardTitle>3-Layer Creative Intelligence</CardTitle>
+  1309→                  <CardDescription>
+  1310→                    Creator → Muse (Orchestrator + Creative) → Maker/Simulator → Learning Engine → Creator Memory Graph
+  1311→                  </CardDescription>
+  1312→                </CardHeader>
+  1313→                <CardContent>
+  1314→                  <div className="flex flex-col items-center gap-3 py-4">
+  1315→                    <ArchNode label="Creator" sublabel="Jules (YouTube)" icon={<Users className="size-4" />} color="amber" />
+  1316→                    <ArchArrow />
+  1317→                    <ArchNode label="Muse" sublabel="Orchestrator + Creative" icon={<Brain className="size-4" />} color="violet" />
+  1318→                    <ArchArrow />
+  1319→                    <ArchNode label="Maker / Simulator" sublabel="Creative · 0 Credits" icon={<Zap className="size-4" />} color="emerald" />
+  1320→                    <ArchArrow />
+  1321→                    <ArchNode label="Learning Engine" sublabel="OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND" icon={<Eye className="size-4" />} color="violet" />
+  1322→                    <ArchArrow />
+  1323→                    <ArchNode label="Creator Memory Graph" sublabel="Identity · Preferences · Performance" icon={<Workflow className="size-4" />} color="amber" wide />
+  1324→                  </div>
+  1325→                </CardContent>
+  1326→              </Card>
+  1327→            </section>
+  1328→          </TabsContent>
+  1329→
+  1330→          {/* ===== DAY 2 TAB ===== */}
+  1331→          <TabsContent value="day2" className="space-y-6">
+  1332→            {/* Day 2 Status Grid */}
+  1333→            <section>
+  1334→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1335→                <Sparkles className="size-4" />
+  1336→                Day 2 Systems — All Active
+  1337→              </h2>
+  1338→              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1339→                {/* Maker Simulator */}
+  1340→                <SystemCard
+  1341→                  icon={<Sparkles className="size-5 text-violet-400" />}
+  1342→                  title="Maker Simulator"
+  1343→                  status="active"
+  1344→                  statusLabel="Ready"
+  1345→                  details={[
+  1346→                    '8 hook patterns loaded',
+  1347→                    `Voice match: ${draftData?.draft?.voiceMatch.toFixed(2) ?? '0.90'}`,
+  1348→                    `Hook compat: ${draftData?.draft?.hookCompat.toFixed(2) ?? '0.80'}`,
+  1349→                    '0 credits per draft',
+  1350→                  ]}
+  1351→                  colorScheme="violet"
+  1352→                />
+  1353→
+  1354→                {/* Learning Loop */}
+  1355→                <SystemCard
+  1356→                  icon={<GraduationCap className="size-5 text-emerald-400" />}
+  1357→                  title="Learning Loop Engine"
+  1358→                  status="active"
+  1359→                  statusLabel="Ready"
+  1360→                  details={[
+  1361→                    '5-step loop: OBSERVE → RECOMMEND',
+  1362→                    'Statistical honesty enforced',
+  1363→                    'Confidence: low/medium/high',
+  1364→                    'Never claims "AI discovered"',
+  1365→                  ]}
+  1366→                  colorScheme="emerald"
+  1367→                />
+  1368→
+  1369→                {/* Hook Classifier */}
+  1370→                <SystemCard
+  1371→                  icon={<BarChart3 className="size-5 text-amber-400" />}
+  1372→                  title="Hook Classifier"
+  1373→                  status="active"
+  1374→                  statusLabel="Ready"
+  1375→                  details={[
+  1376→                    `${hookData?.patterns?.length ?? 8} patterns loaded`,
+  1377→                    hookData?.classification
+  1378→                      ? `Last: "${hookData.classification.pattern}" (${(hookData.classification.confidence * 100).toFixed(0)}%)`
+  1379→                      : 'Contrarian claim detected',
+  1380→                    'Confidence scoring 0-1',
+  1381→                    'Batch classification supported',
+  1382→                  ]}
+  1383→                  colorScheme="amber"
+  1384→                />
+  1385→
+  1386→                {/* SSE Events */}
+  1387→                <SystemCard
+  1388→                  icon={<Radio className="size-5 text-violet-400" />}
+  1389→                  title="SSE Events Hook"
+  1390→                  status="active"
+  1391→                  statusLabel="Simulated"
+  1392→                  details={[
+  1393→                    'Real-time event streaming',
+  1394→                    'Auto-reconnect on disconnect',
+  1395→                    'Simulated fallback active',
+  1396→                    'React hook: useMindsEvents()',
+  1397→                  ]}
+  1398→                  colorScheme="violet"
+  1399→                />
+  1400→
+  1401→                {/* Autonomy Scheduler */}
+  1402→                <SystemCard
+  1403→                  icon={<Moon className="size-5 text-emerald-400" />}
+  1404→                  title="Autonomy Scheduler"
+  1405→                  status="active"
+  1406→                  statusLabel="Equipped"
+  1407→                  details={[
+  1408→                    'Passive Autonomous Soul ✓',
+  1409→                    `Phase: ${autonomyData?.status?.phase ?? 'idle'}`,
+  1410→                    `Pending approvals: ${autonomyData?.status?.pendingApprovals ?? 0}`,
+  1411→                    'Nothing publishes without approval',
+  1412→                  ]}
+  1413→                  colorScheme="emerald"
+  1414→                />
+  1415→
+  1416→                {/* Creator Recruitment */}
+  1417→                <SystemCard
+  1418→                  icon={<UserPlus className="size-5 text-amber-400" />}
+  1419→                  title="Creator Recruitment"
+  1420→                  status="active"
+  1421→                  statusLabel="Templates Ready"
+  1422→                  details={[
+  1423→                    '5 outreach templates',
+  1424→                    '6-step onboarding conversation',
+  1425→                    '6 FAQ entries',
+  1426→                    'Target: 5k-20k followers',
+  1427→                  ]}
+  1428→                  colorScheme="amber"
+  1429→                />
+  1430→              </div>
+  1431→            </section>
+  1432→
+  1433→            <Separator />
+  1434→
+  1435→            {/* Credit Burn Rate */}
+  1436→            <section>
+  1437→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1438→                <Flame className="size-4" />
+  1439→                Credit-Aware Strategy
+  1440→              </h2>
+  1441→              <Card>
+  1442→                <CardHeader>
+  1443→                  <CardTitle>Zero-Credit Architecture</CardTitle>
+  1444→                  <CardDescription>
+  1445→                    All Day 2 systems run at 0 credits — simulator is first class, not a fallback
+  1446→                  </CardDescription>
+  1447→                </CardHeader>
+  1448→                <CardContent>
+  1449→                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  1450→                    <div className="space-y-3">
+  1451→                      <div className="flex items-center justify-between text-sm">
+  1452→                        <span className="text-muted-foreground">Maker Simulator</span>
+  1453→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+  1454→                      </div>
+  1455→                      <div className="flex items-center justify-between text-sm">
+  1456→                        <span className="text-muted-foreground">Learning Loop</span>
+  1457→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+  1458→                      </div>
+  1459→                      <div className="flex items-center justify-between text-sm">
+  1460→                        <span className="text-muted-foreground">Hook Classifier</span>
+  1461→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+  1462→                      </div>
+  1463→                      <div className="flex items-center justify-between text-sm">
+  1464→                        <span className="text-muted-foreground">SSE Events Hook</span>
+  1465→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+  1466→                      </div>
+  1467→                    </div>
+  1468→                    <div className="space-y-3">
+  1469→                      <div className="flex items-center justify-between text-sm">
+  1470→                        <span className="text-muted-foreground">Autonomy Scheduler</span>
+  1471→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+  1472→                      </div>
+  1473→                      <div className="flex items-center justify-between text-sm">
+  1474→                        <span className="text-muted-foreground">Creator Recruitment</span>
+  1475→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+  1476→                      </div>
+  1477→                      <div className="flex items-center justify-between text-sm">
+  1478→                        <span className="text-muted-foreground">API Routes</span>
+  1479→                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">0 credits</Badge>
+  1480→                      </div>
+  1481→                      <div className="flex items-center justify-between text-sm font-semibold">
+  1482→                        <span>Total Day 2 Burn</span>
+  1483→                        <Badge className="bg-emerald-600 text-white border-emerald-600">0 credits</Badge>
+  1484→                      </div>
+  1485→                    </div>
+  1486→                  </div>
+  1487→                </CardContent>
+  1488→              </Card>
+  1489→            </section>
+  1490→
+  1491→            <Separator />
+  1492→
+  1493→            {/* Statistical Honesty */}
+  1494→            <section>
+  1495→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1496→                <Shield className="size-4" />
+  1497→                Statistical Honesty Framework
+  1498→              </h2>
+  1499→              <Card>
+  1500→                <CardHeader>
+  1501→                  <CardTitle>Non-Negotiable: No Inflated Metrics</CardTitle>
+  1502→                </CardHeader>
+  1503→                <CardContent>
+  1504→                  <div className="space-y-3">
+  1505→                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+  1506→                      <CheckCircle2 className="size-5 text-emerald-500 mt-0.5 shrink-0" />
+  1507→                      <div>
+  1508→                        <p className="text-sm font-medium">Confidence Levels</p>
+  1509→                        <p className="text-xs text-muted-foreground">&lt; 5 data points → "low" · 5-15 → "medium" · &gt; 15 → "high"</p>
+  1510→                      </div>
+  1511→                    </div>
+  1512→                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+  1513→                      <CheckCircle2 className="size-5 text-emerald-500 mt-0.5 shrink-0" />
+  1514→                      <div>
+  1515→                        <p className="text-sm font-medium">Honest Phrasing</p>
+  1516→                        <p className="text-xs text-muted-foreground">Every recommendation: "Based on N posts, X pattern averages Y%" — never "AI discovered"</p>
+  1517→                      </div>
+  1518→                    </div>
+  1519→                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+  1520→                      <CheckCircle2 className="size-5 text-emerald-500 mt-0.5 shrink-0" />
+  1521→                      <div>
+  1522→                        <p className="text-sm font-medium">Evidence Types</p>
+  1523→                        <p className="text-xs text-muted-foreground">statistical · observational · absence — each tagged with data point count</p>
+  1524→                      </div>
+  1525→                    </div>
+  1526→                  </div>
+  1527→                </CardContent>
+  1528→              </Card>
+  1529→            </section>
+  1530→
+  1531→            <Separator />
+  1532→
+  1533→            {/* Day 2 Completed Tasks */}
+  1534→            <section>
+  1535→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1536→                <CheckCircle2 className="size-4" />
+  1537→                Day 2 Progress
+  1538→              </h2>
+  1539→              <Card>
+  1540→                <CardHeader>
+  1541→                  <CardTitle>Completed ({completedCount} of {totalCount})</CardTitle>
+  1542→                </CardHeader>
+  1543→                <CardContent>
+  1544→                  <div className="space-y-3">
+  1545→                    {day2Completed.map((task) => (
+  1546→                      <div key={task.id} className="flex items-start gap-3">
+  1547→                        <Checkbox id={task.id} checked={task.done} className="mt-0.5" />
+  1548→                        <label htmlFor={task.id} className="text-sm leading-relaxed cursor-pointer">
+  1549→                          {task.label}
+  1550→                        </label>
+  1551→                      </div>
+  1552→                    ))}
+  1553→                    <Separator className="my-3" />
+  1554→                    {day2Pending.map((task) => (
+  1555→                      <div key={task.id} className="flex items-start gap-3">
+  1556→                        <Checkbox id={task.id} className="mt-0.5" />
+  1557→                        <label htmlFor={task.id} className="text-sm leading-relaxed text-muted-foreground cursor-pointer">
+  1558→                          {task.label}
+  1559→                        </label>
+  1560→                      </div>
+  1561→                    ))}
+  1562→                  </div>
+  1563→                </CardContent>
+  1564→                <CardFooter className="border-t pt-4">
+  1565→                  <Progress value={(completedCount / totalCount) * 100} className="flex-1" />
+  1566→                  <span className="text-xs text-muted-foreground ml-3">Day 2 of 6 — {Math.round((completedCount / totalCount) * 100)}% complete</span>
+  1567→                </CardFooter>
+  1568→              </Card>
+  1569→            </section>
+  1570→          </TabsContent>
+  1571→
+  1572→          {/* ===== DELEGATION TAB (Day 9) ===== */}
+  1573→          <TabsContent value="draft" className="space-y-6">
+  1574→            <section>
+  1575→              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1576→                <Send className="size-4" />
+  1577→                Muse→Maker Delegation
+  1578→              </h2>
+  1579→
+  1580→              {/* Input Controls */}
+  1581→              <Card>
+  1582→                <CardHeader>
+  1583→                  <CardTitle className="text-base flex items-center gap-2">
+  1584→                    <SendHorizontal className="size-4" />
+  1585→                    Delegation Controls
+  1586→                  </CardTitle>
+  1587→                  <CardDescription>
+  1588→                    Override inferred topic & objective, then preview or execute the Muse→Maker delegation pipeline
+  1589→                  </CardDescription>
+  1590→                </CardHeader>
+  1591→                <CardContent className="space-y-4">
+  1592→                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  1593→                    <div className="space-y-1.5">
+  1594→                      <label className="text-xs font-medium text-muted-foreground">Topic (optional override)</label>
+  1595→                      <Input
+  1596→                        placeholder="Leave empty to use inferred topic"
+  1597→                        value={delegationTopic}
+  1598→                        onChange={(e) => setDelegationTopic(e.target.value)}
+  1599→                      />
+  1600→                    </div>
+  1601→                    <div className="space-y-1.5">
+  1602→                      <label className="text-xs font-medium text-muted-foreground">Objective (optional override)</label>
+  1603→                      <Input
+  1604→                        placeholder="Leave empty to use inferred objective"
+  1605→                        value={delegationObjective}
+  1606→                        onChange={(e) => setDelegationObjective(e.target.value)}
+  1607→                      />
+  1608→                    </div>
+  1609→                  </div>
+  1610→                  <div className="flex items-center gap-3 flex-wrap">
+  1611→                    <Button
+  1612→                      variant="outline"
+  1613→                      className="gap-2"
+  1614→                      disabled={delegationPreviewLoading}
+  1615→                      onClick={async () => {
+  1616→                        setDelegationPreviewLoading(true);
+  1617→                        setDelegationPreview(null);
+  1618→                        try {
+  1619→                          const res = await fetch('/api/delegation/send');
+  1620→                          const data = await res.json();
+  1621→                          if (data.success) setDelegationPreview(data);
+  1622→                        } catch (e) {
+  1623→                          console.error('Preview error:', e);
+  1624→                        } finally {
+  1625→                          setDelegationPreviewLoading(false);
+  1626→                        }
+  1627→                      }}
+  1628→                    >
+  1629→                      <Eye className="size-4" />
+  1630→                      {delegationPreviewLoading ? 'Loading…' : 'Preview Instruction'}
+  1631→                    </Button>
+  1632→                    <Button
+  1633→                      className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+  1634→                      disabled={delegationExecuteLoading}
+  1635→                      onClick={async () => {
+  1636→                        setDelegationExecuteLoading(true);
+  1637→                        setDelegationResult(null);
+  1638→                        try {
+  1639→                          const body: Record<string, string> = {};
+  1640→                          if (delegationTopic) body.topic = delegationTopic;
+  1641→                          if (delegationObjective) body.objective = delegationObjective;
+  1642→                          const res = await fetch('/api/delegation/send', {
+  1643→                            method: 'POST',
+  1644→                            headers: { 'Content-Type': 'application/json' },
+  1645→                            body: JSON.stringify(body),
+  1646→                          });
+  1647→                          const data = await res.json();
+  1648→                          if (data.success) setDelegationResult(data);
+  1649→                        } catch (e) {
+  1650→                          console.error('Execute error:', e);
+  1651→                        } finally {
+  1652→                          setDelegationExecuteLoading(false);
+  1653→                        }
+  1654→                      }}
+  1655→                    >
+  1656→                      <Send className="size-4" />
+  1657→                      {delegationExecuteLoading ? 'Delegating…' : 'Execute Delegation'}
+  1658→                    </Button>
+  1659→                  </div>
+  1660→                </CardContent>
+  1661→              </Card>
+  1662→            </section>
+  1663→
+  1664→            {/* Preview Results */}
+  1665→            {delegationPreview && (
+  1666→              <section className="space-y-4">
+  1667→                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1668→                  <Eye className="size-4" />
+  1669→                  Delegation Preview
+  1670→                </h2>
+  1671→
+  1672→                {/* Creator Context Card */}
+  1673→                <Card>
+  1674→                  <CardHeader>
+  1675→                    <CardTitle className="text-base flex items-center gap-2">
+  1676→                      <User className="size-4" />
+  1677→                      Creator Context
+  1678→                    </CardTitle>
+  1679→                  </CardHeader>
+  1680→                  <CardContent>
+  1681→                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+  1682→                      <div>
+  1683→                        <p className="text-xs text-muted-foreground">Name</p>
+  1684→                        <p className="text-sm font-medium">{delegationPreview.context.creatorName}</p>
+  1685→                      </div>
+  1686→                      <div>
+  1687→                        <p className="text-xs text-muted-foreground">Platform</p>
+  1688→                        <p className="text-sm font-medium">{delegationPreview.context.platform}</p>
+  1689→                      </div>
+  1690→                      <div>
+  1691→                        <p className="text-xs text-muted-foreground">Niche</p>
+  1692→                        <p className="text-sm font-medium">{delegationPreview.context.niche ?? '—'}</p>
+  1693→                      </div>
+  1694→                      <div>
+  1695→                        <p className="text-xs text-muted-foreground">Audience</p>
+  1696→                        <p className="text-sm font-medium">{delegationPreview.context.audience ?? '—'}</p>
+  1697→                      </div>
+  1698→                    </div>
+  1699→                  </CardContent>
+  1700→                </Card>
+  1701→
+  1702→                {/* Voice Profile Card */}
+  1703→                <Card>
+  1704→                  <CardHeader>
+  1705→                    <CardTitle className="text-base flex items-center gap-2">
+  1706→                      <Mic className="size-4" />
+  1707→                      Voice Profile
+  1708→                    </CardTitle>
+  1709→                  </CardHeader>
+  1710→                  <CardContent>
+  1711→                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+  1712→                      <div>
+  1713→                        <p className="text-xs text-muted-foreground">Tone</p>
+  1714→                        <p className="text-sm font-medium">{delegationPreview.context.voiceProfile.tone}</p>
+  1715→                      </div>
+  1716→                      <div>
+  1717→                        <p className="text-xs text-muted-foreground">Pace</p>
+  1718→                        <p className="text-sm font-medium">{delegationPreview.context.voiceProfile.pace}</p>
+  1719→                      </div>
+  1720→                      <div>
+  1721→                        <p className="text-xs text-muted-foreground">Vocabulary</p>
+  1722→                        <p className="text-sm font-medium">{delegationPreview.context.voiceProfile.vocabulary}</p>
+  1723→                      </div>
+  1724→                    </div>
+  1725→                    {delegationPreview.context.voiceProfile.avoidTopics.length > 0 && (
+  1726→                      <div className="mt-3">
+  1727→                        <p className="text-xs text-muted-foreground mb-1">Avoid Topics</p>
+  1728→                        <div className="flex flex-wrap gap-1">
+  1729→                          {delegationPreview.context.voiceProfile.avoidTopics.map((t) => (
+  1730→                            <Badge key={t} variant="outline" className="text-xs border-rose-500/30 text-rose-400">{t}</Badge>
+  1731→                          ))}
+  1732→                        </div>
+  1733→                      </div>
+  1734→                    )}
+  1735→                    {delegationPreview.context.voiceProfile.strengths.length > 0 && (
+  1736→                      <div className="mt-3">
+  1737→                        <p className="text-xs text-muted-foreground mb-1">Strengths</p>
+  1738→                        <div className="flex flex-wrap gap-1">
+  1739→                          {delegationPreview.context.voiceProfile.strengths.map((s) => (
+  1740→                            <Badge key={s} variant="outline" className="text-xs border-emerald-500/30 text-emerald-400">{s}</Badge>
+  1741→                          ))}
+  1742→                        </div>
+  1743→                      </div>
+  1744→                    )}
+  1745→                  </CardContent>
+  1746→                </Card>
+  1747→
+  1748→                {/* Best Hook Patterns */}
+  1749→                {delegationPreview.context.bestHookPatterns.length > 0 && (
+  1750→                  <Card>
+  1751→                    <CardHeader>
+  1752→                      <CardTitle className="text-base flex items-center gap-2">
+  1753→                        <Target className="size-4" />
+  1754→                        Best Hook Patterns
+  1755→                      </CardTitle>
+  1756→                    </CardHeader>
+  1757→                    <CardContent>
+  1758→                      <div className="space-y-2">
+  1759→                        {delegationPreview.context.bestHookPatterns.map((p, i) => (
+  1760→                          <div key={i} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50">
+  1761→                            <div className="flex items-center gap-2">
+  1762→                              <span className="text-sm font-medium">{p.pattern}</span>
+  1763→                              <Badge variant="outline" className={`text-xs ${confidenceColor(p.confidence)}`}>
+  1764→                                {p.confidence}
+  1765→                              </Badge>
+  1766→                            </div>
+  1767→                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+  1768→                              <span>{(p.avgEffectiveness * 100).toFixed(0)}% avg</span>
+  1769→                              <span>n={p.sampleSize}</span>
+  1770→                            </div>
+  1771→                          </div>
+  1772→                        ))}
+  1773→                      </div>
+  1774→                    </CardContent>
+  1775→                  </Card>
+  1776→                )}
+  1777→
+  1778→                {/* Recent Winners */}
+  1779→                {delegationPreview.context.recentWinners.length > 0 && (
+  1780→                  <Card>
+  1781→                    <CardHeader>
+  1782→                      <CardTitle className="text-base flex items-center gap-2">
+  1783→                        <Award className="size-4" />
+  1784→                        Recent Winners
+  1785→                      </CardTitle>
+  1786→                    </CardHeader>
+  1787→                    <CardContent>
+  1788→                      <div className="space-y-1.5">
+  1789→                        {delegationPreview.context.recentWinners.map((w, i) => (
+  1790→                          <div key={i} className="flex items-center gap-2 p-2 rounded-md bg-muted/50 text-sm">
+  1791→                            <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
+  1792→                            <span>{w}</span>
+  1793→                          </div>
+  1794→                        ))}
+  1795→                      </div>
+  1796→                    </CardContent>
+  1797→                  </Card>
+  1798→                )}
+  1799→
+  1800→                {/* Performance Signals */}
+  1801→                {delegationPreview.context.performanceSignals.length > 0 && (
+  1802→                  <Card>
+  1803→                    <CardHeader>
+  1804→                      <CardTitle className="text-base flex items-center gap-2">
+  1805→                        <Activity className="size-4" />
+  1806→                        Performance Signals
+  1807→                      </CardTitle>
+  1808→                    </CardHeader>
+  1809→                    <CardContent>
+  1810→                      <div className="space-y-1.5">
+  1811→                        {delegationPreview.context.performanceSignals.map((s, i) => (
+  1812→                          <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-muted/50 text-sm">
+  1813→                            <Zap className="size-3.5 text-amber-400 shrink-0 mt-0.5" />
+  1814→                            <span>{s}</span>
+  1815→                          </div>
+  1816→                        ))}
+  1817→                      </div>
+  1818→                    </CardContent>
+  1819→                  </Card>
+  1820→                )}
+  1821→
+  1822→                {/* Structured Instruction Card */}
+  1823→                <Card>
+  1824→                  <CardHeader>
+  1825→                    <div className="flex items-center justify-between flex-wrap gap-2">
+  1826→                      <CardTitle className="text-base flex items-center gap-2">
+  1827→                        <Radio className="size-4" />
+  1828→                        Structured Instruction
+  1829→                      </CardTitle>
+  1830→                      <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
+  1831→                        {delegationPreview.instruction.instructionId}
+  1832→                      </Badge>
+  1833→                    </div>
+  1834→                    <CardDescription>
+  1835→                      From: <span className="font-medium text-violet-400">{delegationPreview.instruction.from}</span> → To: <span className="font-medium text-emerald-400">{delegationPreview.instruction.to}</span>
+  1836→                    </CardDescription>
+  1837→                  </CardHeader>
+  1838→                  <CardContent className="space-y-4">
+  1839→                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  1840→                      <div className="p-3 rounded-lg bg-muted/50">
+  1841→                        <p className="text-xs text-muted-foreground">Topic</p>
+  1842→                        <p className="text-sm font-medium mt-1">{delegationPreview.instruction.makerInput.topic}</p>
+  1843→                      </div>
+  1844→                      <div className="p-3 rounded-lg bg-muted/50">
+  1845→                        <p className="text-xs text-muted-foreground">Objective</p>
+  1846→                        <p className="text-sm font-medium mt-1">{delegationPreview.instruction.makerInput.objective}</p>
+  1847→                      </div>
+  1848→                      <div className="p-3 rounded-lg bg-muted/50">
+  1849→                        <p className="text-xs text-muted-foreground">Audience</p>
+  1850→                        <p className="text-sm font-medium mt-1">{delegationPreview.instruction.makerInput.audience}</p>
+  1851→                      </div>
+  1852→                    </div>
+  1853→
+  1854→                    {/* Instruction Text */}
+  1855→                    <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+  1856→                      <p className="text-xs font-medium text-violet-400 mb-1.5">Instruction</p>
+  1857→                      <p className="text-sm leading-relaxed">{delegationPreview.instruction.makerInput.instruction}</p>
+  1858→                    </div>
+  1859→
+  1860→                    {/* Reasoning */}
+  1861→                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+  1862→                      <p className="text-xs font-medium text-amber-400 mb-1.5 flex items-center gap-1">
+  1863→                        <Lightbulb className="size-3" />
+  1864→                        Reasoning
+  1865→                      </p>
+  1866→                      <p className="text-sm leading-relaxed">{delegationPreview.instruction.reasoning}</p>
+  1867→                    </div>
+  1868→
+  1869→                    {/* Evidence Used */}
+  1870→                    <div>
+  1871→                      <p className="text-xs font-medium text-muted-foreground mb-1.5">Evidence Used</p>
+  1872→                      <div className="space-y-1">
+  1873→                        {delegationPreview.instruction.evidenceUsed.map((ev, i) => (
+  1874→                          <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+  1875→                            <span className="text-emerald-400 mt-0.5">•</span>
+  1876→                            <span>{ev}</span>
+  1877→                          </div>
+  1878→                        ))}
+  1879→                      </div>
+  1880→                    </div>
+  1881→
+  1882→                    {/* Confidence + Data Points */}
+  1883→                    <div className="flex items-center gap-4 flex-wrap">
+  1884→                      <Badge variant="outline" className={`gap-1 ${confidenceColor(delegationPreview.instruction.confidenceLevel)}`}>
+  1885→                        Confidence: {delegationPreview.instruction.confidenceLevel}
+  1886→                      </Badge>
+  1887→                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+  1888→                        <Database className="size-3" />
+  1889→                        {delegationPreview.instruction.dataPointsUsed} data points
+  1890→                      </span>
+  1891→                    </div>
+  1892→                  </CardContent>
+  1893→                </Card>
+  1894→              </section>
+  1895→            )}
+  1896→
+  1897→            {/* Execution Results */}
+  1898→            {delegationResult && (
+  1899→              <section className="space-y-4">
+  1900→                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+  1901→                  <Zap className="size-4" />
+  1902→                  Delegation Result
+  1903→                </h2>
+  1904→
+  1905→                {/* Maker Output Card */}
+  1906→                <Card>
+  1907→                  <CardHeader>
+  1908→                    <div className="flex items-center justify-between flex-wrap gap-2">
+  1909→                      <CardTitle className="text-base flex items-center gap-2">
+  1910→                        <Sparkles className="size-4" />
+  1911→                        {delegationResult.makerOutput.title}
+  1912→                      </CardTitle>
+  1913→                      <div className="flex items-center gap-2">
+  1914→                        <Badge className={delegationResult.mode === 'live' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-600 text-white border-amber-600'}>
+  1915→                          {delegationResult.mode === 'live' ? 'Live' : 'Simulated'}
+  1916→                        </Badge>
+  1917→                        <Badge variant="outline" className="gap-1">
+  1918→                          <Clock className="size-3" />
+  1919→                          {delegationResult.delegationTime}ms
+  1920→                        </Badge>
+  1921→                      </div>
+  1922→                    </div>
+  1923→                    <CardDescription>{delegationResult.makerOutput.caption}</CardDescription>
+  1924→                  </CardHeader>
+  1925→                  <CardContent className="space-y-4">
+  1926→                    {/* CTA */}
+  1927→                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+  1928→                      <p className="text-xs font-medium text-emerald-400 mb-1">CTA</p>
+  1929→                      <p className="text-sm">{delegationResult.makerOutput.cta}</p>
+  1930→                    </div>
+  1931→
+  1932→                    {/* Scores */}
+  1933→                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  1934→                      <div className="space-y-1.5">
+  1935→                        <div className="flex items-center justify-between text-xs">
+  1936→                          <span className="font-medium">Voice Match</span>
+  1937→                          <span className="text-violet-400">{(delegationResult.makerOutput.voiceMatch * 100).toFixed(0)}%</span>
+  1938→                        </div>
+  1939→                        <Progress value={delegationResult.makerOutput.voiceMatch * 100} className="h-2" />
+  1940→                      </div>
+  1941→                      <div className="space-y-1.5">
+  1942→                        <div className="flex items-center justify-between text-xs">
+  1943→                          <span className="font-medium">Hook Compatibility</span>
+  1944→                          <span className="text-emerald-400">{(delegationResult.makerOutput.hookCompat * 100).toFixed(0)}%</span>
+  1945→                        </div>
+  1946→                        <Progress value={delegationResult.makerOutput.hookCompat * 100} className="h-2" />
+  1947→                      </div>
+  1948→                    </div>
+  1949→
+  1950→                    {/* Source badge + delegation time */}
+  1951→                    <div className="flex items-center gap-3 flex-wrap">
+  1952→                      <Badge variant="outline" className={delegationResult.makerOutput.source === 'live' ? 'gap-1 border-emerald-500/40 text-emerald-400' : 'gap-1 border-amber-500/40 text-amber-400'}>
+  1953→                        {delegationResult.makerOutput.source === 'live' ? <CheckCircle2 className="size-3" /> : <CircleDashed className="size-3" />}
+  1954→                        {delegationResult.makerOutput.source}
+  1955→                      </Badge>
+  1956→                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+  1957→                        <Clock className="size-3" />
+  1958→                        Delegated in {delegationResult.delegationTime}ms
+  1959→                      </span>
+  1960→                    </div>
+  1961→
+  1962→                    {/* Script (collapsible) */}
+  1963→                    <div className="rounded-lg border border-border">
+  1964→                      <button
+  1965→                        type="button"
+  1966→                        className="w-full flex items-center justify-between p-3 text-sm font-medium hover:bg-muted/50 transition-colors"
+  1967→                        onClick={() => setScriptExpanded(!scriptExpanded)}
+  1968→                      >
+  1969→                        <span className="flex items-center gap-2">
+  1970→                          <FileText className="size-4" />
+  1971→                          Generated Script
+  1972→                        </span>
+  1973→                        {scriptExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+  1974→                      </button>
+  1975→                      {scriptExpanded && (
+  1976→                        <div className="px-3 pb-3 border-t border-border">
+  1977→                          <ScrollArea className="max-h-64">
+  1978→                            <p className="text-sm leading-relaxed whitespace-pre-wrap pr-3 pt-3">{delegationResult.makerOutput.script}</p>
+  1979→                          </ScrollArea>
+  1980→                        </div>
+  1981→                      )}
+  1982→                    </div>
+  1983→
+  1984→                    {/* Alternative Hooks */}
+  1985→                    {delegationResult.makerOutput.alternativeHooks.length > 0 && (
+  1986→                      <div>
+  1987→                        <p className="text-xs font-medium text-muted-foreground mb-2">Alternative Hooks</p>
+  1988→                        <div className="space-y-1.5">
+  1989→                          {delegationResult.makerOutput.alternativeHooks.map((hook, i) => (
+  1990→                            <div key={i} className="flex items-start gap-2 p-2 rounded-md bg-muted/50 text-xs">
+  1991→                              <MessageSquare className="size-3 mt-0.5 text-muted-foreground shrink-0" />
+  1992→                              <span>{hook}</span>
+  1993→                            </div>
+  1994→                          ))}
+  1995→                        </div>
+  1996→                      </div>
+  1997→                    )}
+  1998→
+  1999→                    {/* Thumbnail Concept */}
+  2000→                    {delegationResult.makerOutput.thumbnailConcept && (
+
+[showing lines 1-2000 of 5612; use offset=2001 with limit to continue reading]

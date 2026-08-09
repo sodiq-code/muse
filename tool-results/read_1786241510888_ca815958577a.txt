@@ -1,0 +1,764 @@
+     1→// ============================================================================
+     2→// Evaluation Service — Day 10
+     3→// Maker Output Evaluation: Voice Match + Hook Compatibility + Quality Scoring
+     4→//
+     5→// When Maker produces output, Muse must EVALUATE it before storing as Draft.
+     6→// This is the quality gate — it ensures Maker's output aligns with the
+     7→// creator's voice, uses proven hook patterns, and meets quality thresholds.
+     8→//
+     9→// Evaluation is NOT a rubber stamp. It can REJECT output that doesn't
+    10→// meet the creator's standards.
+    11→// ============================================================================
+    12→
+    13→import { type MakerOutput } from '@/lib/maker-simulator';
+    14→import { type CreatorVoiceSnapshot, type HookPatternSummary } from '@/lib/delegation-service';
+    15→import { computeConfidence, type ConfidenceLevel } from '@/lib/learning-engine';
+    16→
+    17→// ---------------------------------------------------------------------------
+    18→// Types
+    19→// ---------------------------------------------------------------------------
+    20→
+    21→/** Detailed voice match evaluation */
+    22→export interface VoiceMatchEvaluation {
+    23→  overall: number;              // 0-1 composite score
+    24→  toneAlignment: number;        // 0-1 — does output tone match creator's voice?
+    25→  paceConsistency: number;      // 0-1 — does output pace match creator's pace?
+    26→  vocabularyMatch: number;      // 0-1 — does output vocabulary match creator's?
+    27→  avoidTopicsCompliance: number;// 0-1 — did output avoid all forbidden topics?
+    28→  strengthUtilization: number;  // 0-1 — did output use creator's strengths?
+    29→  breakdown: string[];          // Human-readable explanations for each sub-score
+    30→  evidence: string[];           // What data was used to compute scores
+    31→}
+    32→
+    33→/** Detailed hook compatibility evaluation */
+    34→export interface HookCompatEvaluation {
+    35→  overall: number;              // 0-1 composite score
+    36→  primaryHookPatternMatch: number;   // 0-1 — does primary hook match best pattern?
+    37→  historicalAlignment: number;       // 0-1 — alignment with historical winners?
+    38→  hookVariety: number;               // 0-1 — are alternative hooks diverse?
+    39→  hookStrength: number;              // 0-1 — are hooks compelling (length, structure)?
+    40→  breakdown: string[];          // Human-readable explanations
+    41→  evidence: string[];           // What data was used
+    42→}
+    43→
+    44→/** Content quality evaluation (beyond voice + hook) */
+    45→export interface ContentQualityEvaluation {
+    46→  overall: number;              // 0-1 composite score
+    47→  scriptStructure: number;      // 0-1 — does script have proper structure (hook, body, CTA)?
+    48→  ctaClarity: number;           // 0-1 — is the CTA clear and actionable?
+    49→  titleEffectiveness: number;   // 0-1 — is the title compelling?
+    50→  captionAlignment: number;     // 0-1 — does caption align with content?
+    51→  breakdown: string[];          // Human-readable explanations
+    52→  evidence: string[];           // What data was used
+    53→}
+    54→
+    55→/** Complete evaluation result */
+    56→export interface EvaluationResult {
+    57→  evaluationId: string;
+    58→  timestamp: string;
+    59→
+    60→  // The three evaluation dimensions
+    61→  voiceMatch: VoiceMatchEvaluation;
+    62→  hookCompat: HookCompatEvaluation;
+    63→  contentQuality: ContentQualityEvaluation;
+    64→
+    65→  // Composite scores
+    66→  overallScore: number;         // 0-1 weighted composite
+    67→  confidenceLevel: ConfidenceLevel;
+    68→
+    69→  // Pass/fail determination
+    70→  passed: boolean;
+    71→  failReasons: string[];       // If !passed, why
+    72→  passThreshold: number;       // The threshold used
+    73→
+    74→  // What was evaluated
+    75→  makerOutput: {
+    76→    title: string;
+    77→    hookCount: number;
+    78→    source: 'live' | 'simulated';
+    79→  };
+    80→
+    81→  // Evidence for the evaluation itself (meta-evidence)
+    82→  evaluationEvidence: string[];
+    83→  dataPointsUsed: number;
+    84→}
+    85→
+    86→// ---------------------------------------------------------------------------
+    87→// Configuration
+    88→// ---------------------------------------------------------------------------
+    89→
+    90→/** Weight configuration for overall score calculation */
+    91→const WEIGHTS = {
+    92→  voiceMatch: 0.40,    // Voice match is most important — it's the creator's identity
+    93→  hookCompat: 0.35,    // Hook compatibility drives audience engagement
+    94→  contentQuality: 0.25, // Content quality matters but is secondary
+    95→} as const;
+    96→
+    97→/** Pass threshold — Maker output must score at least this to be stored as Draft */
+    98→const PASS_THRESHOLD = 0.70;
+    99→
+   100→/** Minimum individual scores — any sub-score below this is a flag */
+   101→const MIN_INDIVIDUAL_SCORE = 0.50;
+   102→
+   103→// ---------------------------------------------------------------------------
+   104→// Step 1: Evaluate Voice Match
+   105→// ---------------------------------------------------------------------------
+   106→
+   107→export function evaluateVoiceMatch(
+   108→  output: MakerOutput,
+   109→  voice: CreatorVoiceSnapshot,
+   110→  hookPatterns: HookPatternSummary[]
+   111→): VoiceMatchEvaluation {
+   112→  const breakdown: string[] = [];
+   113→  const evidence: string[] = [];
+   114→  let subScores: number[] = [];
+   115→
+   116→  // --- Tone Alignment ---
+   117→  // Check if the output's language matches the creator's tone
+   118→  const outputText = `${output.title} ${output.caption} ${output.script} ${output.cta}`.toLowerCase();
+   119→  const toneScore = computeToneAlignment(outputText, voice.tone);
+   120→  subScores.push(toneScore);
+   121→  breakdown.push(`Tone alignment: ${(toneScore * 100).toFixed(0)}% — output ${toneScore >= 0.7 ? 'matches' : 'differs from'} "${voice.tone}" tone`);
+   122→  evidence.push(`Creator tone: ${voice.tone}`);
+   123→
+   124→  // --- Pace Consistency ---
+   125→  // Check sentence length distribution vs expected pace
+   126→  const paceScore = computePaceConsistency(output.script, voice.pace);
+   127→  subScores.push(paceScore);
+   128→  breakdown.push(`Pace consistency: ${(paceScore * 100).toFixed(0)}% — output ${paceScore >= 0.7 ? 'matches' : 'differs from'} "${voice.pace}" pace`);
+   129→  evidence.push(`Creator pace: ${voice.pace}`);
+   130→
+   131→  // --- Vocabulary Match ---
+   132→  // Check if output uses the right vocabulary level
+   133→  const vocabScore = computeVocabularyMatch(outputText, voice.vocabulary);
+   134→  subScores.push(vocabScore);
+   135→  breakdown.push(`Vocabulary match: ${(vocabScore * 100).toFixed(0)}% — output ${vocabScore >= 0.7 ? 'uses' : 'doesn\'t use'} "${voice.vocabulary}" vocabulary`);
+   136→  evidence.push(`Creator vocabulary: ${voice.vocabulary}`);
+   137→
+   138→  // --- Avoid Topics Compliance ---
+   139→  // Check if output respects the "avoid" list
+   140→  const avoidScore = computeAvoidCompliance(outputText, voice.avoidTopics);
+   141→  subScores.push(avoidScore);
+   142→  if (voice.avoidTopics.length > 0) {
+   143→    breakdown.push(`Avoid compliance: ${(avoidScore * 100).toFixed(0)}% — output ${avoidScore >= 0.9 ? 'respects' : 'violates'} avoid topics`);
+   144→    evidence.push(`Avoid topics: ${voice.avoidTopics.join(', ')}`);
+   145→  } else {
+   146→    breakdown.push(`Avoid compliance: ${(avoidScore * 100).toFixed(0)}% — no avoid topics specified`);
+   147→  }
+   148→
+   149→  // --- Strength Utilization ---
+   150→  // Check if output leverages creator's strengths
+   151→  const strengthScore = computeStrengthUtilization(outputText, voice.strengths);
+   152→  subScores.push(strengthScore);
+   153→  if (voice.strengths.length > 0) {
+   154→    breakdown.push(`Strength utilization: ${(strengthScore * 100).toFixed(0)}% — output ${strengthScore >= 0.6 ? 'leverages' : 'underutilizes'} creator strengths`);
+   155→    evidence.push(`Creator strengths: ${voice.strengths.join(', ')}`);
+   156→  } else {
+   157→    breakdown.push(`Strength utilization: ${(strengthScore * 100).toFixed(0)}% — no strengths specified`);
+   158→  }
+   159→
+   160→  // --- Composite Voice Score ---
+   161→  // Weighted average: tone and avoid are most important
+   162→  const overall = (
+   163→    toneScore * 0.30 +
+   164→    paceScore * 0.15 +
+   165→    vocabScore * 0.20 +
+   166→    avoidScore * 0.20 +
+   167→    strengthScore * 0.15
+   168→  );
+   169→
+   170→  evidence.push(`Data points: ${hookPatterns.reduce((sum, p) => sum + p.sampleSize, 0)} hook pattern samples`);
+   171→
+   172→  return {
+   173→    overall: Math.round(overall * 1000) / 1000,
+   174→    toneAlignment: Math.round(toneScore * 1000) / 1000,
+   175→    paceConsistency: Math.round(paceScore * 1000) / 1000,
+   176→    vocabularyMatch: Math.round(vocabScore * 1000) / 1000,
+   177→    avoidTopicsCompliance: Math.round(avoidScore * 1000) / 1000,
+   178→    strengthUtilization: Math.round(strengthScore * 1000) / 1000,
+   179→    breakdown,
+   180→    evidence,
+   181→  };
+   182→}
+   183→
+   184→// ---------------------------------------------------------------------------
+   185→// Step 2: Evaluate Hook Compatibility
+   186→// ---------------------------------------------------------------------------
+   187→
+   188→export function evaluateHookCompat(
+   189→  output: MakerOutput,
+   190→  hookPatterns: HookPatternSummary[],
+   191→  historicalWinners: string[]
+   192→): HookCompatEvaluation {
+   193→  const breakdown: string[] = [];
+   194→  const evidence: string[] = [];
+   195→
+   196→  // --- Primary Hook Pattern Match ---
+   197→  // Does the primary hook (in script or title) match the best-known pattern?
+   198→  const primaryHook = extractPrimaryHook(output);
+   199→  const patternMatchScore = computePatternMatch(primaryHook, hookPatterns);
+   200→  breakdown.push(`Pattern match: ${(patternMatchScore * 100).toFixed(0)}% — primary hook ${patternMatchScore >= 0.7 ? 'aligns with' : 'differs from'} best pattern`);
+   201→  if (hookPatterns.length > 0) {
+   202→    evidence.push(`Best pattern: ${hookPatterns[0].pattern} (${(hookPatterns[0].avgEffectiveness * 100).toFixed(0)}% avg, ${hookPatterns[0].sampleSize} samples)`);
+   203→  }
+   204→
+   205→  // --- Historical Alignment ---
+   206→  // Does the output resemble what worked before?
+   207→  const historicalScore = computeHistoricalAlignment(output, historicalWinners);
+   208→  breakdown.push(`Historical alignment: ${(historicalScore * 100).toFixed(0)}% — output ${historicalScore >= 0.6 ? 'resembles' : 'differs from'} past winners`);
+   209→  if (historicalWinners.length > 0) {
+   210→    evidence.push(`Historical winners: ${historicalWinners.length} items`);
+   211→  }
+   212→
+   213→  // --- Hook Variety ---
+   214→  // Are alternative hooks diverse (not all same pattern)?
+   215→  const varietyScore = computeHookVariety(output.alternativeHooks);
+   216→  breakdown.push(`Hook variety: ${(varietyScore * 100).toFixed(0)}% — ${varietyScore >= 0.7 ? 'diverse' : 'repetitive'} alternative hooks`);
+   217→  evidence.push(`Hook count: 1 primary + ${output.alternativeHooks.length} alternatives`);
+   218→
+   219→  // --- Hook Strength ---
+   220→  // Are hooks compelling (proper length, structure, opening)?
+   221→  const strengthScore = computeHookStrength(output);
+   222→  breakdown.push(`Hook strength: ${(strengthScore * 100).toFixed(0)}% — hooks ${strengthScore >= 0.7 ? 'are' : 'aren\'t'} compelling`);
+   223→
+   224→  // --- Composite Hook Score ---
+   225→  const overall = (
+   226→    patternMatchScore * 0.35 +
+   227→    historicalScore * 0.25 +
+   228→    varietyScore * 0.20 +
+   229→    strengthScore * 0.20
+   230→  );
+   231→
+   232→  evidence.push(`Data points: ${hookPatterns.reduce((sum, p) => sum + p.sampleSize, 0)} hook pattern samples + ${historicalWinners.length} winners`);
+   233→
+   234→  return {
+   235→    overall: Math.round(overall * 1000) / 1000,
+   236→    primaryHookPatternMatch: Math.round(patternMatchScore * 1000) / 1000,
+   237→    historicalAlignment: Math.round(historicalScore * 1000) / 1000,
+   238→    hookVariety: Math.round(varietyScore * 1000) / 1000,
+   239→    hookStrength: Math.round(strengthScore * 1000) / 1000,
+   240→    breakdown,
+   241→    evidence,
+   242→  };
+   243→}
+   244→
+   245→// ---------------------------------------------------------------------------
+   246→// Step 3: Evaluate Content Quality
+   247→// ---------------------------------------------------------------------------
+   248→
+   249→export function evaluateContentQuality(output: MakerOutput): ContentQualityEvaluation {
+   250→  const breakdown: string[] = [];
+   251→  const evidence: string[] = [];
+   252→
+   253→  // --- Script Structure ---
+   254→  // Does the script have hook → body → CTA?
+   255→  const structureScore = computeScriptStructure(output.script);
+   256→  breakdown.push(`Script structure: ${(structureScore * 100).toFixed(0)}% — ${structureScore >= 0.8 ? 'complete' : 'incomplete'} structure (hook/body/CTA)`);
+   257→  evidence.push(`Script length: ${output.script.length} chars`);
+   258→
+   259→  // --- CTA Clarity ---
+   260→  // Is the CTA specific and actionable?
+   261→  const ctaScore = computeCtaClarity(output.cta);
+   262→  breakdown.push(`CTA clarity: ${(ctaScore * 100).toFixed(0)}% — CTA ${ctaScore >= 0.7 ? 'is' : 'isn\'t'} clear and actionable`);
+   263→  evidence.push(`CTA: "${output.cta.substring(0, 60)}${output.cta.length > 60 ? '...' : ''}"`);
+   264→
+   265→  // --- Title Effectiveness ---
+   266→  // Is the title compelling?
+   267→  const titleScore = computeTitleEffectiveness(output.title);
+   268→  breakdown.push(`Title effectiveness: ${(titleScore * 100).toFixed(0)}% — title ${titleScore >= 0.7 ? 'is' : 'isn\'t'} compelling`);
+   269→  evidence.push(`Title: "${output.title}"`);
+   270→
+   271→  // --- Caption Alignment ---
+   272→  // Does caption align with the content?
+   273→  const captionScore = computeCaptionAlignment(output.caption, output.title, output.script);
+   274→  breakdown.push(`Caption alignment: ${(captionScore * 100).toFixed(0)}% — caption ${captionScore >= 0.7 ? 'aligns' : 'misaligns'} with content`);
+   275→  evidence.push(`Caption: "${output.caption.substring(0, 60)}${output.caption.length > 60 ? '...' : ''}"`);
+   276→
+   277→  // --- Composite Quality Score ---
+   278→  const overall = (
+   279→    structureScore * 0.35 +
+   280→    ctaScore * 0.25 +
+   281→    titleScore * 0.25 +
+   282→    captionScore * 0.15
+   283→  );
+   284→
+   285→  return {
+   286→    overall: Math.round(overall * 1000) / 1000,
+   287→    scriptStructure: Math.round(structureScore * 1000) / 1000,
+   288→    ctaClarity: Math.round(ctaScore * 1000) / 1000,
+   289→    titleEffectiveness: Math.round(titleScore * 1000) / 1000,
+   290→    captionAlignment: Math.round(captionScore * 1000) / 1000,
+   291→    breakdown,
+   292→    evidence,
+   293→  };
+   294→}
+   295→
+   296→// ---------------------------------------------------------------------------
+   297→// Step 4: Full Evaluation Pipeline
+   298→// ---------------------------------------------------------------------------
+   299→
+   300→export function evaluateMakerOutput(
+   301→  output: MakerOutput,
+   302→  voice: CreatorVoiceSnapshot,
+   303→  hookPatterns: HookPatternSummary[],
+   304→  historicalWinners: string[]
+   305→): EvaluationResult {
+   306→  const evaluationId = `eval_${Date.now()}`;
+   307→
+   308→  // Run all three evaluation dimensions
+   309→  const voiceMatch = evaluateVoiceMatch(output, voice, hookPatterns);
+   310→  const hookCompat = evaluateHookCompat(output, hookPatterns, historicalWinners);
+   311→  const contentQuality = evaluateContentQuality(output);
+   312→
+   313→  // Composite overall score (weighted)
+   314→  const overallScore = (
+   315→    voiceMatch.overall * WEIGHTS.voiceMatch +
+   316→    hookCompat.overall * WEIGHTS.hookCompat +
+   317→    contentQuality.overall * WEIGHTS.contentQuality
+   318→  );
+   319→
+   320→  // Determine pass/fail
+   321→  const failReasons: string[] = [];
+   322→  let passed = true;
+   323→
+   324→  if (overallScore < PASS_THRESHOLD) {
+   325→    passed = false;
+   326→    failReasons.push(`Overall score ${(overallScore * 100).toFixed(0)}% below threshold ${(PASS_THRESHOLD * 100).toFixed(0)}%`);
+   327→  }
+   328→
+   329→  // Check individual sub-scores for critical failures
+   330→  if (voiceMatch.avoidTopicsCompliance < MIN_INDIVIDUAL_SCORE) {
+   331→    passed = false;
+   332→    failReasons.push(`Avoid topics compliance ${(voiceMatch.avoidTopicsCompliance * 100).toFixed(0)}% below minimum ${(MIN_INDIVIDUAL_SCORE * 100).toFixed(0)}%`);
+   333→  }
+   334→
+   335→  if (voiceMatch.toneAlignment < MIN_INDIVIDUAL_SCORE) {
+   336→    passed = false;
+   337→    failReasons.push(`Tone alignment ${(voiceMatch.toneAlignment * 100).toFixed(0)}% below minimum ${(MIN_INDIVIDUAL_SCORE * 100).toFixed(0)}%`);
+   338→  }
+   339→
+   340→  // Confidence level based on data points
+   341→  const dataPointsUsed = hookPatterns.reduce((sum, p) => sum + p.sampleSize, 0) + historicalWinners.length;
+   342→  const confidenceLevel = computeConfidence(dataPointsUsed);
+   343→
+   344→  // Meta-evidence for the evaluation itself
+   345→  const evaluationEvidence: string[] = [];
+   346→  evaluationEvidence.push(`Evaluation ID: ${evaluationId}`);
+   347→  evaluationEvidence.push(`Pass threshold: ${(PASS_THRESHOLD * 100).toFixed(0)}%`);
+   348→  evaluationEvidence.push(`Weights: voice=${(WEIGHTS.voiceMatch * 100).toFixed(0)}%, hook=${(WEIGHTS.hookCompat * 100).toFixed(0)}%, quality=${(WEIGHTS.contentQuality * 100).toFixed(0)}%`);
+   349→  evaluationEvidence.push(`Data points used: ${dataPointsUsed}`);
+   350→  evaluationEvidence.push(`Confidence: ${confidenceLevel}`);
+   351→  if (!passed) {
+   352→    evaluationEvidence.push(`Failed: ${failReasons.join('; ')}`);
+   353→  }
+   354→
+   355→  return {
+   356→    evaluationId,
+   357→    timestamp: new Date().toISOString(),
+   358→    voiceMatch,
+   359→    hookCompat,
+   360→    contentQuality,
+   361→    overallScore: Math.round(overallScore * 1000) / 1000,
+   362→    confidenceLevel,
+   363→    passed,
+   364→    failReasons,
+   365→    passThreshold: PASS_THRESHOLD,
+   366→    makerOutput: {
+   367→      title: output.title,
+   368→      hookCount: output.alternativeHooks.length + 1,
+   369→      source: output.source,
+   370→    },
+   371→    evaluationEvidence,
+   372→    dataPointsUsed,
+   373→  };
+   374→}
+   375→
+   376→// ---------------------------------------------------------------------------
+   377→// Sub-score computation helpers
+   378→// ---------------------------------------------------------------------------
+   379→
+   380→function computeToneAlignment(text: string, expectedTone: string): number {
+   381→  // Score based on whether output language matches expected tone
+   382→  const toneIndicators: Record<string, { present: string[]; absent: string[] }> = {
+   383→    direct: {
+   384→      present: ['exactly', 'here\'s', 'this is', 'the fact', 'the reason', 'here\'s why', 'that\'s why'],
+   385→      absent: ['perhaps', 'maybe', 'might', 'could possibly', 'i think'],
+   386→    },
+   387→    educational: {
+   388→      present: ['step', 'learn', 'understand', 'how to', 'guide', 'framework', 'walk through', 'walk you'],
+   389→      absent: ['just', 'simply', 'obviously', 'trivially'],
+   390→    },
+   391→    witty: {
+   392→      present: ['funny', 'ironic', 'plot twist', ' spoiler', 'joke'],
+   393→      absent: [],
+   394→    },
+   395→    narrative: {
+   396→      present: ['story', 'last week', 'i spent', 'then i', 'it turned out', 'let me'],
+   397→      absent: [],
+   398→    },
+   399→  };
+   400→
+   401→  const indicators = toneIndicators[expectedTone] ?? toneIndicators.direct;
+   402→  const lowerText = text.toLowerCase();
+   403→
+   404→  let matchCount = 0;
+   405→  for (const phrase of indicators.present) {
+   406→    if (lowerText.includes(phrase.toLowerCase())) matchCount++;
+   407→  }
+   408→
+   409→  let violationCount = 0;
+   410→  for (const phrase of indicators.absent) {
+   411→    if (lowerText.includes(phrase.toLowerCase())) violationCount++;
+   412→  }
+   413→
+   414→  // Base score from matches
+   415→  const presenceRatio = indicators.present.length > 0 ? matchCount / indicators.present.length : 0.5;
+   416→  const violationPenalty = indicators.absent.length > 0 ? violationCount / indicators.absent.length : 0;
+   417→
+   418→  // Combine: baseline 0.60, + presence bonus, - violation penalty
+   419→  const score = 0.60 + presenceRatio * 0.30 - violationPenalty * 0.20;
+   420→  return Math.max(0.30, Math.min(1.0, score));
+   421→}
+   422→
+   423→function computePaceConsistency(script: string, expectedPace: string): number {
+   424→  // Analyze sentence lengths to determine pace
+   425→  const sentences = script.split(/[.!?]+/).filter((s) => s.trim().length > 10);
+   426→  if (sentences.length === 0) return 0.70;
+   427→
+   428→  const avgLength = sentences.reduce((sum, s) => sum + s.split(/\s+/).length, 0) / sentences.length;
+   429→
+   430→  // Expected word counts per sentence for each pace
+   431→  const paceExpect: Record<string, { min: number; max: number; ideal: number }> = {
+   432→    fast: { min: 5, max: 20, ideal: 12 },
+   433→    measured: { min: 10, max: 30, ideal: 18 },
+   434→    slow: { min: 15, max: 40, ideal: 25 },
+   435→  };
+   436→
+   437→  const expected = paceExpect[expectedPace] ?? paceExpect.measured;
+   438→
+   439→  // Score based on how close avgLength is to ideal
+   440→  const deviation = Math.abs(avgLength - expected.ideal) / expected.ideal;
+   441→  const score = Math.max(0.40, 1.0 - deviation * 0.5);
+   442→
+   443→  return score;
+   444→}
+   445→
+   446→function computeVocabularyMatch(text: string, expectedVocab: string): number {
+   447→  // Check vocabulary level in output
+   448→  const vocabIndicators: Record<string, { words: string[]; penalty: string[] }> = {
+   449→    technical: {
+   450→      words: ['implement', 'architecture', 'optimize', 'production', 'framework', 'debug', 'deploy', 'iterate', 'instrument', 'compound'],
+   451→      penalty: ['basically', 'simply', 'just like', 'super easy', 'no brainer'],
+   452→    },
+   453→    casual: {
+   454→      words: ['cool', 'awesome', 'stuff', 'thing', 'pretty', 'kinda', 'gonna'],
+   455→      penalty: ['therefore', 'consequently', 'henceforth', 'notwithstanding'],
+   456→    },
+   457→    academic: {
+   458→      words: ['therefore', 'consequently', 'demonstrates', 'hypothesis', 'empirical', 'analysis'],
+   459→      penalty: ['cool', 'awesome', 'stuff', 'gonna'],
+   460→    },
+   461→  };
+   462→
+   463→  const vocab = vocabIndicators[expectedVocab] ?? vocabIndicators.technical;
+   464→  const lowerText = text.toLowerCase();
+   465→
+   466→  let matchCount = 0;
+   467→  for (const word of vocab.words) {
+   468→    if (lowerText.includes(word.toLowerCase())) matchCount++;
+   469→  }
+   470→
+   471→  let penaltyCount = 0;
+   472→  for (const word of vocab.penalty) {
+   473→    if (lowerText.includes(word.toLowerCase())) penaltyCount++;
+   474→  }
+   475→
+   476→  const matchRatio = vocab.words.length > 0 ? matchCount / vocab.words.length : 0.5;
+   477→  const penaltyRatio = vocab.penalty.length > 0 ? penaltyCount / vocab.penalty.length : 0;
+   478→
+   479→  const score = 0.55 + matchRatio * 0.35 - penaltyRatio * 0.15;
+   480→  return Math.max(0.30, Math.min(1.0, score));
+   481→}
+   482→
+   483→function computeAvoidCompliance(text: string, avoidTopics: string[]): number {
+   484→  if (avoidTopics.length === 0) return 1.0; // No restrictions = perfect compliance
+   485→
+   486→  const lowerText = text.toLowerCase();
+   487→  let violations = 0;
+   488→
+   489→  for (const topic of avoidTopics) {
+   490→    // Check for key phrases from each avoid topic
+   491→    const topicLower = topic.toLowerCase();
+   492→    const keywords = topicLower.split(/\s+/).filter((w) => w.length > 3);
+   493→    for (const keyword of keywords) {
+   494→      if (lowerText.includes(keyword)) {
+   495→        violations++;
+   496→        break; // One violation per topic
+   497→      }
+   498→    }
+   499→  }
+   500→
+   501→  const violationRatio = violations / avoidTopics.length;
+   502→  return Math.max(0.20, 1.0 - violationRatio);
+   503→}
+   504→
+   505→function computeStrengthUtilization(text: string, strengths: string[]): number {
+   506→  if (strengths.length === 0) return 0.70; // No strengths specified = neutral
+   507→
+   508→  const lowerText = text.toLowerCase();
+   509→  let utilized = 0;
+   510→
+   511→  // Map strengths to keywords that indicate utilization
+   512→  const strengthKeywords: Record<string, string[]> = {
+   513→    'code walkthroughs': ['code', 'walkthrough', 'step by step', 'implementation', 'here\'s the'],
+   514→    'architecture decisions': ['architecture', 'design', 'decision', 'trade-off', 'approach'],
+   515→    'debugging strategies': ['debug', 'debugging', 'fix', 'issue', 'error', 'solve'],
+   516→    'tool comparisons': ['compare', 'vs', 'alternative', 'better', 'trade-off'],
+   517→  };
+   518→
+   519→  for (const strength of strengths) {
+   520→    const keywords = strengthKeywords[strength] ?? strength.toLowerCase().split(/\s+/);
+   521→    for (const keyword of keywords) {
+   522→      if (lowerText.includes(keyword.toLowerCase())) {
+   523→        utilized++;
+   524→        break; // One utilization per strength
+   525→      }
+   526→    }
+   527→  }
+   528→
+   529→  const ratio = utilized / strengths.length;
+   530→  return 0.40 + ratio * 0.55; // 0.40 base + up to 0.55 bonus
+   531→}
+   532→
+   533→function extractPrimaryHook(output: MakerOutput): string {
+   534→  // Extract the hook from the script's [HOOK] section
+   535→  const hookMatch = output.script.match(/\[HOOK\]\s*\n(.+)/);
+   536→  if (hookMatch) return hookMatch[1].trim();
+   537→  // Fallback: first sentence of script
+   538→  const firstSentence = output.script.split(/[.!?]/)[0];
+   539→  return firstSentence?.trim() ?? output.title;
+   540→}
+   541→
+   542→function computePatternMatch(hook: string, patterns: HookPatternSummary[]): number {
+   543→  if (patterns.length === 0) return 0.75; // No pattern data = neutral
+   544→
+   545→  const hookLower = hook.toLowerCase();
+   546→
+   547→  // Map patterns to their textual indicators
+   548→  const patternIndicators: Record<string, string[]> = {
+   549→    contrarian_claim: ['wrong', "they're wrong", 'everyone says', 'myth', 'misconception'],
+   550→    question: ['what if', 'why do', 'how could', '?'],
+   551→    story: ['last week', 'i spent', 'then i', 'story', 'it turned out'],
+   552→    statistic: ['%', 'percent', 'study', 'data', 'research'],
+   553→    tutorial: ['step', 'how to', 'guide', 'build', 'setup'],
+   554→    listicle: ['5 ', '7 ', 'top 5', 'mistakes', 'reasons'],
+   555→    analogy: ['like a', 'think of', 'imagine', 'picture', 'metaphor'],
+   556→    personal: ['i avoided', 'i tried', 'changed how', 'for me'],
+   557→  };
+   558→
+   559→  let bestScore = 0;
+   560→
+   561→  for (const pattern of patterns) {
+   562→    const indicators = patternIndicators[pattern.pattern] ?? [];
+   563→    if (indicators.length === 0) continue;
+   564→
+   565→    let matchCount = 0;
+   566→    for (const indicator of indicators) {
+   567→      if (hookLower.includes(indicator.toLowerCase())) matchCount++;
+   568→    }
+   569→
+   570→    const matchRatio = matchCount / indicators.length;
+   571→    // Weight by pattern's effectiveness and confidence
+   572→    const score = matchRatio * pattern.avgEffectiveness;
+   573→    if (score > bestScore) bestScore = score;
+   574→  }
+   575→
+   576→  // If no patterns matched at all, check basic hook quality
+   577→  if (bestScore === 0) {
+   578→    return hook.length > 20 ? 0.60 : 0.40;
+   579→  }
+   580→
+   581→  return Math.min(0.95, bestScore + 0.30); // Boost base since we found a pattern
+   582→}
+   583→
+   584→function computeHistoricalAlignment(output: MakerOutput, historicalWinners: string[]): number {
+   585→  if (historicalWinners.length === 0) return 0.70; // No history = neutral
+   586→
+   587→  const outputText = `${output.title} ${output.caption}`.toLowerCase();
+   588→  let alignmentScore = 0;
+   589→
+   590→  // Check if output's language resembles historical winners
+   591→  for (const winner of historicalWinners) {
+   592→    const winnerLower = winner.toLowerCase();
+   593→    const winnerWords = winnerLower.split(/\s+/).filter((w) => w.length > 4);
+   594→
+   595→    let matchCount = 0;
+   596→    for (const word of winnerWords) {
+   597→      if (outputText.includes(word)) matchCount++;
+   598→    }
+   599→
+   600→    if (winnerWords.length > 0) {
+   601→      alignmentScore += matchCount / winnerWords.length;
+   602→    }
+   603→  }
+   604→
+   605→  const avgAlignment = alignmentScore / historicalWinners.length;
+   606→  return 0.50 + avgAlignment * 0.45; // 0.50 base + up to 0.45 bonus
+   607→}
+   608→
+   609→function computeHookVariety(alternativeHooks: string[]): number {
+   610→  if (alternativeHooks.length === 0) return 0.40;
+   611→  if (alternativeHooks.length === 1) return 0.55;
+   612→
+   613→  // Check if hooks start differently (diverse patterns)
+   614→  const starters = new Set<string>();
+   615→  for (const hook of alternativeHooks) {
+   616→    const start = hook.split(/\s+/).slice(0, 2).join(' ').toLowerCase();
+   617→    starters.add(start);
+   618→  }
+   619→
+   620→  // Also check length variety
+   621→  const lengths = alternativeHooks.map((h) => h.length);
+   622→  const avgLen = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+   623→  const lenVariance = lengths.reduce((sum, l) => sum + Math.abs(l - avgLen), 0) / lengths.length;
+   624→
+   625→  const startVariety = starters.size / alternativeHooks.length;
+   626→  const lenVariety = Math.min(1.0, lenVariance / 50); // Normalize variance
+   627→
+   628→  return 0.50 + startVariety * 0.30 + lenVariety * 0.20;
+   629→}
+   630→
+   631→function computeHookStrength(output: MakerOutput): number {
+   632→  // Check all hooks for compelling characteristics
+   633→  const allHooks = [extractPrimaryHook(output), ...output.alternativeHooks];
+   634→
+   635→  let totalStrength = 0;
+   636→  for (const hook of allHooks) {
+   637→    let strength = 0.50; // baseline
+   638→
+   639→    // Good length (20-100 chars)
+   640→    if (hook.length >= 20 && hook.length <= 100) strength += 0.15;
+   641→    else if (hook.length > 100) strength += 0.05; // Too long but has content
+   642→
+   643→    // Starts with a strong word
+   644→    const strongStarts = ['what', 'why', 'how', 'everyone', 'nobody', 'i', 'last', '93%', '5', '7'];
+   645→    const firstWord = hook.split(/\s+/)[0]?.toLowerCase() ?? '';
+   646→    if (strongStarts.some((s) => firstWord.startsWith(s))) strength += 0.15;
+   647→
+   648→    // Contains a number (statistical hooks)
+   649→    if (/\d/.test(hook)) strength += 0.10;
+   650→
+   651→    // Contains a question mark
+   652→    if (hook.includes('?')) strength += 0.05;
+   653→
+   654→    totalStrength += Math.min(1.0, strength);
+   655→  }
+   656→
+   657→  return totalStrength / allHooks.length;
+   658→}
+   659→
+   660→function computeScriptStructure(script: string): number {
+   661→  let score = 0;
+   662→
+   663→  // Check for key structural elements
+   664→  const hasHook = /\[HOOK\]/i.test(script) || script.includes('HOOK');
+   665→  const hasBody = /\[CORE|PROOF|FRAMEWORK|INSIGHT\]/i.test(script);
+   666→  const hasCta = /\[CTA\]/i.test(script) || script.includes('CTA');
+   667→  const hasEnd = /\[END\]/i.test(script);
+   668→
+   669→  if (hasHook) score += 0.30;
+   670→  if (hasBody) score += 0.40;
+   671→  if (hasCta) score += 0.20;
+   672→  if (hasEnd) score += 0.10;
+   673→
+   674→  return Math.max(0.20, score);
+   675→}
+   676→
+   677→function computeCtaClarity(cta: string): number {
+   678→  if (!cta || cta.length < 5) return 0.20;
+   679→
+   680→  let score = 0.50; // baseline
+   681→
+   682→  // CTA should be actionable
+   683→  const actionWords = ['follow', 'subscribe', 'hit', 'click', 'try', 'download', 'share', 'join', 'check'];
+   684→  const ctaLower = cta.toLowerCase();
+   685→  for (const word of actionWords) {
+   686→    if (ctaLower.includes(word)) {
+   687→      score += 0.20;
+   688→      break;
+   689→    }
+   690→  }
+   691→
+   692→  // CTA should mention the creator or channel
+   693→  if (ctaLower.includes('for more') || ctaLower.includes('subscribe') || ctaLower.includes('follow')) {
+   694→    score += 0.15;
+   695→  }
+   696→
+   697→  // Reasonable length
+   698→  if (cta.length >= 20 && cta.length <= 200) score += 0.15;
+   699→
+   700→  return Math.min(1.0, score);
+   701→}
+   702→
+   703→function computeTitleEffectiveness(title: string): number {
+   704→  if (!title || title.length < 5) return 0.20;
+   705→
+   706→  let score = 0.50; // baseline
+   707→
+   708→  // Title should be compelling
+   709→  const compellingIndicators = ['nobody', 'secret', 'wrong', 'why', 'how', 'framework', 'mistake', 'actually'];
+   710→  const titleLower = title.toLowerCase();
+   711→  for (const indicator of compellingIndicators) {
+   712→    if (titleLower.includes(indicator)) {
+   713→      score += 0.15;
+   714→      break;
+   715→    }
+   716→  }
+   717→
+   718→  // Colon pattern (Topic: Subtitle) is effective
+   719→  if (title.includes(':')) score += 0.10;
+   720→
+   721→  // Reasonable length (20-80 chars for video title)
+   722→  if (title.length >= 20 && title.length <= 80) score += 0.15;
+   723→  else if (title.length > 80) score += 0.05;
+   724→
+   725→  return Math.min(1.0, score);
+   726→}
+   727→
+   728→function computeCaptionAlignment(caption: string, title: string, script: string): number {
+   729→  if (!caption || caption.length < 5) return 0.50;
+   730→
+   731→  let score = 0.60; // baseline
+   732→
+   733→  // Caption should reference the same topic as title
+   734→  const titleWords = new Set(title.toLowerCase().split(/\s+/).filter((w) => w.length > 4));
+   735→  const captionLower = caption.toLowerCase();
+   736→  let overlap = 0;
+   737→  for (const word of titleWords) {
+   738→    if (captionLower.includes(word)) overlap++;
+   739→  }
+   740→  if (titleWords.size > 0) {
+   741→    score += (overlap / titleWords.size) * 0.25;
+   742→  }
+   743→
+   744→  // Caption with arrow/link indicator
+   745→  if (caption.includes('→') || caption.includes('→') || caption.includes('link')) {
+   746→    score += 0.15;
+   747→  }
+   748→
+   749→  return Math.min(1.0, score);
+   750→}
+   751→
+   752→// ---------------------------------------------------------------------------
+   753→// Utility: Get evaluation thresholds for display
+   754→// ---------------------------------------------------------------------------
+   755→
+   756→export function getEvaluationThresholds() {
+   757→  return {
+   758→    passThreshold: PASS_THRESHOLD,
+   759→    minIndividualScore: MIN_INDIVIDUAL_SCORE,
+   760→    weights: WEIGHTS,
+   761→    description: 'Maker output must score ≥70% overall and ≥50% on all critical sub-scores to pass evaluation',
+   762→  };
+   763→}
+   764→
