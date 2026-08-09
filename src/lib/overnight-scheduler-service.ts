@@ -784,8 +784,24 @@ export async function approveAction(
     }
   );
 
-  // If itemType is 'draft', log the approval on the draft
+  // If itemType is 'draft', log the approval on the draft AND create CreatorDecision
   if (approval.itemType === 'draft' && approval.itemId) {
+    // Look up the draft to get its contentItemId for CreatorDecision
+    const draft = await db.draft.findUnique({ where: { id: approval.itemId } });
+    const contentItemId = draft?.contentItemId ?? null;
+
+    // Create CreatorDecision for accepted approval (mirrors reject flow)
+    if (contentItemId) {
+      await db.creatorDecision.create({
+        data: {
+          creatorId,
+          contentItemId,
+          decision: 'accepted',
+          reason: 'Creator approved overnight draft for publishing',
+        },
+      });
+    }
+
     await createAuditEvent(
       creatorId,
       'creator',
@@ -796,7 +812,9 @@ export async function approveAction(
         draftId: approval.itemId,
         approvalId,
         action: 'publish_approved',
-        note: 'Draft approved for publishing',
+        contentItemId,
+        draftVersion: draft?.version ?? null,
+        note: 'Draft approved for publishing — CreatorDecision logged',
       }
     );
   }
@@ -955,6 +973,318 @@ export async function getApprovalQueue(
   }
 
   return queue;
+}
+
+// ---------------------------------------------------------------------------
+// Expire Stale Approvals — Auto-expire approvals older than threshold
+// NON-NEGOTIABLE: Expiry prevents stale approvals from accumulating.
+// Default threshold: 48 hours. Every expiry is audit-logged.
+// ---------------------------------------------------------------------------
+
+export interface ExpireResult {
+  expired: number;
+  expiredIds: string[];
+  auditEventIds: string[];
+}
+
+export async function expireStaleApprovals(
+  creatorId: string,
+  maxAgeHours: number = 48
+): Promise<ExpireResult> {
+  const cutoff = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
+
+  // Find all pending approvals older than the cutoff
+  const staleApprovals = await db.approval.findMany({
+    where: {
+      creatorId,
+      status: 'pending',
+      createdAt: { lt: cutoff },
+    },
+  });
+
+  const expiredIds: string[] = [];
+  const auditEventIds: string[] = [];
+
+  for (const approval of staleApprovals) {
+    const now = new Date();
+
+    // Mark as expired
+    await db.approval.update({
+      where: { id: approval.id },
+      data: {
+        status: 'expired',
+        reviewedAt: now,
+      },
+    });
+
+    // Audit log the expiry
+    const auditId = await createAuditEvent(
+      creatorId,
+      'system',
+      'expire',
+      'approval',
+      approval.id,
+      {
+        approvalId: approval.id,
+        itemType: approval.itemType,
+        itemId: approval.itemId,
+        originalAction: approval.action,
+        createdAge: `${Math.round((now.getTime() - approval.createdAt.getTime()) / (60 * 60 * 1000))}h`,
+        maxAgeHours,
+        note: `Approval auto-expired after ${maxAgeHours}h without review`,
+      }
+    );
+
+    // If it was a draft approval, also log on the draft
+    if (approval.itemType === 'draft' && approval.itemId) {
+      await createAuditEvent(
+        creatorId,
+        'system',
+        'expire_approval',
+        'draft',
+        approval.itemId,
+        {
+          draftId: approval.itemId,
+          approvalId: approval.id,
+          note: 'Draft publish approval expired — draft remains unpublished',
+        }
+      );
+    }
+
+    expiredIds.push(approval.id);
+    auditEventIds.push(auditId);
+  }
+
+  return {
+    expired: staleApprovals.length,
+    expiredIds,
+    auditEventIds,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Get Approval History — includes all statuses, not just pending
+// ---------------------------------------------------------------------------
+
+export interface ApprovalHistoryItem {
+  id: string;
+  itemType: string;
+  itemId: string | null;
+  action: string;
+  status: string;
+  createdAt: string;
+  reviewedAt: string | null;
+  title?: string;
+  reason?: string;
+}
+
+export async function getApprovalHistory(
+  creatorId: string,
+  options?: { limit?: number; status?: string }
+): Promise<ApprovalHistoryItem[]> {
+  const limit = options?.limit ?? 50;
+  const where: Record<string, unknown> = { creatorId };
+  if (options?.status) {
+    where.status = options.status;
+  }
+
+  const approvals = await db.approval.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+
+  const history: ApprovalHistoryItem[] = [];
+  for (const approval of approvals) {
+    const item: ApprovalHistoryItem = {
+      id: approval.id,
+      itemType: approval.itemType,
+      itemId: approval.itemId,
+      action: approval.action,
+      status: approval.status,
+      createdAt: approval.createdAt.toISOString(),
+      reviewedAt: approval.reviewedAt?.toISOString() ?? null,
+    };
+
+    // Resolve title for drafts
+    if (approval.itemType === 'draft' && approval.itemId) {
+      const draft = await db.draft.findUnique({ where: { id: approval.itemId } });
+      if (draft) {
+        try {
+          const content = JSON.parse(draft.content);
+          item.title = content.title ?? `Draft v${draft.version}`;
+        } catch {
+          item.title = `Draft v${draft.version}`;
+        }
+      }
+    } else if (approval.itemType === 'recommendation' && approval.itemId) {
+      const rec = await db.recommendation.findUnique({ where: { id: approval.itemId } });
+      if (rec) item.title = rec.title;
+    } else if (approval.itemType === 'autonomous_run' && approval.itemId) {
+      const run = await db.autonomousRun.findUnique({ where: { id: approval.itemId } });
+      if (run) item.title = `Autonomous run: ${run.taskType}`;
+    }
+
+    history.push(item);
+  }
+
+  return history;
+}
+
+// ---------------------------------------------------------------------------
+// Audit Statistics — aggregated counts for dashboard display
+// ---------------------------------------------------------------------------
+
+export interface AuditStats {
+  totalEvents: number;
+  byActor: Record<string, number>;
+  byAction: Record<string, number>;
+  byTargetType: Record<string, number>;
+  last24h: number;
+  last7d: number;
+  oldestEvent: string | null;
+  newestEvent: string | null;
+}
+
+export async function getAuditStats(creatorId: string): Promise<AuditStats> {
+  const now = new Date();
+  const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  // Total count
+  const totalEvents = await db.auditEvent.count({ where: { creatorId } });
+
+  // Time-bounded counts
+  const last24hCount = await db.auditEvent.count({
+    where: { creatorId, createdAt: { gte: last24h } },
+  });
+  const last7dCount = await db.auditEvent.count({
+    where: { creatorId, createdAt: { gte: last7d } },
+  });
+
+  // Get all events for grouping (last 500 for performance)
+  const recentEvents = await db.auditEvent.findMany({
+    where: { creatorId },
+    orderBy: { createdAt: 'desc' },
+    take: 500,
+    select: { actor: true, action: true, targetType: true, createdAt: true },
+  });
+
+  // Group by actor
+  const byActor: Record<string, number> = {};
+  const byAction: Record<string, number> = {};
+  const byTargetType: Record<string, number> = {};
+
+  for (const evt of recentEvents) {
+    byActor[evt.actor] = (byActor[evt.actor] ?? 0) + 1;
+    byAction[evt.action] = (byAction[evt.action] ?? 0) + 1;
+    byTargetType[evt.targetType] = (byTargetType[evt.targetType] ?? 0) + 1;
+  }
+
+  // Oldest/newest
+  const oldest = await db.auditEvent.findFirst({
+    where: { creatorId },
+    orderBy: { createdAt: 'asc' },
+    select: { createdAt: true },
+  });
+  const newest = await db.auditEvent.findFirst({
+    where: { creatorId },
+    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true },
+  });
+
+  return {
+    totalEvents,
+    byActor,
+    byAction,
+    byTargetType,
+    last24h: last24hCount,
+    last7d: last7dCount,
+    oldestEvent: oldest?.createdAt.toISOString() ?? null,
+    newestEvent: newest?.createdAt.toISOString() ?? null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Filtered Audit Trail — supports filtering by actor, action, date range
+// ---------------------------------------------------------------------------
+
+export interface AuditFilterOptions {
+  actor?: string;
+  action?: string;
+  targetType?: string;
+  since?: string;  // ISO date string
+  until?: string;  // ISO date string
+  limit?: number;
+  offset?: number;
+  search?: string; // search in delta JSON
+}
+
+export interface AuditEventDetail {
+  id: string;
+  creatorId: string;
+  actor: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  delta: string | null;
+  createdAt: string;
+}
+
+export async function getFilteredAuditTrail(
+  creatorId: string,
+  filters: AuditFilterOptions = {}
+): Promise<{ events: AuditEventDetail[]; total: number }> {
+  const where: Record<string, unknown> = { creatorId };
+
+  if (filters.actor) where.actor = filters.actor;
+  if (filters.action) where.action = filters.action;
+  if (filters.targetType) where.targetType = filters.targetType;
+
+  // Date range
+  const createdAt: Record<string, Date> = {};
+  if (filters.since) createdAt.gte = new Date(filters.since);
+  if (filters.until) createdAt.lte = new Date(filters.until);
+  if (Object.keys(createdAt).length > 0) where.createdAt = createdAt;
+
+  const limit = filters.limit ?? 50;
+  const offset = filters.offset ?? 0;
+
+  // Get total count
+  const total = await db.auditEvent.count({ where });
+
+  // Get filtered events
+  const events = await db.auditEvent.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    skip: offset,
+  });
+
+  // Apply search filter on delta if provided (in-memory since SQLite can't JSON search well)
+  let filteredEvents = events.map((e) => ({
+    id: e.id,
+    creatorId: e.creatorId,
+    actor: e.actor,
+    action: e.action,
+    targetType: e.targetType,
+    targetId: e.targetId,
+    delta: e.delta,
+    createdAt: e.createdAt.toISOString(),
+  }));
+
+  if (filters.search) {
+    const searchLower = filters.search.toLowerCase();
+    filteredEvents = filteredEvents.filter(
+      (e) =>
+        e.delta?.toLowerCase().includes(searchLower) ||
+        e.action.toLowerCase().includes(searchLower) ||
+        e.targetType.toLowerCase().includes(searchLower) ||
+        e.actor.toLowerCase().includes(searchLower)
+    );
+  }
+
+  return { events: filteredEvents, total };
 }
 
 // ---------------------------------------------------------------------------
