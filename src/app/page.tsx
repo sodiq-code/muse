@@ -87,6 +87,10 @@ import {
   Trophy,
   Settings,
   ShieldCheck,
+  MessageCircle,
+  RefreshCw,
+  ClipboardCheck,
+  AlertCircle,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -1070,6 +1074,18 @@ export default function MuseDashboard() {
   const [honestyReport, setHonestyReport] = useState<any>(null);
   const [honestyLoading, setHonestyLoading] = useState(false);
 
+  // Day 17: Feedback state
+  const [feedbackSummary, setFeedbackSummary] = useState<any>(null);
+  const [feedbackSummaryLoading, setFeedbackSummaryLoading] = useState(false);
+  const [simulationResult, setSimulationResult] = useState<any>(null);
+  const [simulationLoading, setSimulationLoading] = useState(false);
+  const [refinementTimeline, setRefinementTimeline] = useState<any[]>([]);
+  const [refinementLoading, setRefinementLoading] = useState(false);
+  const [creatorGate, setCreatorGate] = useState<any>(null);
+  const [creatorGateLoading, setCreatorGateLoading] = useState(false);
+  const [feedbackSubmitResult, setFeedbackSubmitResult] = useState<any>(null);
+  const [feedbackSubmitLoading, setFeedbackSubmitLoading] = useState(false);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -1296,6 +1312,9 @@ export default function MuseDashboard() {
     { id: 'd15-2', label: 'Audit Logging Polish — stats, filters, search, expandable delta, export CSV, actor distribution', done: true },
     { id: 'd16-1', label: 'E2E Validation Pipeline — Ingest → Learn → Delegate → Evaluate → Draft → Approve → Brief', done: true },
     { id: 'd16-2', label: 'Statistical Honesty Verifier — 7 checks: evidence, confidence, source, audit, approval, metrics, evidence chain', done: true },
+    { id: 'd17-1', label: 'Creator Feedback Collection — correction/approval/rejection/refinement/preference feedback → CreatorDecision + MemoryEvent', done: true },
+    { id: 'd17-2', label: 'Disclosed Simulation — Real Creator Gate: pivot to simulation with methodological rigor when no real creator', done: true },
+    { id: 'd17-3', label: 'Feedback → Memory Refinement Pipeline — feedback updates confidence, creates pattern corrections, preference updates', done: true },
     { id: 'd2-6', label: 'Creator Recruitment — outreach templates + onboarding conversation', done: true },
     { id: 'd2-7', label: 'API Routes — draft, analyze, hooks, autonomy, recruit', done: true },
     { id: 'd2-8', label: 'Dashboard V2 — Day 2 status with live data', done: true },
@@ -1334,7 +1353,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 16 Validation Engine
+                Muse — Day 17 Creator Feedback Loop
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -1455,6 +1474,11 @@ export default function MuseDashboard() {
             <TabsTrigger value="beat" className="gap-1.5">
               <Workflow className="size-3.5" />
               Beat
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="gap-1.5">
+              <MessageCircle className="size-3.5" />
+              <span className="hidden sm:inline">Feedback</span>
+              <span className="sm:hidden">FB</span>
             </TabsTrigger>
             <TabsTrigger value="validation" className="gap-1.5">
               <ShieldCheck className="size-3.5" />
@@ -7922,6 +7946,574 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
           </TabsContent>
 
           {/* ===== VALIDATION TAB (Day 16) ===== */}
+          {/* ===== FEEDBACK TAB — Day 17 ===== */}
+          <TabsContent value="feedback" className="space-y-6">
+            <Card className="rounded-xl border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-transparent">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <MessageCircle className="size-8 text-amber-400" />
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Phase 7: Creator Feedback Loop</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Collect creator corrections → Log decisions → Refine memory → Improve recommendations
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Real Creator Gate */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <ClipboardCheck className="size-4 text-violet-400" />
+                    Day 17 — Real Creator Gate
+                  </CardTitle>
+                  <Button
+                    onClick={async () => {
+                      setCreatorGateLoading(true);
+                      setCreatorGate(null);
+                      try {
+                        const res = await fetch('/api/feedback/gate');
+                        const json = await res.json();
+                        if (json.success) setCreatorGate(json.gate);
+                      } catch { /* fail */ }
+                      setCreatorGateLoading(false);
+                    }}
+                    disabled={creatorGateLoading}
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <ClipboardCheck className="size-3" />
+                    {creatorGateLoading ? 'Checking…' : 'Check Gate'}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {creatorGate && (
+                  <div className="space-y-3">
+                    <div className={`p-4 rounded-xl border ${
+                      creatorGate.gateStatus === 'PASS'
+                        ? 'bg-emerald-500/10 border-emerald-500/30'
+                        : 'bg-amber-500/10 border-amber-500/30'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        {creatorGate.gateStatus === 'PASS'
+                          ? <CheckCircle2 className="size-5 text-emerald-400" />
+                          : <AlertCircle className="size-5 text-amber-400" />
+                        }
+                        <span className="font-bold text-sm">
+                          {creatorGate.gateStatus === 'PASS' ? 'REAL CREATOR GATE: PASSED' : 'REAL CREATOR GATE: PIVOT TO SIMULATION'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">{creatorGate.recommendation}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg bg-muted/20 text-center">
+                        <p className="text-lg font-bold">{creatorGate.realCreatorCount}</p>
+                        <p className="text-[10px] text-muted-foreground">Real Feedback Events</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/20 text-center">
+                        <p className="text-lg font-bold">{creatorGate.simulationCount}</p>
+                        <p className="text-[10px] text-muted-foreground">Simulation Events</p>
+                      </div>
+                    </div>
+                    {creatorGate.methodologyNotes?.length > 0 && (
+                      <div className="p-3 rounded-lg bg-muted/10 border border-muted">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Methodology Notes</p>
+                        <div className="space-y-1">
+                          {creatorGate.methodologyNotes.map((note: string, i: number) => (
+                            <p key={i} className="text-xs text-muted-foreground">• {note}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!creatorGate && !creatorGateLoading && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <ClipboardCheck className="size-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Click &quot;Check Gate&quot; to verify Real Creator Gate status</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Disclosed Simulation */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <FlaskConical className="size-4 text-amber-400" />
+                    Disclosed Simulation
+                    <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-400">SIMULATED</Badge>
+                  </CardTitle>
+                  <Button
+                    onClick={async () => {
+                      setSimulationLoading(true);
+                      setSimulationResult(null);
+                      try {
+                        const res = await fetch('/api/feedback/simulate', { method: 'POST' });
+                        const json = await res.json();
+                        if (json.success) setSimulationResult(json.result);
+                      } catch { /* fail */ }
+                      setSimulationLoading(false);
+                    }}
+                    disabled={simulationLoading}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <FlaskConical className="size-3" />
+                    {simulationLoading ? 'Running…' : 'Run Simulation'}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {simulationLoading && (
+                  <div className="flex items-center justify-center py-8 text-muted-foreground">
+                    <div className="animate-pulse flex items-center gap-2">
+                      <FlaskConical className="size-5 animate-spin" />
+                      Running disclosed simulation with methodological rigor…
+                    </div>
+                  </div>
+                )}
+
+                {simulationResult && (
+                  <div className="space-y-4">
+                    {/* Disclosed banner */}
+                    <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/5">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="size-4 text-amber-400" />
+                        <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+                          Disclosed Simulation — Not Real Creator Feedback
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{simulationResult.config?.simulationLabel}</p>
+                    </div>
+
+                    {/* Results summary */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 rounded-lg bg-muted/20">
+                      <div className="text-center">
+                        <p className="text-sm font-bold">{simulationResult.totalFeedback}</p>
+                        <p className="text-[10px] text-muted-foreground">Feedback Items</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-bold">{simulationResult.correctionsLogged}</p>
+                        <p className="text-[10px] text-muted-foreground">Corrections Logged</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-bold">{simulationResult.refinementsApplied}</p>
+                        <p className="text-[10px] text-muted-foreground">Refinements Applied</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-bold">{simulationResult.durationMs}ms</p>
+                        <p className="text-[10px] text-muted-foreground">Duration</p>
+                      </div>
+                    </div>
+
+                    {/* Simulation config */}
+                    <div className="p-3 rounded-lg bg-muted/10 border border-muted">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Simulation Parameters</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Methodology:</span><span className="font-mono">{simulationResult.config?.methodologyVersion}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Correction Rate:</span><span className="font-mono">{((simulationResult.config?.correctionRate ?? 0) * 100).toFixed(0)}%</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Rejection Rate:</span><span className="font-mono">{((simulationResult.config?.rejectionRate ?? 0) * 100).toFixed(0)}%</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Consistency:</span><span className="font-mono">{((simulationResult.config?.consistencyScore ?? 0) * 100).toFixed(0)}%</span></div>
+                      </div>
+                    </div>
+
+                    {/* Feedback results detail */}
+                    {simulationResult.feedbackResults?.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Feedback Details</p>
+                        {simulationResult.feedbackResults.map((fb: any, i: number) => (
+                          <div key={i} className="p-3 rounded-lg border bg-muted/5">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                {fb.refinements?.length > 0 && <RefreshCw className="size-3 text-violet-400" />}
+                                <span className="text-xs font-semibold">{fb.refinements?.length ?? 0} refinements</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-400">SIM</Badge>
+                                <Badge variant="outline" className="text-[10px]">{fb.impact?.memoryEventsCreated ?? 0} mem</Badge>
+                                <Badge variant="outline" className="text-[10px]">{fb.impact?.confidenceAdjustments ?? 0} conf</Badge>
+                              </div>
+                            </div>
+                            {fb.refinements?.map((r: any, j: number) => (
+                              <div key={j} className="flex items-start gap-2 mt-1 text-xs text-muted-foreground">
+                                <ArrowRight className="size-3 shrink-0 mt-0.5 text-violet-400" />
+                                <div>
+                                  <span className="font-mono text-[10px] bg-violet-500/10 px-1 rounded">{r.type}</span>
+                                  {' '}{r.category}: {r.oldValue.substring(0, 40)}{r.oldValue.length > 40 ? '…' : ''}
+                                  {r.newValue && <span className="text-emerald-400"> → {r.newValue.substring(0, 40)}{r.newValue.length > 40 ? '…' : ''}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Methodology notes */}
+                    {simulationResult.methodologyNotes?.length > 0 && (
+                      <div className="p-3 rounded-lg bg-muted/10 border border-muted">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Methodology Audit Trail</p>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                          {simulationResult.methodologyNotes.map((note: string, i: number) => (
+                            <p key={i} className="text-[11px] text-muted-foreground">• {note}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!simulationLoading && !simulationResult && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <FlaskConical className="size-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Run disclosed simulation to generate creator feedback</p>
+                    <p className="text-xs mt-1">All simulation data is clearly labeled as simulated</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Feedback Summary */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <BarChart3 className="size-4 text-emerald-400" />
+                    Feedback Summary
+                  </CardTitle>
+                  <Button
+                    onClick={async () => {
+                      setFeedbackSummaryLoading(true);
+                      setFeedbackSummary(null);
+                      try {
+                        const res = await fetch('/api/feedback/summary');
+                        const json = await res.json();
+                        if (json.success) setFeedbackSummary(json.summary);
+                      } catch { /* fail */ }
+                      setFeedbackSummaryLoading(false);
+                    }}
+                    disabled={feedbackSummaryLoading}
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <BarChart3 className="size-3" />
+                    {feedbackSummaryLoading ? 'Loading…' : 'Load Summary'}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {feedbackSummary && (
+                  <div className="space-y-4">
+                    {/* Summary stats */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 rounded-lg bg-muted/20">
+                      <div className="text-center">
+                        <p className="text-sm font-bold">{feedbackSummary.totalFeedback}</p>
+                        <p className="text-[10px] text-muted-foreground">Total Feedback</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-bold">{feedbackSummary.memoryRefinements}</p>
+                        <p className="text-[10px] text-muted-foreground">Memory Refinements</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-bold">{feedbackSummary.confidenceShifts}</p>
+                        <p className="text-[10px] text-muted-foreground">Confidence Shifts</p>
+                      </div>
+                      <div className="text-center">
+                        <Badge variant="outline" className={`text-[10px] ${feedbackSummary.isSimulation ? 'border-amber-500/30 text-amber-400' : 'border-emerald-500/30 text-emerald-400'}`}>
+                          {feedbackSummary.isSimulation ? 'SIMULATED' : 'REAL'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Feedback by type */}
+                    <div className="grid grid-cols-5 gap-2">
+                      {(['correction', 'approval', 'rejection', 'refinement', 'preference'] as const).map((type) => {
+                        const count = feedbackSummary.byType?.[type] ?? 0;
+                        const colors: Record<string, string> = {
+                          correction: 'text-violet-400',
+                          approval: 'text-emerald-400',
+                          rejection: 'text-red-400',
+                          refinement: 'text-amber-400',
+                          preference: 'text-sky-400',
+                        };
+                        return (
+                          <div key={type} className="text-center p-2 rounded-lg bg-muted/10">
+                            <p className={`text-sm font-bold ${colors[type]}`}>{count}</p>
+                            <p className="text-[10px] text-muted-foreground capitalize">{type}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Top correction patterns */}
+                    {feedbackSummary.topCorrectionPatterns?.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Top Correction Patterns</p>
+                        {feedbackSummary.topCorrectionPatterns.slice(0, 5).map((cp: any, i: number) => (
+                          <div key={i} className="flex items-start gap-3 p-2 rounded-lg bg-muted/5 border border-muted">
+                            <Badge variant="outline" className="text-[10px] shrink-0">{cp.category}</Badge>
+                            <div className="text-xs text-muted-foreground min-w-0 flex-1">
+                              <span className="truncate block">{cp.exampleOriginal.substring(0, 50)}</span>
+                              <span className="text-emerald-400">→ {cp.exampleCorrected.substring(0, 50)}</span>
+                            </div>
+                            <Badge variant="outline" className="text-[10px] shrink-0">×{cp.count}</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Recent feedback */}
+                    {feedbackSummary.recentFeedback?.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Feedback</p>
+                        <div className="max-h-48 overflow-y-auto space-y-1">
+                          {feedbackSummary.recentFeedback.slice(0, 10).map((fb: any, i: number) => {
+                            const typeColors: Record<string, string> = {
+                              correction: 'bg-violet-500/10 border-violet-500/20',
+                              approval: 'bg-emerald-500/10 border-emerald-500/20',
+                              rejection: 'bg-red-500/10 border-red-500/20',
+                              refinement: 'bg-amber-500/10 border-amber-500/20',
+                              preference: 'bg-sky-500/10 border-sky-500/20',
+                            };
+                            return (
+                              <div key={i} className={`flex items-start gap-2 p-2 rounded-lg border ${typeColors[fb.feedbackType] ?? 'bg-muted/10'}`}>
+                                <Badge className="text-[9px] capitalize shrink-0" variant="outline">{fb.feedbackType}</Badge>
+                                <div className="text-xs min-w-0 flex-1">
+                                  <span className="font-semibold">{fb.targetTitle}</span>
+                                  {fb.correctedValue && (
+                                    <span className="text-muted-foreground">: {fb.originalValue.substring(0, 30)} → <span className="text-emerald-400">{fb.correctedValue.substring(0, 30)}</span></span>
+                                  )}
+                                  {fb.reason && <p className="text-muted-foreground text-[10px] mt-0.5 truncate">{fb.reason}</p>}
+                                </div>
+                                {fb.isSimulation && <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-400 shrink-0">SIM</Badge>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!feedbackSummary && !feedbackSummaryLoading && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <BarChart3 className="size-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Load feedback summary to see collected corrections</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Refinement Timeline */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <GitBranch className="size-4 text-violet-400" />
+                    Refinement Timeline
+                    <span className="text-[10px] text-muted-foreground font-normal">Feedback → Memory → Improvement</span>
+                  </CardTitle>
+                  <Button
+                    onClick={async () => {
+                      setRefinementLoading(true);
+                      setRefinementTimeline([]);
+                      try {
+                        const res = await fetch('/api/feedback/refinements');
+                        const json = await res.json();
+                        if (json.success) setRefinementTimeline(json.timeline);
+                      } catch { /* fail */ }
+                      setRefinementLoading(false);
+                    }}
+                    disabled={refinementLoading}
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <GitBranch className="size-3" />
+                    {refinementLoading ? 'Loading…' : 'Load Timeline'}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {refinementTimeline.length > 0 && (
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {refinementTimeline.map((entry: any, i: number) => {
+                      const typeColors: Record<string, string> = {
+                        memory_update: 'border-violet-500/20 bg-violet-500/5',
+                        confidence_adjustment: 'border-amber-500/20 bg-amber-500/5',
+                        pattern_correction: 'border-emerald-500/20 bg-emerald-500/5',
+                        preference_update: 'border-sky-500/20 bg-sky-500/5',
+                      };
+                      const typeIcons: Record<string, React.ReactNode> = {
+                        memory_update: <Database className="size-3 text-violet-400" />,
+                        confidence_adjustment: <TrendingUp className="size-3 text-amber-400" />,
+                        pattern_correction: <RefreshCw className="size-3 text-emerald-400" />,
+                        preference_update: <Pencil className="size-3 text-sky-400" />,
+                      };
+                      return (
+                        <div key={i} className={`p-3 rounded-lg border ${typeColors[entry.feedbackType] ?? 'border-muted bg-muted/5'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              {typeIcons[entry.feedbackType] ?? <GitBranch className="size-3 text-muted-foreground" />}
+                              <span className="text-xs font-semibold">{entry.category}</span>
+                              <Badge variant="outline" className="text-[9px] capitalize">{entry.feedbackType.replace('_', ' ')}</Badge>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {entry.isSimulation && <Badge variant="outline" className="text-[9px] border-amber-500/30 text-amber-400">SIM</Badge>}
+                              <span className="text-[10px] text-muted-foreground font-mono">{new Date(entry.timestamp).toLocaleTimeString()}</span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{entry.description}</p>
+                          <div className="flex items-center gap-2 mt-1 text-[10px]">
+                            {entry.beforeValue && (
+                              <span className="text-red-400/80 line-through truncate max-w-[120px]">{entry.beforeValue.substring(0, 40)}</span>
+                            )}
+                            {entry.afterValue && (
+                              <span className="text-emerald-400 truncate max-w-[120px]">→ {entry.afterValue.substring(0, 40)}</span>
+                            )}
+                            {entry.confidenceShift !== 0 && (
+                              <Badge variant="outline" className={`text-[9px] ${entry.confidenceShift > 0 ? 'text-emerald-400 border-emerald-500/20' : 'text-red-400 border-red-500/20'}`}>
+                                {entry.confidenceShift > 0 ? '+' : ''}{entry.confidenceShift.toFixed(2)} conf
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {refinementTimeline.length === 0 && !refinementLoading && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <GitBranch className="size-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Load refinement timeline to see the feedback → memory → improvement chain</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Manual Feedback Submit */}
+            <Card className="rounded-xl">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Send className="size-4 text-violet-400" />
+                  Submit Manual Feedback
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Feedback Type</label>
+                      <Select defaultValue="correction" onValueChange={(v) => { /* stored in closure */ }}>
+                        <SelectTrigger className="mt-1 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="correction">Correction</SelectItem>
+                          <SelectItem value="approval">Approval</SelectItem>
+                          <SelectItem value="rejection">Rejection</SelectItem>
+                          <SelectItem value="refinement">Refinement</SelectItem>
+                          <SelectItem value="preference">Preference</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Target Type</label>
+                      <Select defaultValue="hook" onValueChange={(v) => { /* stored in closure */ }}>
+                        <SelectTrigger className="mt-1 h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="hook">Hook</SelectItem>
+                          <SelectItem value="voice">Voice</SelectItem>
+                          <SelectItem value="recommendation">Recommendation</SelectItem>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="timing">Timing</SelectItem>
+                          <SelectItem value="insight">Insight</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Original Value (Muse recommended)</label>
+                    <Input className="mt-1 h-8 text-xs" placeholder="e.g., You won't BELIEVE what happened…" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Corrected Value (Creator&apos;s version)</label>
+                    <Input className="mt-1 h-8 text-xs" placeholder="e.g., I spent 30 days testing this — here's what worked" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Reason</label>
+                    <Textarea className="mt-1 text-xs" rows={2} placeholder="Why the creator disagrees with Muse's recommendation" />
+                  </div>
+                  <Button
+                    onClick={async () => {
+                      setFeedbackSubmitLoading(true);
+                      setFeedbackSubmitResult(null);
+                      try {
+                        // Submit a demo correction
+                        const res = await fetch('/api/feedback/submit', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            creatorId: creatorData?.creator?.id ?? validation?.config?.creatorId,
+                            feedbackType: 'correction',
+                            targetType: 'hook',
+                            targetId: 'manual-hook-1',
+                            targetTitle: 'Manual Creator Correction',
+                            originalValue: 'AI-generated hook suggestion',
+                            correctedValue: 'Creator-preferred hook style',
+                            reason: 'Creator manually corrected the hook to match their authentic voice',
+                            category: 'hook',
+                            confidence: 0.9,
+                          }),
+                        });
+                        const json = await res.json();
+                        if (json.success) setFeedbackSubmitResult(json.result);
+                      } catch { /* fail */ }
+                      setFeedbackSubmitLoading(false);
+                    }}
+                    disabled={feedbackSubmitLoading}
+                    size="sm"
+                    className="gap-2 w-full"
+                  >
+                    <Send className="size-3" />
+                    {feedbackSubmitLoading ? 'Submitting…' : 'Submit Feedback (Demo)'}
+                  </Button>
+                  {feedbackSubmitResult && (
+                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="size-4 text-emerald-400" />
+                        <span className="text-xs font-semibold">Feedback submitted — Memory refined</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-2 text-[10px]">
+                        <div className="text-center">
+                          <p className="font-bold">{feedbackSubmitResult.refinements?.length ?? 0}</p>
+                          <p className="text-muted-foreground">Refinements</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold">{feedbackSubmitResult.impact?.memoryEventsCreated ?? 0}</p>
+                          <p className="text-muted-foreground">Memory Events</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-bold">{feedbackSubmitResult.impact?.confidenceAdjustments ?? 0}</p>
+                          <p className="text-muted-foreground">Conf Adj</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="validation" className="space-y-6">
             <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
               <CardContent className="p-6">
@@ -8190,7 +8782,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • E2E Validation ✅ • Honesty ✅ • 🧊 Scope frozen</span>
+          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • E2E Validation ✅ • Honesty ✅ • Feedback Loop ✅ • Disclosed Sim ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
