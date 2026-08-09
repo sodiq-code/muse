@@ -679,3 +679,66 @@ Stage Summary:
 - Voice match 95%, Hook compatibility 80% — both honest scores from real data analysis
 - Graceful fallback: 401s from Minds API → Maker Simulator produces real creative output
 - Phase 4 continues on Day 10 (Maker output evaluation + Draft storage)
+---
+Task ID: 10
+Agent: full-stack-developer
+Task: Day 10 — Implement Maker output evaluation (voice match, hook compat) + Store Maker output as Draft
+
+Work Log:
+- Created src/lib/evaluation-service.ts — Full evaluation engine with 3 scoring dimensions
+  - evaluateVoiceMatch(): 5 sub-scores — tone alignment, pace consistency, vocabulary match, avoid topics compliance, strength utilization
+  - evaluateHookCompat(): 4 sub-scores — primary hook pattern match, historical alignment, hook variety, hook strength
+  - evaluateContentQuality(): 4 sub-scores — script structure, CTA clarity, title effectiveness, caption alignment
+  - evaluateMakerOutput(): combines all 3 dimensions with weighted scoring (Voice 40%, Hook 35%, Quality 25%)
+  - Pass threshold: 70% overall, 50% minimum on critical sub-scores (tone alignment, avoid topics compliance)
+  - Every sub-score has human-readable breakdown + evidence chain
+  - Honest scoring: no inflated metrics, confidence based on real data points
+- Created src/lib/draft-pipeline.ts — Draft storage pipeline
+  - storeDraftFromEvaluation(): stores evaluated Maker output as Draft in DB (only if evaluation passes)
+  - ensureContentItem(): creates or finds existing ContentItem for the draft
+  - getNextVersion(): auto-increments version for same content item
+  - listDrafts(): lists all drafts with computed evaluation details (scores, topic, source)
+  - getDraftWithContent(): single draft with full script/caption/CTA/hooks
+  - deleteDraft(): with audit trail
+  - Audit events: 'create' for stored drafts, 'reject' for failed evaluations
+- Created src/app/api/delegation/evaluate/route.ts — Evaluation API endpoint
+  - GET: returns evaluation thresholds (70% pass, 50% min individual), weights, creator context
+  - POST: full Muse→Maker→Evaluate→Store pipeline — runs delegation, evaluates output, stores draft
+- Created src/app/api/drafts/route.ts — Drafts CRUD API
+  - GET: lists all drafts with summary stats (total, passed, failed, avg scores)
+  - DELETE: deletes draft by ID with audit trail
+- Enhanced src/lib/delegation-service.ts — Added runDelegationWithEvaluation() pipeline (Day 10)
+  - Full pipeline: load context → build instruction → execute delegation → evaluate → store draft
+  - DelegationWithEvaluationResult extends DelegationResult with evaluation + draft
+- Enhanced src/app/page.tsx dashboard for Day 10
+  - Header: 'Muse — Day 10 Evaluation & Drafts'
+  - Tab 12: 'Evaluate' — View Thresholds button, Run Evaluate + Store Draft button
+    - Thresholds display: pass threshold, min individual score, weights, creator context
+    - Evaluation result: pass/fail banner, 3-column score display (Voice/Hook/Quality)
+    - Sub-score bars with color coding (green ≥70%, yellow ≥50%, red <50%)
+    - Breakdowns for each dimension, fail reasons, draft storage confirmation, meta-evidence
+  - Tab 13: 'Drafts' — Load Drafts button, summary stats, draft list cards
+    - Each draft card: version, score badge, source badge, voice/hook/quality bars, topic, date, changelog
+  - ScoreBar sub-component for mini progress bars in evaluation results
+  - Footer: 'Evaluation ✅ • Drafts ✅ • 🧊 Scope frozen'
+- API verification:
+  - GET /api/delegation/evaluate: 200, thresholds passThreshold=70%, weights V40%/H35%/Q25%
+  - POST /api/delegation/evaluate: 200, Overall 80%, PASSED
+    - Voice Match: 82% (Tone 73%, Pace 85%, Vocab 76%, Avoid 100%, Strengths 81%)
+    - Hook Compat: 67% (Pattern 60%, History 53%, Variety 86%, Strength 76%)
+    - Content Quality: 94% (Structure 100%, CTA 100%, Title 80%, Caption 90%)
+    - Draft stored: v1, draftId and contentItemId assigned
+  - Second evaluation: v2 created (versioning works)
+  - Custom topic (React performance optimization): 79%, PASSED, v1 (new ContentItem)
+  - GET /api/drafts: 200, 3 drafts total, all passed, avg score 80%, avg voice 82%, avg hook 67%
+- Browser verification: Page renders with Day 10 header, all 13 tabs present (including Evaluate + Drafts), footer correct
+- Lint: 0 errors, 0 warnings
+- Schema unchanged (12 models, still frozen)
+- Pushed to GitHub: commit 0aab105
+
+Stage Summary:
+- Day 10 (Phase 4: DELEGATION) complete — both tasks done
+- Maker output evaluation works: 3 scoring dimensions (Voice Match 82%, Hook Compat 67%, Content Quality 94%), honest scores with evidence chains
+- Draft pipeline works: evaluated Maker output stored as Draft in DB, versioning auto-increments, audit trail for every action
+- Full Muse→Maker→Evaluate→Store pipeline verified end-to-end
+- Phase 4 continues on Day 11 (Demo the full delegation beat: Muse→Maker→evaluate→store)
