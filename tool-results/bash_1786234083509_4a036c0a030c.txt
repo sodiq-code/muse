@@ -1,0 +1,269 @@
+Started PID: 19132
+$ next dev -p 3000 2>&1 | tee dev.log
+▲ Next.js 16.1.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://21.0.9.1:3000
+- Environments: .env.local, .env
+
+✓ Starting...
+✓ Ready in 699ms
+○ Compiling / ...
+ GET / 200 in 4.1s (compile: 3.8s, render: 252ms)
+ POST /api/learning/hooks 200 in 79ms (compile: 58ms, render: 21ms)
+ POST /api/minds/draft 200 in 111ms (compile: 106ms, render: 6ms)
+ GET /api/autonomy/status 200 in 69ms (compile: 63ms, render: 6ms)
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`MemoryEvent`.`id` FROM `main`.`MemoryEvent` WHERE `main`.`MemoryEvent`.`creatorId` = ? LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`AuditEvent`.`id` FROM `main`.`AuditEvent` WHERE `main`.`AuditEvent`.`creatorId` = ? LIMIT ? OFFSET ?) AS `sub`
+ GET /api/creator 200 in 198ms (compile: 118ms, render: 80ms)
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`MemoryEvent`.`id`, `main`.`MemoryEvent`.`creatorId`, `main`.`MemoryEvent`.`category`, `main`.`MemoryEvent`.`key`, `main`.`MemoryEvent`.`value`, `main`.`MemoryEvent`.`confidence`, `main`.`MemoryEvent`.`source`, `main`.`MemoryEvent`.`sessionId`, `main`.`MemoryEvent`.`createdAt` FROM `main`.`MemoryEvent` WHERE `main`.`MemoryEvent`.`creatorId` = ? ORDER BY `main`.`MemoryEvent`.`createdAt` DESC LIMIT ? OFFSET ?
+ GET /api/creator/memory 200 in 51ms (compile: 38ms, render: 12ms)
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`AuditEvent`.`id`, `main`.`AuditEvent`.`creatorId`, `main`.`AuditEvent`.`actor`, `main`.`AuditEvent`.`action`, `main`.`AuditEvent`.`targetType`, `main`.`AuditEvent`.`targetId`, `main`.`AuditEvent`.`delta`, `main`.`AuditEvent`.`createdAt` FROM `main`.`AuditEvent` WHERE `main`.`AuditEvent`.`creatorId` = ? ORDER BY `main`.`AuditEvent`.`createdAt` DESC LIMIT ? OFFSET ?
+ GET /api/creator/audit 200 in 37ms (compile: 28ms, render: 9ms)
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE (`main`.`ContentItem`.`creatorId` = ? AND `main`.`ContentItem`.`title` IN (?,?,?,?,?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+ GET /api/creator/voice 200 in 46ms (compile: 37ms, render: 9ms)
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`voiceProfile` FROM `main`.`Creator` WHERE (`main`.`Creator`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE (`main`.`ContentItem`.`creatorId` = ? AND `main`.`ContentItem`.`title` IN (?,?,?,?,?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE (`main`.`ContentItem`.`creatorId` = ? AND `main`.`ContentItem`.`title` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`CreatorDecision`.`id` FROM `main`.`CreatorDecision` WHERE `main`.`CreatorDecision`.`creatorId` = ? LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`ContentItem`.`id`, `main`.`ContentItem`.`creatorId`, `main`.`ContentItem`.`type`, `main`.`ContentItem`.`title`, `main`.`ContentItem`.`status`, `main`.`ContentItem`.`body`, `main`.`ContentItem`.`platformMeta`, `main`.`ContentItem`.`publishedAt`, `main`.`ContentItem`.`createdAt`, `main`.`ContentItem`.`updatedAt` FROM `main`.`ContentItem` WHERE `main`.`ContentItem`.`creatorId` = ? ORDER BY `main`.`ContentItem`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentMetric`.`id`, `main`.`ContentMetric`.`contentItemId`, `main`.`ContentMetric`.`metricKey`, `main`.`ContentMetric`.`metricValue`, `main`.`ContentMetric`.`capturedAt` FROM `main`.`ContentMetric` WHERE `main`.`ContentMetric`.`contentItemId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ORDER BY `main`.`ContentMetric`.`capturedAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Hook`.`id`, `main`.`Hook`.`contentItemId`, `main`.`Hook`.`text`, `main`.`Hook`.`hookType`, `main`.`Hook`.`effectiveness`, `main`.`Hook`.`createdAt` FROM `main`.`Hook` WHERE `main`.`Hook`.`contentItemId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ORDER BY `main`.`Hook`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`HookPattern`.`id`, `main`.`HookPattern`.`hookId`, `main`.`HookPattern`.`patternName`, `main`.`HookPattern`.`confidence`, `main`.`HookPattern`.`sampleSize`, `main`.`HookPattern`.`avgEffectiveness`, `main`.`HookPattern`.`createdAt`, `main`.`HookPattern`.`updatedAt` FROM `main`.`HookPattern` WHERE `main`.`HookPattern`.`hookId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentItem`.`id`, `main`.`ContentItem`.`creatorId`, `main`.`ContentItem`.`type`, `main`.`ContentItem`.`title`, `main`.`ContentItem`.`status`, `main`.`ContentItem`.`body`, `main`.`ContentItem`.`platformMeta`, `main`.`ContentItem`.`publishedAt`, `main`.`ContentItem`.`createdAt`, `main`.`ContentItem`.`updatedAt` FROM `main`.`ContentItem` WHERE `main`.`ContentItem`.`creatorId` = ? ORDER BY `main`.`ContentItem`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentMetric`.`id`, `main`.`ContentMetric`.`contentItemId`, `main`.`ContentMetric`.`metricKey`, `main`.`ContentMetric`.`metricValue`, `main`.`ContentMetric`.`capturedAt` FROM `main`.`ContentMetric` WHERE `main`.`ContentMetric`.`contentItemId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Hook`.`id`, `main`.`Hook`.`contentItemId`, `main`.`Hook`.`text`, `main`.`Hook`.`hookType`, `main`.`Hook`.`effectiveness`, `main`.`Hook`.`createdAt` FROM `main`.`Hook` WHERE `main`.`Hook`.`contentItemId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`HookPattern`.`id`, `main`.`HookPattern`.`hookId`, `main`.`HookPattern`.`patternName`, `main`.`HookPattern`.`confidence`, `main`.`HookPattern`.`sampleSize`, `main`.`HookPattern`.`avgEffectiveness`, `main`.`HookPattern`.`createdAt`, `main`.`HookPattern`.`updatedAt` FROM `main`.`HookPattern` WHERE `main`.`HookPattern`.`hookId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+ GET /api/content 200 in 58ms (compile: 39ms, render: 19ms)
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE (`main`.`ContentItem`.`creatorId` = ? AND `main`.`ContentItem`.`title` IN (?,?,?,?,?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`ContentItem`.`id`, `main`.`ContentItem`.`creatorId`, `main`.`ContentItem`.`type`, `main`.`ContentItem`.`title`, `main`.`ContentItem`.`status`, `main`.`ContentItem`.`body`, `main`.`ContentItem`.`platformMeta`, `main`.`ContentItem`.`publishedAt`, `main`.`ContentItem`.`createdAt`, `main`.`ContentItem`.`updatedAt` FROM `main`.`ContentItem` WHERE `main`.`ContentItem`.`creatorId` = ? ORDER BY `main`.`ContentItem`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentMetric`.`id`, `main`.`ContentMetric`.`contentItemId`, `main`.`ContentMetric`.`metricKey`, `main`.`ContentMetric`.`metricValue`, `main`.`ContentMetric`.`capturedAt` FROM `main`.`ContentMetric` WHERE `main`.`ContentMetric`.`contentItemId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Hook`.`id`, `main`.`Hook`.`contentItemId`, `main`.`Hook`.`text`, `main`.`Hook`.`hookType`, `main`.`Hook`.`effectiveness`, `main`.`Hook`.`createdAt` FROM `main`.`Hook` WHERE `main`.`Hook`.`contentItemId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentItem`.`id`, `main`.`ContentItem`.`creatorId`, `main`.`ContentItem`.`type`, `main`.`ContentItem`.`title`, `main`.`ContentItem`.`status`, `main`.`ContentItem`.`body`, `main`.`ContentItem`.`platformMeta`, `main`.`ContentItem`.`publishedAt`, `main`.`ContentItem`.`createdAt`, `main`.`ContentItem`.`updatedAt` FROM `main`.`ContentItem` WHERE `main`.`ContentItem`.`creatorId` = ? ORDER BY `main`.`ContentItem`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentMetric`.`id`, `main`.`ContentMetric`.`contentItemId`, `main`.`ContentMetric`.`metricKey`, `main`.`ContentMetric`.`metricValue`, `main`.`ContentMetric`.`capturedAt` FROM `main`.`ContentMetric` WHERE `main`.`ContentMetric`.`contentItemId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+ GET /api/content/performance 200 in 59ms (compile: 31ms, render: 28ms)
+prisma:query SELECT `main`.`HookPattern`.`id`, `main`.`HookPattern`.`hookId`, `main`.`HookPattern`.`patternName`, `main`.`HookPattern`.`confidence`, `main`.`HookPattern`.`sampleSize`, `main`.`HookPattern`.`avgEffectiveness`, `main`.`HookPattern`.`createdAt`, `main`.`HookPattern`.`updatedAt` FROM `main`.`HookPattern` WHERE `main`.`HookPattern`.`hookId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Hook`.`id`, `main`.`Hook`.`contentItemId`, `main`.`Hook`.`text`, `main`.`Hook`.`hookType`, `main`.`Hook`.`effectiveness`, `main`.`Hook`.`createdAt` FROM `main`.`Hook` WHERE `main`.`Hook`.`contentItemId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`HookPattern`.`id`, `main`.`HookPattern`.`hookId`, `main`.`HookPattern`.`patternName`, `main`.`HookPattern`.`confidence`, `main`.`HookPattern`.`sampleSize`, `main`.`HookPattern`.`avgEffectiveness`, `main`.`HookPattern`.`createdAt`, `main`.`HookPattern`.`updatedAt` FROM `main`.`HookPattern` WHERE `main`.`HookPattern`.`hookId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE (`main`.`ContentItem`.`creatorId` = ? AND `main`.`ContentItem`.`title` IN (?,?,?,?,?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE (`main`.`ContentItem`.`creatorId` = ? AND `main`.`ContentItem`.`title` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`CreatorDecision`.`id` FROM `main`.`CreatorDecision` WHERE `main`.`CreatorDecision`.`creatorId` = ? LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`CreatorDecision`.`id`, `main`.`CreatorDecision`.`creatorId`, `main`.`CreatorDecision`.`contentItemId`, `main`.`CreatorDecision`.`recommendationId`, `main`.`CreatorDecision`.`decision`, `main`.`CreatorDecision`.`modifications`, `main`.`CreatorDecision`.`reason`, `main`.`CreatorDecision`.`createdAt` FROM `main`.`CreatorDecision` WHERE `main`.`CreatorDecision`.`creatorId` = ? ORDER BY `main`.`CreatorDecision`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentItem`.`id`, `main`.`ContentItem`.`title` FROM `main`.`ContentItem` WHERE `main`.`ContentItem`.`id` IN (?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`MemoryEvent`.`id`, `main`.`MemoryEvent`.`creatorId`, `main`.`MemoryEvent`.`category`, `main`.`MemoryEvent`.`key`, `main`.`MemoryEvent`.`value`, `main`.`MemoryEvent`.`confidence`, `main`.`MemoryEvent`.`source`, `main`.`MemoryEvent`.`sessionId`, `main`.`MemoryEvent`.`createdAt` FROM `main`.`MemoryEvent` WHERE (`main`.`MemoryEvent`.`creatorId` = ? AND `main`.`MemoryEvent`.`key` LIKE ?) ORDER BY `main`.`MemoryEvent`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`CreatorDecision`.`id`, `main`.`CreatorDecision`.`creatorId`, `main`.`CreatorDecision`.`contentItemId`, `main`.`CreatorDecision`.`recommendationId`, `main`.`CreatorDecision`.`decision`, `main`.`CreatorDecision`.`modifications`, `main`.`CreatorDecision`.`reason`, `main`.`CreatorDecision`.`createdAt` FROM `main`.`CreatorDecision` WHERE `main`.`CreatorDecision`.`creatorId` = ? ORDER BY `main`.`CreatorDecision`.`createdAt` DESC LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentItem`.`id`, `main`.`ContentItem`.`title`, `main`.`ContentItem`.`type` FROM `main`.`ContentItem` WHERE `main`.`ContentItem`.`id` IN (?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+ GET /api/creator/decisions 200 in 57ms (compile: 41ms, render: 16ms)
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE (`main`.`ContentItem`.`creatorId` = ? AND `main`.`ContentItem`.`title` IN (?,?,?,?,?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE (`main`.`ContentItem`.`creatorId` = ? AND `main`.`ContentItem`.`title` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`CreatorDecision`.`id` FROM `main`.`CreatorDecision` WHERE `main`.`CreatorDecision`.`creatorId` = ? LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE `main`.`ContentItem`.`creatorId` = ? LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentMetric`.`id` FROM `main`.`ContentMetric` LEFT JOIN `main`.`ContentItem` AS `j0` ON (`j0`.`id`) = (`main`.`ContentMetric`.`contentItemId`) WHERE (`j0`.`creatorId` = ? AND (`j0`.`id` IS NOT NULL)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`Hook`.`id` FROM `main`.`Hook` LEFT JOIN `main`.`ContentItem` AS `j0` ON (`j0`.`id`) = (`main`.`Hook`.`contentItemId`) WHERE (`j0`.`creatorId` = ? AND (`j0`.`id` IS NOT NULL)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`HookPattern`.`id`, `main`.`HookPattern`.`patternName` FROM `main`.`HookPattern` LEFT JOIN `main`.`Hook` AS `j0` ON (`j0`.`id`) = (`main`.`HookPattern`.`hookId`) LEFT JOIN `main`.`ContentItem` AS `j1` ON (`j1`.`id`) = (`j0`.`contentItemId`) WHERE (`j1`.`creatorId` = ? AND (`j1`.`id` IS NOT NULL) AND (`j0`.`id` IS NOT NULL)) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentItem`.`id`, `main`.`ContentItem`.`createdAt` FROM `main`.`ContentItem` WHERE `main`.`ContentItem`.`creatorId` = ? ORDER BY `main`.`ContentItem`.`createdAt` DESC LIMIT ? OFFSET ?
+ GET /api/content/ingest 200 in 46ms (compile: 32ms, render: 14ms)
+prisma:query SELECT `main`.`Creator`.`id`, `main`.`Creator`.`email`, `main`.`Creator`.`name`, `main`.`Creator`.`platform`, `main`.`Creator`.`niche`, `main`.`Creator`.`audience`, `main`.`Creator`.`voiceProfile`, `main`.`Creator`.`tone`, `main`.`Creator`.`avoid`, `main`.`Creator`.`mindsHumanId`, `main`.`Creator`.`mindsMuseId`, `main`.`Creator`.`mindsMakerId`, `main`.`Creator`.`createdAt`, `main`.`Creator`.`updatedAt` FROM `main`.`Creator` WHERE (`main`.`Creator`.`email` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query SELECT COUNT(*) AS `_count$_all` FROM (SELECT `main`.`ContentItem`.`id` FROM `main`.`ContentItem` WHERE (`main`.`ContentItem`.`creatorId` = ? AND `main`.`ContentItem`.`title` IN (?,?,?,?,?,?,?,?,?,?)) LIMIT ? OFFSET ?) AS `sub`
+prisma:query SELECT `main`.`Hook`.`id`, `main`.`Hook`.`contentItemId`, `main`.`Hook`.`text`, `main`.`Hook`.`hookType`, `main`.`Hook`.`effectiveness`, `main`.`Hook`.`createdAt` FROM `main`.`Hook` LEFT JOIN `main`.`ContentItem` AS `j0` ON (`j0`.`id`) = (`main`.`Hook`.`contentItemId`) WHERE (`j0`.`creatorId` = ? AND (`j0`.`id` IS NOT NULL)) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`HookPattern`.`id`, `main`.`HookPattern`.`hookId`, `main`.`HookPattern`.`patternName`, `main`.`HookPattern`.`confidence`, `main`.`HookPattern`.`sampleSize`, `main`.`HookPattern`.`avgEffectiveness`, `main`.`HookPattern`.`createdAt`, `main`.`HookPattern`.`updatedAt` FROM `main`.`HookPattern` WHERE `main`.`HookPattern`.`hookId` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`ContentItem`.`id`, `main`.`ContentItem`.`createdAt` FROM `main`.`ContentItem` WHERE `main`.`ContentItem`.`id` IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) LIMIT ? OFFSET ?
+ GET /api/learning/rankings 200 in 81ms (compile: 67ms, render: 14ms)
+inds-adapter] getCognitionBalance failed for 15d1483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCognitionBalance (src/lib/minds-adapter.ts:244:12)
+    at async GET (src/app/api/minds/status/route.ts:25:41)
+  242 |   }
+  243 |   try {
+> 244 |     return await liveGetCognitionBalance(mindId);
+      |            ^
+  245 |   } catch (err) {
+  246 |     console.warn(`inds-adapter] getCognitionBalance failed for ${mindId}`, err);
+  247 |     return { mindId, cognition: 0 }; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+inds-adapter] listEquippedSkills failed for 9fd0483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterListEquippedSkills (src/lib/minds-adapter.ts:177:12)
+    at async GET (src/app/api/validation/day1/route.ts:77:24)
+  175 |   }
+  176 |   try {
+> 177 |     return await liveListEquippedSkills(mindId);
+      |            ^
+  178 |   } catch (err) {
+  179 |     console.warn(`inds-adapter] listEquippedSkills failed for ${mindId}`, err);
+  180 |     if (mindId === SIMULATED_MUSE_MIND.mindId) return SIMULATED_MUSE_SKILLS; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+inds-adapter] getCognitionBalance failed for 9fd0483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCognitionBalance (src/lib/minds-adapter.ts:244:12)
+    at async GET (src/app/api/minds/status/route.ts:25:41)
+  242 |   }
+  243 |   try {
+> 244 |     return await liveGetCognitionBalance(mindId);
+      |            ^
+  245 |   } catch (err) {
+  246 |     console.warn(`inds-adapter] getCognitionBalance failed for ${mindId}`, err);
+  247 |     return { mindId, cognition: 0 }; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+ GET /api/learning/honesty 200 in 658ms (compile: 651ms, render: 6ms)
+inds-adapter] getCircle failed for 15d1483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCircle (src/lib/minds-adapter.ts:210:12)
+    at async GET (src/app/api/validation/day1/route.ts:88:43)
+  208 |   }
+  209 |   try {
+> 210 |     return await liveGetCircle(mindId);
+      |            ^
+  211 |   } catch (err) {
+  212 |     console.warn(`inds-adapter] getCircle failed for ${mindId}`, err);
+  213 |     if (mindId === SIMULATED_MUSE_MIND.mindId) return SIMULATED_MUSE_CIRCLE; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+inds-adapter] listEquippedSkills failed for 9fd0483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterListEquippedSkills (src/lib/minds-adapter.ts:177:12)
+    at async GET (src/app/api/minds/status/route.ts:31:39)
+  175 |   }
+  176 |   try {
+> 177 |     return await liveListEquippedSkills(mindId);
+      |            ^
+  178 |   } catch (err) {
+  179 |     console.warn(`inds-adapter] listEquippedSkills failed for ${mindId}`, err);
+  180 |     if (mindId === SIMULATED_MUSE_MIND.mindId) return SIMULATED_MUSE_SKILLS; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+inds-adapter] listEquippedSkills failed for 15d1483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterListEquippedSkills (src/lib/minds-adapter.ts:177:12)
+    at async GET (src/app/api/minds/status/route.ts:31:39)
+  175 |   }
+  176 |   try {
+> 177 |     return await liveListEquippedSkills(mindId);
+      |            ^
+  178 |   } catch (err) {
+  179 |     console.warn(`inds-adapter] listEquippedSkills failed for ${mindId}`, err);
+  180 |     if (mindId === SIMULATED_MUSE_MIND.mindId) return SIMULATED_MUSE_SKILLS; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+inds-adapter] getCircle failed for 9fd0483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCircle (src/lib/minds-adapter.ts:210:12)
+    at async GET (src/app/api/validation/day1/route.ts:88:43)
+  208 |   }
+  209 |   try {
+> 210 |     return await liveGetCircle(mindId);
+      |            ^
+  211 |   } catch (err) {
+  212 |     console.warn(`inds-adapter] getCircle failed for ${mindId}`, err);
+  213 |     if (mindId === SIMULATED_MUSE_MIND.mindId) return SIMULATED_MUSE_CIRCLE; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+inds-adapter] getCircle failed for 9fd0483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCircle (src/lib/minds-adapter.ts:210:12)
+    at async GET (src/app/api/minds/status/route.ts:37:39)
+  208 |   }
+  209 |   try {
+> 210 |     return await liveGetCircle(mindId);
+      |            ^
+  211 |   } catch (err) {
+  212 |     console.warn(`inds-adapter] getCircle failed for ${mindId}`, err);
+  213 |     if (mindId === SIMULATED_MUSE_MIND.mindId) return SIMULATED_MUSE_CIRCLE; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+inds-adapter] getCognitionBalance failed for 9fd0483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCognitionBalance (src/lib/minds-adapter.ts:244:12)
+    at async GET (src/app/api/validation/day1/route.ts:102:37)
+  242 |   }
+  243 |   try {
+> 244 |     return await liveGetCognitionBalance(mindId);
+      |            ^
+  245 |   } catch (err) {
+  246 |     console.warn(`inds-adapter] getCognitionBalance failed for ${mindId}`, err);
+  247 |     return { mindId, cognition: 0 }; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+inds-adapter] getCircle failed for 15d1483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCircle (src/lib/minds-adapter.ts:210:12)
+    at async GET (src/app/api/minds/status/route.ts:37:39)
+  208 |   }
+  209 |   try {
+> 210 |     return await liveGetCircle(mindId);
+      |            ^
+  211 |   } catch (err) {
+  212 |     console.warn(`inds-adapter] getCircle failed for ${mindId}`, err);
+  213 |     if (mindId === SIMULATED_MUSE_MIND.mindId) return SIMULATED_MUSE_CIRCLE; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+ GET /api/minds/status 200 in 2.5s (compile: 174ms, render: 2.4s)
+inds-adapter] getCognitionBalance failed for 15d1483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCognitionBalance (src/lib/minds-adapter.ts:244:12)
+    at async GET (src/app/api/validation/day1/route.ts:102:37)
+  242 |   }
+  243 |   try {
+> 244 |     return await liveGetCognitionBalance(mindId);
+      |            ^
+  245 |   } catch (err) {
+  246 |     console.warn(`inds-adapter] getCognitionBalance failed for ${mindId}`, err);
+  247 |     return { mindId, cognition: 0 }; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+ GET /api/validation/day1 200 in 2.6s (compile: 127ms, render: 2.5s)
+inds-adapter] getCircle failed for 15d1483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCircle (src/lib/minds-adapter.ts:210:12)
+    at async GET (src/app/api/minds/status/route.ts:37:39)
+  208 |   }
+  209 |   try {
+> 210 |     return await liveGetCircle(mindId);
+      |            ^
+  211 |   } catch (err) {
+  212 |     console.warn(`inds-adapter] getCircle failed for ${mindId}`, err);
+  213 |     if (mindId === SIMULATED_MUSE_MIND.mindId) return SIMULATED_MUSE_CIRCLE; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+ GET /api/minds/status 200 in 2.5s (compile: 174ms, render: 2.4s)
+inds-adapter] getCognitionBalance failed for 15d1483e-f36b-1410-8466-00039ce7df11 Error [MindsApiError]: Invalid or expired access key
+    at async adapterGetCognitionBalance (src/lib/minds-adapter.ts:244:12)
+    at async GET (src/app/api/validation/day1/route.ts:102:37)
+  242 |   }
+  243 |   try {
+> 244 |     return await liveGetCognitionBalance(mindId);
+      |            ^
+  245 |   } catch (err) {
+  246 |     console.warn(`inds-adapter] getCognitionBalance failed for ${mindId}`, err);
+  247 |     return { mindId, cognition: 0 }; {
+  status: 401,
+  code: 'AUTH_FAILED',
+  requestId: undefined
+}
+ GET /api/validation/day1 200 in 2.6s (compile: 127ms, render: 2.5s)
