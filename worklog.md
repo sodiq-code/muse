@@ -540,3 +540,47 @@ Stage Summary:
 - Creator-specific: "This Statistic hook typically underperforms your average by 5%" (not generic)
 - Total credit burn: 0 (all local computation)
 - Commit pushed: bbaef03 at https://github.com/sodiq-code/muse
+---
+Task ID: 7
+Agent: full-stack-developer
+Task: Day 7 — Build Learning Engine (observe→compare→infer→update→recommend) + Implement Statistical Honesty Framework
+
+Work Log:
+- Created src/lib/learning-engine-service.ts — DB-backed Learning Engine Service that reads real creator data from database
+- Implemented 5-step learning loop: OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND on real DB data
+- Added loadCreatorContentMetrics() — reads 26 content items with metrics and hooks from DB
+- Added loadCreatorMemory() — reads memory events, past performance, learned patterns from DB
+- Added verifyStatisticalHonesty() — 6 automated honesty checks (evidence chain, inflated language, confidence alignment, causation claims, honest phrasing, overall confidence)
+- Added buildEvidenceChain() — creates full evidence chain for every recommendation
+- Added storeLearningResults() — stores pattern updates as MemoryEvents, recommendations to DB
+- Added runLearningEngineOnCreatorData() — main entry point that runs full loop, verifies honesty, stores results, creates audit event
+- Added getPatternEffectivenessSummary() — dashboard helper for pattern stats
+- Enhanced src/lib/learning-engine.ts with Day 7 Statistical Honesty Framework
+  - Evidence type taxonomy: observed, correlation, recommendation, insufficient, statistical, absence, observational
+  - Forbidden phrases detection: AI discovered, proven, guaranteed, always, never, causes, etc.
+  - CONFIDENCE_THRESHOLDS with labels (low <5, medium 5-15, high ≥16)
+  - classifyEvidenceType() — formal evidence classification from data characteristics
+  - hasInflatedLanguage() — inflated language detector
+  - qualifiedPhrase() — confidence-qualified phrasing with baseline comparison
+  - Fix: Pattern-specific confidence in recommendations (not overall data confidence)
+- Created src/app/api/learning/run/route.ts — GET/POST API to run full learning loop on real DB data
+- Created src/app/api/learning/honesty/route.ts — GET API for honesty verification
+- Enhanced src/app/page.tsx dashboard with Day 7 features
+  - Header: 'Muse — Day 7 Learning Engine' + '✅ Honest' badge
+  - New Learning Engine section with Run Loop button, data summary, 5-step visualization, honesty report, evidence chain
+  - New Statistical Honesty Framework section with Verify button, individual checks, principles, evidence taxonomy
+  - Footer: 'Learning engine DB-backed • Statistical honesty ✅'
+- Ran lint: 0 errors, 0 warnings
+- API verification: Learning Run API returns full results (26 items, 175 metrics, 52 data points)
+- Honesty verification: 6/6 checks passed — all honest
+- Browser verification: Page renders correctly with all Day 7 sections
+- Pushed to GitHub: commit 4f6a873
+
+Stage Summary:
+- Day 7 (Phase 3: LEARNING) complete
+- DB-backed Learning Engine runs on real creator data (26 items, 175 metrics, 26 hooks)
+- Full 5-step loop: 6 observations, 2 comparisons, 10 inferences, 8 pattern updates, 2 recommendations
+- Statistical Honesty Framework: 6/6 checks pass, zero inflated metrics, no causation claims
+- Evidence chain: 6 steps with proper types (observed → correlation → correlation → correlation → correlation/statistical)
+- 8 memory events stored, 2 recommendations generated, audit trail maintained
+- Schema remains frozen (12 models, no changes)
