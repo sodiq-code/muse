@@ -1315,6 +1315,9 @@ export default function MuseDashboard() {
     { id: 'd17-1', label: 'Creator Feedback Collection — correction/approval/rejection/refinement/preference feedback → CreatorDecision + MemoryEvent', done: true },
     { id: 'd17-2', label: 'Disclosed Simulation — Real Creator Gate: pivot to simulation with methodological rigor when no real creator', done: true },
     { id: 'd17-3', label: 'Feedback → Memory Refinement Pipeline — feedback updates confidence, creates pattern corrections, preference updates', done: true },
+    { id: 'd18-1', label: 'Typography, Spacing, Hierarchy — consistent fonts, staggered animations, card hover effects', done: true },
+    { id: 'd18-2', label: 'Loading States, Error States, Empty States — skeleton shimmer, graceful degradation, tab fade-in animation', done: true },
+    { id: 'd18-3', label: 'Mobile Responsive — scrollable tab bar with compact labels, overflow scroll, thin scrollbars', done: true },
     { id: 'd2-6', label: 'Creator Recruitment — outreach templates + onboarding conversation', done: true },
     { id: 'd2-7', label: 'API Routes — draft, analyze, hooks, autonomy, recruit', done: true },
     { id: 'd2-8', label: 'Dashboard V2 — Day 2 status with live data', done: true },
@@ -1353,7 +1356,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 17 Creator Feedback Loop
+                Muse — Day 18 Polished UI
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -1398,91 +1401,90 @@ export default function MuseDashboard() {
       {/* ===== Main ===== */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
         <Tabs defaultValue="today" className="w-full">
-          <TabsList className="w-full sm:w-auto flex-wrap">
-            <TabsTrigger value="today" className="gap-1.5">
+          <TabsList className="w-full overflow-x-auto flex-nowrap justify-start gap-0.5 pb-1 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
+            <TabsTrigger value="today" className="gap-1 shrink-0">
               <Sun className="size-3.5" />
-              Today
+              <span className="hidden sm:inline">Today</span><span className="sm:hidden">Today</span>
             </TabsTrigger>
-            <TabsTrigger value="memoryscreen" className="gap-1.5">
+            <TabsTrigger value="memoryscreen" className="gap-1 shrink-0">
               <Brain className="size-3.5" />
-              Memory
+              <span className="hidden sm:inline">Memory</span><span className="sm:hidden">Mem</span>
             </TabsTrigger>
-            <TabsTrigger value="learningscreen" className="gap-1.5">
+            <TabsTrigger value="learningscreen" className="gap-1 shrink-0">
               <GraduationCap className="size-3.5" />
-              Learning
+              <span className="hidden sm:inline">Learning</span><span className="sm:hidden">Learn</span>
             </TabsTrigger>
-            <TabsTrigger value="overnightscreen" className="gap-1.5">
+            <TabsTrigger value="overnightscreen" className="gap-1 shrink-0">
               <Moon className="size-3.5" />
-              Overnight
+              <span className="hidden sm:inline">Overnight</span><span className="sm:hidden">O/N</span>
             </TabsTrigger>
-            <TabsTrigger value="controlscreen" className="gap-1.5">
+            <TabsTrigger value="controlscreen" className="gap-1 shrink-0">
               <Settings className="size-3.5" />
-              Control
+              <span className="hidden sm:inline">Control</span><span className="sm:hidden">Ctrl</span>
             </TabsTrigger>
-            <TabsTrigger value="day1" className="gap-1.5">
-              <Shield className="size-3.5" />
-              Day 1
-            </TabsTrigger>
-            <TabsTrigger value="day2" className="gap-1.5">
-              <Sparkles className="size-3.5" />
-              Day 2
-            </TabsTrigger>
-            <TabsTrigger value="draft" className="gap-1.5">
-              <SendHorizontal className="size-3.5" />
-              Delegation
-            </TabsTrigger>
-            <TabsTrigger value="autonomy" className="gap-1.5">
-              <Moon className="size-3.5" />
-              Autonomy
-            </TabsTrigger>
-            <TabsTrigger value="memory" className="gap-1.5">
-              <Database className="size-3.5" />
-              Memory
-            </TabsTrigger>
-            <TabsTrigger value="voice" className="gap-1.5">
-              <Mic className="size-3.5" />
-              Voice
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="gap-1.5">
-              <TrendingUp className="size-3.5" />
-              Performance
-            </TabsTrigger>
-            <TabsTrigger value="learning" className="gap-1.5">
-              <GraduationCap className="size-3.5" />
-              Learning
-            </TabsTrigger>
-            <TabsTrigger value="decisions" className="gap-1.5">
-              <Scale className="size-3.5" />
-              Decisions
-            </TabsTrigger>
-            <TabsTrigger value="explain" className="gap-1.5">
-              <Eye className="size-3.5" />
-              Why Chose This
-            </TabsTrigger>
-            <TabsTrigger value="proof" className="gap-1.5">
-              <FlaskConical className="size-3.5" />
-              7-Day Proof
-            </TabsTrigger>
-            <TabsTrigger value="evaluate" className="gap-1.5">
-              <Scale className="size-3.5" />
-              Evaluate
-            </TabsTrigger>
-            <TabsTrigger value="drafts" className="gap-1.5">
-              <FileText className="size-3.5" />
-              Drafts
-            </TabsTrigger>
-            <TabsTrigger value="beat" className="gap-1.5">
-              <Workflow className="size-3.5" />
-              Beat
-            </TabsTrigger>
-            <TabsTrigger value="feedback" className="gap-1.5">
+            <TabsTrigger value="feedback" className="gap-1 shrink-0">
               <MessageCircle className="size-3.5" />
-              <span className="hidden sm:inline">Feedback</span>
-              <span className="sm:hidden">FB</span>
+              <span className="hidden sm:inline">Feedback</span><span className="sm:hidden">FB</span>
             </TabsTrigger>
-            <TabsTrigger value="validation" className="gap-1.5">
+            <TabsTrigger value="validation" className="gap-1 shrink-0">
               <ShieldCheck className="size-3.5" />
-              Validation
+              <span className="hidden sm:inline">Validation</span><span className="sm:hidden">Val</span>
+            </TabsTrigger>
+            <TabsTrigger value="day1" className="gap-1 shrink-0">
+              <Shield className="size-3.5" />
+              <span className="hidden md:inline">Day 1</span><span className="md:hidden">D1</span>
+            </TabsTrigger>
+            <TabsTrigger value="day2" className="gap-1 shrink-0">
+              <Sparkles className="size-3.5" />
+              <span className="hidden md:inline">Day 2</span><span className="md:hidden">D2</span>
+            </TabsTrigger>
+            <TabsTrigger value="draft" className="gap-1 shrink-0">
+              <SendHorizontal className="size-3.5" />
+              <span className="hidden md:inline">Delegation</span><span className="md:hidden">Deleg</span>
+            </TabsTrigger>
+            <TabsTrigger value="autonomy" className="gap-1 shrink-0">
+              <Moon className="size-3.5" />
+              <span className="hidden md:inline">Autonomy</span><span className="md:hidden">Auto</span>
+            </TabsTrigger>
+            <TabsTrigger value="memory" className="gap-1 shrink-0">
+              <Database className="size-3.5" />
+              <span className="hidden md:inline">Memory DB</span><span className="md:hidden">MDB</span>
+            </TabsTrigger>
+            <TabsTrigger value="voice" className="gap-1 shrink-0">
+              <Mic className="size-3.5" />
+              <span className="hidden md:inline">Voice</span><span className="md:hidden">Voc</span>
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="gap-1 shrink-0">
+              <TrendingUp className="size-3.5" />
+              <span className="hidden md:inline">Performance</span><span className="md:hidden">Perf</span>
+            </TabsTrigger>
+            <TabsTrigger value="learning" className="gap-1 shrink-0">
+              <GraduationCap className="size-3.5" />
+              <span className="hidden md:inline">Learning DB</span><span className="md:hidden">LDB</span>
+            </TabsTrigger>
+            <TabsTrigger value="decisions" className="gap-1 shrink-0">
+              <Scale className="size-3.5" />
+              <span className="hidden md:inline">Decisions</span><span className="md:hidden">Dec</span>
+            </TabsTrigger>
+            <TabsTrigger value="explain" className="gap-1 shrink-0">
+              <Eye className="size-3.5" />
+              <span className="hidden md:inline">Why?</span><span className="md:hidden">Why</span>
+            </TabsTrigger>
+            <TabsTrigger value="proof" className="gap-1 shrink-0">
+              <FlaskConical className="size-3.5" />
+              <span className="hidden md:inline">7-Day Proof</span><span className="md:hidden">7D</span>
+            </TabsTrigger>
+            <TabsTrigger value="evaluate" className="gap-1 shrink-0">
+              <Scale className="size-3.5" />
+              <span className="hidden md:inline">Evaluate</span><span className="md:hidden">Eval</span>
+            </TabsTrigger>
+            <TabsTrigger value="drafts" className="gap-1 shrink-0">
+              <FileText className="size-3.5" />
+              <span className="hidden md:inline">Drafts</span><span className="md:hidden">Drft</span>
+            </TabsTrigger>
+            <TabsTrigger value="beat" className="gap-1 shrink-0">
+              <Workflow className="size-3.5" />
+              <span className="hidden md:inline">Beat</span><span className="md:hidden">Beat</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1523,9 +1525,9 @@ export default function MuseDashboard() {
             {todayScreenData && (
               <>
                 {/* Morning Greeting */}
-                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent muse-card-hover">
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 muse-stagger-1">
                       {todayScreenData.greeting?.timeOfDay === 'morning' ? (
                         <Sunrise className="size-8 text-amber-400" />
                       ) : todayScreenData.greeting?.timeOfDay === 'evening' || todayScreenData.greeting?.timeOfDay === 'night' ? (
@@ -1674,7 +1676,7 @@ export default function MuseDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="max-h-64 overflow-y-auto space-y-3">
+                      <div className="max-h-64 overflow-y-auto scrollbar-thin space-y-3">
                         {todayScreenData.pendingApprovals.map((draft: any, i: number) => (
                           <div key={draft.draftId || i} className="p-3 rounded-lg border bg-muted/30 space-y-2">
                             <div className="flex items-start justify-between gap-2">
@@ -1758,9 +1760,9 @@ export default function MuseDashboard() {
             {memoryScreenData && (
               <>
                 {/* Header: What Muse Knows About You */}
-                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent muse-card-hover">
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 muse-stagger-1">
                       <Brain className="size-8 text-violet-400" />
                       <div>
                         <h2 className="text-2xl font-bold tracking-tight">
@@ -1958,7 +1960,7 @@ export default function MuseDashboard() {
                     </CardHeader>
                     <CardContent>
                       {memoryScreenData.decisions.recentDecisions?.length > 0 ? (
-                        <div className="max-h-48 overflow-y-auto space-y-2">
+                        <div className="max-h-48 overflow-y-auto scrollbar-thin space-y-2">
                           {memoryScreenData.decisions.recentDecisions.map((dec: any, i: number) => (
                             <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-muted/50">
                               {dec.type === 'accepted' ? (
@@ -2040,9 +2042,9 @@ export default function MuseDashboard() {
             {learningScreenData && (
               <>
                 {/* How Muse Is Learning Header */}
-                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent muse-card-hover">
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 muse-stagger-1">
                       <GraduationCap className="size-8 text-violet-400" />
                       <div>
                         <h2 className="text-2xl font-bold tracking-tight">How Muse Is Learning</h2>
@@ -2065,7 +2067,7 @@ export default function MuseDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="max-h-96 overflow-y-auto">
+                    <ScrollArea className="max-h-96 overflow-y-auto scrollbar-thin">
                       <div className="space-y-6">
                         {learningScreenData.timeline?.map((entry: any, entryIdx: number) => (
                           <div key={entryIdx} className="space-y-3">
@@ -2380,7 +2382,7 @@ export default function MuseDashboard() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="max-h-80 overflow-y-auto">
+                    <ScrollArea className="max-h-80 overflow-y-auto scrollbar-thin">
                       <div className="space-y-2">
                         {overnightScreenData.mindTheatre?.map((entry: any, i: number) => (
                           <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30">
@@ -2524,9 +2526,9 @@ export default function MuseDashboard() {
             {controlScreenData && (
               <>
                 {/* You're In Control Header */}
-                <Card className="rounded-xl border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent">
+                <Card className="rounded-xl border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent muse-card-hover">
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 muse-stagger-1">
                       <Settings className="size-8 text-emerald-400" />
                       <div>
                         <h2 className="text-2xl font-bold tracking-tight">You&apos;re In Control</h2>
@@ -2774,7 +2776,7 @@ export default function MuseDashboard() {
                         <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
                           <History className="size-3" /> Approval History ({approvalHistoryData.count})
                         </p>
-                        <ScrollArea className="max-h-48 overflow-y-auto">
+                        <ScrollArea className="max-h-48 overflow-y-auto scrollbar-thin">
                           <div className="space-y-2">
                             {approvalHistoryData.history.map((h: any) => (
                               <div key={h.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/20 text-xs">
@@ -2900,7 +2902,7 @@ export default function MuseDashboard() {
                     </div>
 
                     {/* Audit Log Entries */}
-                    <ScrollArea className="max-h-80 overflow-y-auto">
+                    <ScrollArea className="max-h-80 overflow-y-auto scrollbar-thin">
                       <div className="space-y-1">
                         {controlScreenData.auditLog
                           ?.filter((entry: any) => {
@@ -7720,7 +7722,7 @@ export default function MuseDashboard() {
                             {step.step === 2 && beatResult.beat.instruction && (
                               <div>
                                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Structured Instruction</p>
-                                <div className="p-3 rounded-lg bg-muted/50 text-xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+                                <div className="p-3 rounded-lg bg-muted/50 text-xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto scrollbar-thin">
 {`[MUSE DELEGATION]
 Creator: ${beatResult.beat.instruction.makerInput.creator}
 Topic: ${beatResult.beat.instruction.makerInput.topic}
@@ -7809,7 +7811,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
                           <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
                             Alternative Hooks ({beatResult.beat.makerOutput.alternativeHooks.length})
                           </p>
-                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                          <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-thin">
                             {beatResult.beat.makerOutput.alternativeHooks.map((hook, i) => (
                               <p key={i} className="text-xs text-muted-foreground p-1.5 rounded bg-muted/30">{hook}</p>
                             ))}
@@ -7819,7 +7821,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
                           <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground">
                             View full script ({beatResult.beat.makerOutput.script.length} chars)
                           </summary>
-                          <pre className="mt-2 p-3 rounded-lg bg-muted/50 text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto">
+                          <pre className="mt-2 p-3 rounded-lg bg-muted/50 text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto scrollbar-thin">
                             {beatResult.beat.makerOutput.script}
                           </pre>
                         </details>
@@ -7873,7 +7875,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                    <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-thin">
                       {beatHistory.history.map((beat) => (
                         <div
                           key={beat.beatId}
@@ -7948,9 +7950,9 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
           {/* ===== VALIDATION TAB (Day 16) ===== */}
           {/* ===== FEEDBACK TAB — Day 17 ===== */}
           <TabsContent value="feedback" className="space-y-6">
-            <Card className="rounded-xl border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-transparent">
+            <Card className="rounded-xl border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-transparent muse-card-hover">
               <CardContent className="p-6">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 muse-stagger-1">
                   <MessageCircle className="size-8 text-amber-400" />
                   <div>
                     <h2 className="text-2xl font-bold tracking-tight">Phase 7: Creator Feedback Loop</h2>
@@ -8160,7 +8162,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
                     {simulationResult.methodologyNotes?.length > 0 && (
                       <div className="p-3 rounded-lg bg-muted/10 border border-muted">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Methodology Audit Trail</p>
-                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                        <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-thin">
                           {simulationResult.methodologyNotes.map((note: string, i: number) => (
                             <p key={i} className="text-[11px] text-muted-foreground">• {note}</p>
                           ))}
@@ -8274,7 +8276,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
                     {feedbackSummary.recentFeedback?.length > 0 && (
                       <div className="space-y-2">
                         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Feedback</p>
-                        <div className="max-h-48 overflow-y-auto space-y-1">
+                        <div className="max-h-48 overflow-y-auto scrollbar-thin space-y-1">
                           {feedbackSummary.recentFeedback.slice(0, 10).map((fb: any, i: number) => {
                             const typeColors: Record<string, string> = {
                               correction: 'bg-violet-500/10 border-violet-500/20',
@@ -8343,7 +8345,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
               </CardHeader>
               <CardContent>
                 {refinementTimeline.length > 0 && (
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                  <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-thin">
                     {refinementTimeline.map((entry: any, i: number) => {
                       const typeColors: Record<string, string> = {
                         memory_update: 'border-violet-500/20 bg-violet-500/5',
@@ -8515,9 +8517,9 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
           </TabsContent>
 
           <TabsContent value="validation" className="space-y-6">
-            <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+            <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent muse-card-hover">
               <CardContent className="p-6">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 muse-stagger-1">
                   <ShieldCheck className="size-8 text-violet-400" />
                   <div>
                     <h2 className="text-2xl font-bold tracking-tight">Phase 7: Validation</h2>
@@ -8782,7 +8784,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • E2E Validation ✅ • Honesty ✅ • Feedback Loop ✅ • Disclosed Sim ✅ • 🧊 Scope frozen</span>
+          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • E2E Validation ✅ • Honesty ✅ • Feedback Loop ✅ • Disclosed Sim ✅ • Polish ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
