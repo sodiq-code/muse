@@ -313,6 +313,92 @@ interface DraftsResponse {
   };
 }
 
+// Day 11: Delegation Beat types
+interface BeatStepData {
+  step: number;
+  name: string;
+  description: string;
+  status: 'pending' | 'running' | 'complete' | 'failed';
+  startTime: number;
+  endTime: number;
+  duration: number;
+  evidence: string[];
+  data: Record<string, unknown>;
+}
+
+interface DelegationBeatResponse {
+  success: boolean;
+  beat: {
+    beatId: string;
+    timestamp: string;
+    creatorId: string;
+    creatorName: string;
+    mode: 'live' | 'simulated';
+    totalDuration: number;
+    steps: BeatStepData[];
+    success: boolean;
+    evaluationPassed: boolean;
+    draftStored: boolean;
+    evaluation: {
+      evaluationId: string;
+      overallScore: number;
+      voiceMatch: { overall: number; toneAlignment: number; paceConsistency: number; vocabularyMatch: number; avoidTopicsCompliance: number; strengthUtilization: number; breakdown: string[]; evidence: string[] };
+      hookCompat: { overall: number; primaryHookPatternMatch: number; historicalAlignment: number; hookVariety: number; hookStrength: number; breakdown: string[]; evidence: string[] };
+      contentQuality: { overall: number; scriptStructure: number; ctaClarity: number; titleEffectiveness: number; captionAlignment: number; breakdown: string[]; evidence: string[] };
+      passed: boolean;
+      failReasons: string[];
+      confidenceLevel: string;
+      dataPointsUsed: number;
+    } | null;
+    instruction: {
+      instructionId: string;
+      makerInput: { creator: string; topic: string; objective: string; audience: string; instruction: string };
+      reasoning: string;
+      evidenceUsed: string[];
+      confidenceLevel: string;
+      dataPointsUsed: number;
+    } | null;
+    makerOutput: {
+      title: string;
+      script: string;
+      caption: string;
+      cta: string;
+      alternativeHooks: string[];
+      voiceMatch: number;
+      hookCompat: number;
+      source: string;
+    } | null;
+    draft: {
+      success: boolean;
+      draftId: string;
+      version: number;
+      contentItemId: string;
+      evaluationPassed: boolean;
+    } | null;
+    auditSummary: {
+      totalAuditEvents: number;
+      delegationAuditId: string;
+      evaluationId: string;
+      draftAuditId: string;
+    };
+  };
+}
+
+interface BeatHistoryResponse {
+  success: boolean;
+  history: Array<{
+    beatId: string;
+    timestamp: string;
+    mode: string;
+    success: boolean;
+    evaluationPassed: boolean;
+    draftStored: boolean;
+    totalDuration: number;
+    scores: { voiceMatch: number; hookCompat: number; contentQuality: number; overall: number };
+  }>;
+  count: number;
+}
+
 interface EvaluationThresholdsResponse {
   success: boolean;
   thresholds: {
@@ -899,6 +985,15 @@ export default function MuseDashboard() {
   const [draftsData, setDraftsData] = useState<DraftsResponse | null>(null);
   const [draftsLoading, setDraftsLoading] = useState(false);
 
+  // Day 11: Delegation Beat State
+  const [beatResult, setBeatResult] = useState<DelegationBeatResponse | null>(null);
+  const [beatLoading, setBeatLoading] = useState(false);
+  const [beatHistory, setBeatHistory] = useState<BeatHistoryResponse | null>(null);
+  const [beatHistoryLoading, setBeatHistoryLoading] = useState(false);
+  const [beatTopic, setBeatTopic] = useState('');
+  const [beatObjective, setBeatObjective] = useState('');
+  const [activeBeatStep, setActiveBeatStep] = useState<number | null>(null);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -1088,7 +1183,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 10 Evaluation & Drafts
+                Muse — Day 11 Delegation Beat
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -1185,6 +1280,10 @@ export default function MuseDashboard() {
             <TabsTrigger value="drafts" className="gap-1.5">
               <FileText className="size-3.5" />
               Drafts
+            </TabsTrigger>
+            <TabsTrigger value="beat" className="gap-1.5">
+              <Workflow className="size-3.5" />
+              Beat
             </TabsTrigger>
           </TabsList>
 
@@ -5333,13 +5432,580 @@ export default function MuseDashboard() {
               )}
             </section>
           </TabsContent>
+
+          {/* ===== DELEGATION BEAT TAB (Day 11) ===== */}
+          <TabsContent value="beat" className="space-y-6">
+            {/* Header */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Workflow className="size-4" />
+                Full Delegation Beat: Muse → Maker → Evaluate → Store
+              </h2>
+
+              {/* Controls */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Workflow className="size-4" />
+                    Run Delegation Beat
+                  </CardTitle>
+                  <CardDescription>
+                    Execute the full Muse→Maker→evaluate→store pipeline in a single step-by-step beat
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Topic (optional)</label>
+                      <Input
+                        placeholder="Leave empty to use inferred topic"
+                        value={beatTopic}
+                        onChange={(e) => setBeatTopic(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Objective (optional)</label>
+                      <Input
+                        placeholder="Leave empty to use inferred objective"
+                        value={beatObjective}
+                        onChange={(e) => setBeatObjective(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      className="gap-2 bg-gradient-to-r from-violet-600 to-emerald-600 hover:from-violet-700 hover:to-emerald-700 text-white"
+                      disabled={beatLoading}
+                      onClick={async () => {
+                        setBeatLoading(true);
+                        setBeatResult(null);
+                        setActiveBeatStep(null);
+                        try {
+                          const body: Record<string, string> = {};
+                          if (beatTopic) body.topic = beatTopic;
+                          if (beatObjective) body.objective = beatObjective;
+                          const res = await fetch('/api/delegation/beat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body),
+                          });
+                          const data = await res.json();
+                          if (data.success) setBeatResult(data);
+                        } catch (e) {
+                          console.error('Beat error:', e);
+                        } finally {
+                          setBeatLoading(false);
+                        }
+                      }}
+                    >
+                      <Zap className="size-4" />
+                      {beatLoading ? 'Running Beat…' : 'Run Full Beat'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      disabled={beatHistoryLoading}
+                      onClick={async () => {
+                        setBeatHistoryLoading(true);
+                        try {
+                          const res = await fetch('/api/delegation/beat');
+                          const data = await res.json();
+                          if (data.success) setBeatHistory(data);
+                        } catch (e) {
+                          console.error('Beat history error:', e);
+                        } finally {
+                          setBeatHistoryLoading(false);
+                        }
+                      }}
+                    >
+                      <History className="size-4" />
+                      {beatHistoryLoading ? 'Loading…' : 'Beat History'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            {/* Pipeline Flow Visualization */}
+            <section>
+              <Card className="border-violet-500/20">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <GitBranch className="size-4" />
+                    Pipeline Flow
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
+                    {/* Step indicators */}
+                    {[
+                      { step: 1, name: 'Load Context', icon: <Database className="size-4" /> },
+                      { step: 2, name: 'Delegate', icon: <Send className="size-4" /> },
+                      { step: 3, name: 'Evaluate', icon: <Scale className="size-4" /> },
+                      { step: 4, name: 'Store Draft', icon: <Save className="size-4" /> },
+                    ].map(({ step, name, icon }, idx) => {
+                      const stepData = beatResult?.beat.steps.find((s) => s.step === step);
+                      const isActive = activeBeatStep === step;
+                      const isComplete = stepData?.status === 'complete';
+                      const isFailed = stepData?.status === 'failed';
+                      return (
+                        <div key={step} className="flex items-center gap-2 sm:gap-4">
+                          <button
+                            onClick={() => setActiveBeatStep(isActive ? null : step)}
+                            className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
+                              isActive
+                                ? 'border-violet-500/50 bg-violet-500/10 scale-105'
+                                : isComplete
+                                  ? 'border-emerald-500/30 bg-emerald-500/5'
+                                  : isFailed
+                                    ? 'border-rose-500/30 bg-rose-500/5'
+                                    : 'border-border bg-muted/30'
+                            }`}
+                          >
+                            <div className={`flex items-center justify-center size-8 rounded-full ${
+                              isComplete
+                                ? 'bg-emerald-500/20 text-emerald-400'
+                                : isFailed
+                                  ? 'bg-rose-500/20 text-rose-400'
+                                  : isActive
+                                    ? 'bg-violet-500/20 text-violet-400'
+                                    : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {isComplete ? <CheckCircle2 className="size-4" /> : isFailed ? <AlertTriangle className="size-4" /> : icon}
+                            </div>
+                            <span className={`text-xs font-medium ${
+                              isComplete ? 'text-emerald-400' : isFailed ? 'text-rose-400' : isActive ? 'text-violet-400' : 'text-muted-foreground'
+                            }`}>
+                              {name}
+                            </span>
+                            {stepData && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {stepData.duration}ms
+                              </span>
+                            )}
+                          </button>
+                          {idx < 3 && (
+                            <ArrowRight className={`size-4 ${isComplete ? 'text-emerald-400' : 'text-muted-foreground/30'}`} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </section>
+
+            {/* Beat Result */}
+            {beatResult && (
+              <>
+                {/* Overall Summary */}
+                <section>
+                  <Card className={beatResult.beat.success ? 'border-emerald-500/30' : 'border-rose-500/30'}>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {beatResult.beat.success ? (
+                          <CheckCircle2 className="size-4 text-emerald-400" />
+                        ) : (
+                          <AlertTriangle className="size-4 text-rose-400" />
+                        )}
+                        Beat Result — {beatResult.beat.beatId}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Creator</p>
+                          <p className="text-sm font-medium">{beatResult.beat.creatorName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Mode</p>
+                          <Badge variant={beatResult.beat.mode === 'live' ? 'default' : 'secondary'}>
+                            {beatResult.beat.mode}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Total Duration</p>
+                          <p className="text-sm font-medium font-mono">{beatResult.beat.totalDuration}ms</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Evaluation</p>
+                          <Badge variant={beatResult.beat.evaluationPassed ? 'default' : 'destructive'}>
+                            {beatResult.beat.evaluationPassed ? 'PASSED' : 'FAILED'}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Evaluation Scores */}
+                      {beatResult.beat.evaluation && (
+                        <div className="mt-4 space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase">Evaluation Scores</p>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="p-3 rounded-lg bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">Voice Match</p>
+                              <p className="text-xl font-bold text-violet-400">
+                                {(beatResult.beat.evaluation.voiceMatch.overall * 100).toFixed(1)}%
+                              </p>
+                            </div>
+                            <div className="p-3 rounded-lg bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">Hook Compat</p>
+                              <p className="text-xl font-bold text-emerald-400">
+                                {(beatResult.beat.evaluation.hookCompat.overall * 100).toFixed(1)}%
+                              </p>
+                            </div>
+                            <div className="p-3 rounded-lg bg-muted/50 text-center">
+                              <p className="text-xs text-muted-foreground">Content Quality</p>
+                              <p className="text-xl font-bold text-amber-400">
+                                {(beatResult.beat.evaluation.contentQuality.overall * 100).toFixed(1)}%
+                              </p>
+                            </div>
+                          </div>
+                          <div className="p-3 rounded-lg bg-violet-500/5 border border-violet-500/20 text-center">
+                            <p className="text-xs text-muted-foreground">Overall Score</p>
+                            <p className="text-2xl font-bold text-violet-400">
+                              {(beatResult.beat.evaluation.overallScore * 100).toFixed(1)}%
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Draft Info */}
+                      {beatResult.beat.draft && (
+                        <div className="mt-4 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                          <p className="text-xs font-semibold text-emerald-400 uppercase mb-1">Draft Stored</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                            <div>
+                              <span className="text-xs text-muted-foreground">ID</span>
+                              <p className="font-mono text-xs">{beatResult.beat.draft.draftId.slice(0, 16)}…</p>
+                            </div>
+                            <div>
+                              <span className="text-xs text-muted-foreground">Version</span>
+                              <p className="font-medium">v{beatResult.beat.draft.version}</p>
+                            </div>
+                            <div>
+                              <span className="text-xs text-muted-foreground">Content Item</span>
+                              <p className="font-mono text-xs">{beatResult.beat.draft.contentItemId.slice(0, 16)}…</p>
+                            </div>
+                            <div>
+                              <span className="text-xs text-muted-foreground">Status</span>
+                              <Badge variant="default" className="bg-emerald-600">Stored</Badge>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </section>
+
+                {/* Step Details */}
+                <section className="space-y-3">
+                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Layers className="size-4" />
+                    Step-by-Step Breakdown
+                  </h2>
+                  {beatResult.beat.steps.map((step) => {
+                    const isActive = activeBeatStep === step.step;
+                    return (
+                      <Card
+                        key={step.step}
+                        className={`cursor-pointer transition-all ${
+                          isActive ? 'border-violet-500/40 shadow-md' : 'border-border'
+                        } ${step.status === 'complete' ? 'hover:border-emerald-500/30' : step.status === 'failed' ? 'hover:border-rose-500/30' : ''}`}
+                        onClick={() => setActiveBeatStep(isActive ? null : step.step)}
+                      >
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm flex items-center gap-2">
+                              <span className={`flex items-center justify-center size-6 rounded-full text-xs font-bold ${
+                                step.status === 'complete'
+                                  ? 'bg-emerald-500/20 text-emerald-400'
+                                  : step.status === 'failed'
+                                    ? 'bg-rose-500/20 text-rose-400'
+                                    : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {step.step}
+                              </span>
+                              {step.name}
+                            </CardTitle>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[10px] font-mono">
+                                {step.duration}ms
+                              </Badge>
+                              <Badge
+                                variant={step.status === 'complete' ? 'default' : step.status === 'failed' ? 'destructive' : 'secondary'}
+                                className={step.status === 'complete' ? 'bg-emerald-600' : undefined}
+                              >
+                                {step.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <CardDescription className="text-xs">{step.description}</CardDescription>
+                        </CardHeader>
+                        {isActive && (
+                          <CardContent className="pt-2 space-y-3">
+                            {/* Evidence */}
+                            <div>
+                              <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Evidence</p>
+                              <div className="space-y-1">
+                                {step.evidence.map((ev, i) => (
+                                  <div key={i} className="flex items-start gap-2 text-xs">
+                                    <span className="text-violet-400 mt-0.5 shrink-0">•</span>
+                                    <span className="text-muted-foreground">{ev}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Step-specific data */}
+                            {step.step === 1 && beatResult.beat.instruction && (
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Context Details</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="p-2 rounded bg-muted/50">
+                                    <p className="text-[10px] text-muted-foreground">Topic</p>
+                                    <p className="text-xs font-medium">{beatResult.beat.instruction.makerInput.topic}</p>
+                                  </div>
+                                  <div className="p-2 rounded bg-muted/50">
+                                    <p className="text-[10px] text-muted-foreground">Objective</p>
+                                    <p className="text-xs font-medium">{beatResult.beat.instruction.makerInput.objective}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {step.step === 2 && beatResult.beat.instruction && (
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Structured Instruction</p>
+                                <div className="p-3 rounded-lg bg-muted/50 text-xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
+{`[MUSE DELEGATION]
+Creator: ${beatResult.beat.instruction.makerInput.creator}
+Topic: ${beatResult.beat.instruction.makerInput.topic}
+Objective: ${beatResult.beat.instruction.makerInput.objective}
+Audience: ${beatResult.beat.instruction.makerInput.audience}
+
+Instruction:
+${beatResult.beat.instruction.makerInput.instruction}
+
+Reasoning: ${beatResult.beat.instruction.reasoning}
+Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.instruction.dataPointsUsed} data points)
+[END DELEGATION]`}
+                                </div>
+                              </div>
+                            )}
+
+                            {step.step === 3 && beatResult.beat.evaluation && (
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Evaluation Breakdown</p>
+                                <div className="space-y-2">
+                                  <ScoreBar label="Voice" value={beatResult.beat.evaluation.voiceMatch.overall} />
+                                  <ScoreBar label="Hook" value={beatResult.beat.evaluation.hookCompat.overall} />
+                                  <ScoreBar label="Quality" value={beatResult.beat.evaluation.contentQuality.overall} />
+                                  <ScoreBar label="Overall" value={beatResult.beat.evaluation.overallScore} />
+                                </div>
+                                {beatResult.beat.evaluation.voiceMatch.breakdown.length > 0 && (
+                                  <div className="mt-2 space-y-1">
+                                    <p className="text-[10px] font-semibold text-muted-foreground uppercase">Voice Breakdown</p>
+                                    {beatResult.beat.evaluation.voiceMatch.breakdown.map((b, i) => (
+                                      <p key={i} className="text-[10px] text-muted-foreground">{b}</p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {step.step === 4 && beatResult.beat.draft && (
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase mb-1.5">Draft Info</p>
+                                <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                                  <p className="text-xs">Draft <span className="font-mono">{beatResult.beat.draft.draftId.slice(0, 20)}…</span> stored as version {beatResult.beat.draft.version}</p>
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </section>
+
+                {/* Maker Output Preview */}
+                {beatResult.beat.makerOutput && (
+                  <section>
+                    <Card className="border-emerald-500/20">
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Zap className="size-4 text-emerald-400" />
+                          Maker Output
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Title</p>
+                          <p className="text-sm font-medium">{beatResult.beat.makerOutput.title}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">Caption</p>
+                          <p className="text-sm text-muted-foreground">{beatResult.beat.makerOutput.caption}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">CTA</p>
+                          <p className="text-sm text-muted-foreground">{beatResult.beat.makerOutput.cta}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="p-2 rounded-lg bg-violet-500/5 text-center">
+                            <p className="text-[10px] text-muted-foreground">Voice Match</p>
+                            <p className="text-lg font-bold text-violet-400">{(beatResult.beat.makerOutput.voiceMatch * 100).toFixed(1)}%</p>
+                          </div>
+                          <div className="p-2 rounded-lg bg-emerald-500/5 text-center">
+                            <p className="text-[10px] text-muted-foreground">Hook Compat</p>
+                            <p className="text-lg font-bold text-emerald-400">{(beatResult.beat.makerOutput.hookCompat * 100).toFixed(1)}%</p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
+                            Alternative Hooks ({beatResult.beat.makerOutput.alternativeHooks.length})
+                          </p>
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {beatResult.beat.makerOutput.alternativeHooks.map((hook, i) => (
+                              <p key={i} className="text-xs text-muted-foreground p-1.5 rounded bg-muted/30">{hook}</p>
+                            ))}
+                          </div>
+                        </div>
+                        <details className="group">
+                          <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground">
+                            View full script ({beatResult.beat.makerOutput.script.length} chars)
+                          </summary>
+                          <pre className="mt-2 p-3 rounded-lg bg-muted/50 text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto">
+                            {beatResult.beat.makerOutput.script}
+                          </pre>
+                        </details>
+                      </CardContent>
+                    </Card>
+                  </section>
+                )}
+
+                {/* Audit Trail */}
+                <section>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Shield className="size-4" />
+                        Audit Trail
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Total Events</p>
+                          <p className="font-medium">{beatResult.beat.auditSummary.totalAuditEvents}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Delegation</p>
+                          <p className="font-mono text-xs">{beatResult.beat.auditSummary.delegationAuditId.slice(0, 16)}…</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Evaluation</p>
+                          <p className="font-mono text-xs">{beatResult.beat.auditSummary.evaluationId.slice(0, 16)}…</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Draft</p>
+                          <p className="font-mono text-xs">{beatResult.beat.auditSummary.draftAuditId.slice(0, 16)}…</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </section>
+              </>
+            )}
+
+            {/* Beat History */}
+            {beatHistory && beatHistory.history.length > 0 && (
+              <section>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <History className="size-4" />
+                      Recent Beats ({beatHistory.count})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {beatHistory.history.map((beat) => (
+                        <div
+                          key={beat.beatId}
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={beat.evaluationPassed ? 'default' : 'destructive'}
+                              className="text-[10px]"
+                            >
+                              {beat.evaluationPassed ? 'PASS' : 'FAIL'}
+                            </Badge>
+                            <span className="text-xs font-mono">{beat.beatId}</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span>V:{(beat.scores.voiceMatch * 100).toFixed(0)}%</span>
+                            <span>H:{(beat.scores.hookCompat * 100).toFixed(0)}%</span>
+                            <span>{beat.totalDuration}ms</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {/* Empty State */}
+            {!beatResult && !beatLoading && (
+              <Card>
+                <CardContent className="py-16 text-center">
+                  <Workflow className="size-12 text-muted-foreground/20 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Run the Full Delegation Beat</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                    This demonstrates the complete Muse→Maker→evaluate→store pipeline in a single
+                    step-by-step execution — the core intelligence cycle of MUSE.
+                  </p>
+                  <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <div className="size-5 rounded-full bg-violet-500/10 flex items-center justify-center">
+                        <Database className="size-3 text-violet-400" />
+                      </div>
+                      Load
+                    </div>
+                    <ArrowRight className="size-3" />
+                    <div className="flex items-center gap-1.5">
+                      <div className="size-5 rounded-full bg-violet-500/10 flex items-center justify-center">
+                        <Send className="size-3 text-violet-400" />
+                      </div>
+                      Delegate
+                    </div>
+                    <ArrowRight className="size-3" />
+                    <div className="flex items-center gap-1.5">
+                      <div className="size-5 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                        <Scale className="size-3 text-emerald-400" />
+                      </div>
+                      Evaluate
+                    </div>
+                    <ArrowRight className="size-3" />
+                    <div className="flex items-center gap-1.5">
+                      <div className="size-5 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                        <Save className="size-3 text-emerald-400" />
+                      </div>
+                      Store
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
         </Tabs>
       </main>
 
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Evaluation ✅ • Drafts ✅ • 🧊 Scope frozen</span>
+          <span>Beat ✅ • Evaluation ✅ • Drafts ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
