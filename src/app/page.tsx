@@ -91,6 +91,7 @@ import {
   RefreshCw,
   ClipboardCheck,
   AlertCircle,
+  Anchor,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -1296,6 +1297,36 @@ export default function MuseDashboard() {
     fetchDecisionsData();
     fetchRankings();
     fetchHonestyCheck();
+
+    // Auto-load dashboard tab data on mount
+    (async () => {
+      setTodayScreenLoading(true);
+      setMemoryScreenLoading(true);
+      setLearningScreenLoading(true);
+      setOvernightScreenLoading(true);
+      setControlScreenLoading(true);
+      try {
+        const [todayRes, memRes, learnRes, overRes, ctrlRes, statsRes] = await Promise.all([
+          fetch('/api/dashboard/today').then((r) => r.json()).catch(() => null),
+          fetch('/api/dashboard/memory').then((r) => r.json()).catch(() => null),
+          fetch('/api/dashboard/learning').then((r) => r.json()).catch(() => null),
+          fetch('/api/dashboard/overnight').then((r) => r.json()).catch(() => null),
+          fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null),
+          fetch('/api/audit/stats').then((r) => r.json()).catch(() => null),
+        ]);
+        if (todayRes?.success) setTodayScreenData(todayRes.data);
+        if (memRes?.success) setMemoryScreenData(memRes.data);
+        if (learnRes?.success) setLearningScreenData(learnRes.data);
+        if (overRes?.success) setOvernightScreenData(overRes.data);
+        if (ctrlRes?.success) setControlScreenData(ctrlRes.data);
+        if (statsRes?.success) setAuditStatsData(statsRes.stats);
+      } catch { /* silently fail */ }
+      setTodayScreenLoading(false);
+      setMemoryScreenLoading(false);
+      setLearningScreenLoading(false);
+      setOvernightScreenLoading(false);
+      setControlScreenLoading(false);
+    })();
   }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData, fetchRankings, fetchHonestyCheck]);
 
   // Build test rows from validation data
@@ -1391,14 +1422,6 @@ export default function MuseDashboard() {
                 Disconnected
               </Badge>
             )}
-            <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
-              <Sparkles className="size-3" />
-              Dual-Role: Orchestrator + Creative
-            </Badge>
-            <Badge variant="outline" className="gap-1 border-sky-500/40 text-sky-400">
-              ❄️ Schema Frozen
-            </Badge>
-            <Badge variant="secondary" className="bg-sky-500/10 text-sky-400 border-sky-500/20">🧊 Scope Frozen</Badge>
             {validation?.config && (
               <Badge variant="outline" className="gap-1">
                 <Users className="size-3" />
@@ -1437,29 +1460,6 @@ export default function MuseDashboard() {
 
           {/* ===== TODAY TAB (Day 12) ===== */}
           <TabsContent value="today" className="space-y-6">
-            {/* Load Button */}
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={async () => {
-                  setTodayScreenLoading(true);
-                  try {
-                    const res = await fetch('/api/dashboard/today');
-                    const json = await res.json();
-                    if (json.success) setTodayScreenData(json.data);
-                  } catch { /* silently fail */ }
-                  setTodayScreenLoading(false);
-                }}
-                disabled={todayScreenLoading}
-                className="gap-2"
-              >
-                <Sun className="size-4" />
-                {todayScreenLoading ? 'Loading…' : 'Load Today'}
-              </Button>
-              {todayScreenData && (
-                <Badge variant="secondary" className="text-xs">Live</Badge>
-              )}
-            </div>
-
             {todayScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">
@@ -1662,39 +1662,11 @@ export default function MuseDashboard() {
               </>
             )}
 
-            {!todayScreenLoading && !todayScreenData && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Sun className="size-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Click &quot;Load Today&quot; to fetch your daily briefing</p>
-              </div>
-            )}
+            {!todayScreenLoading && !todayScreenData && null}
           </TabsContent>
 
           {/* ===== MEMORY SCREEN TAB (Day 12) ===== */}
           <TabsContent value="memoryscreen" className="space-y-6">
-            {/* Load Button */}
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={async () => {
-                  setMemoryScreenLoading(true);
-                  try {
-                    const res = await fetch('/api/dashboard/memory');
-                    const json = await res.json();
-                    if (json.success) setMemoryScreenData(json.data);
-                  } catch { /* silently fail */ }
-                  setMemoryScreenLoading(false);
-                }}
-                disabled={memoryScreenLoading}
-                className="gap-2"
-              >
-                <Brain className="size-4" />
-                {memoryScreenLoading ? 'Loading…' : 'Load Memory'}
-              </Button>
-              {memoryScreenData && (
-                <Badge variant="secondary" className="text-xs">Live</Badge>
-              )}
-            </div>
-
             {memoryScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">
@@ -1944,39 +1916,11 @@ export default function MuseDashboard() {
               </>
             )}
 
-            {!memoryScreenLoading && !memoryScreenData && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Brain className="size-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Click &quot;Load Memory&quot; to explore what Muse knows</p>
-              </div>
-            )}
+            {!memoryScreenLoading && !memoryScreenData && null}
           </TabsContent>
 
           {/* ===== LEARNING SCREEN TAB (Day 13) — MOST IMPORTANT ===== */}
           <TabsContent value="learningscreen" className="space-y-6">
-            {/* Load Button */}
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={async () => {
-                  setLearningScreenLoading(true);
-                  try {
-                    const res = await fetch('/api/dashboard/learning');
-                    const json = await res.json();
-                    if (json.success) setLearningScreenData(json.data);
-                  } catch { /* silently fail */ }
-                  setLearningScreenLoading(false);
-                }}
-                disabled={learningScreenLoading}
-                className="gap-2"
-              >
-                <GraduationCap className="size-4" />
-                {learningScreenLoading ? 'Loading…' : 'Load Learning'}
-              </Button>
-              {learningScreenData && (
-                <Badge variant="secondary" className="text-xs">Live</Badge>
-              )}
-            </div>
-
             {learningScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">
@@ -2050,21 +1994,21 @@ export default function MuseDashboard() {
                                     )}
                                     {step.type === 'performance' && (
                                       <div className="flex items-center gap-2">
-                                        <span>📊</span>
+                                        <BarChart3 className="size-4" />
                                         <span className="text-sm font-medium">{step.label}</span>
                                         <span className="text-xs text-muted-foreground font-mono">{step.detail}</span>
                                       </div>
                                     )}
                                     {step.type === 'hook_analysis' && (
                                       <div className="flex items-center gap-2">
-                                        <span>🎣</span>
+                                        <Anchor className="size-4" />
                                         <span className="text-sm font-medium">{step.label}</span>
                                         <span className="text-xs text-muted-foreground">{step.detail}</span>
                                       </div>
                                     )}
                                     {step.type === 'comparison' && (
                                       <div className="flex items-center gap-2">
-                                        <span>📈</span>
+                                        <TrendingUp className="size-4" />
                                         <span className="text-sm font-medium">{step.label}</span>
                                         <span className={`text-xs font-mono ${
                                           step.delta && step.delta.startsWith('-')
@@ -2077,21 +2021,21 @@ export default function MuseDashboard() {
                                     )}
                                     {step.type === 'memory_updated' && (
                                       <div className="flex items-center gap-2">
-                                        <span>🧠</span>
+                                        <Brain className="size-4" />
                                         <span className="text-sm font-medium">{step.label}</span>
                                         <span className="text-xs text-violet-400">{step.detail}</span>
                                       </div>
                                     )}
                                     {step.type === 'strategy_changed' && (
                                       <div className="flex items-center gap-2">
-                                        <span>⚡</span>
+                                        <Zap className="size-4" />
                                         <span className="text-sm font-medium">{step.label}</span>
                                         <span className="text-xs text-amber-400">{step.detail}</span>
                                       </div>
                                     )}
                                     {step.type === 'loop_working' && (
                                       <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                                        <span>✅</span>
+                                        <CheckCircle2 className="size-4" />
                                         <span className="text-sm font-bold text-emerald-400">{step.label}</span>
                                         <span className="text-xs text-emerald-300">{step.detail}</span>
                                       </div>
@@ -2162,7 +2106,7 @@ export default function MuseDashboard() {
                               : 'bg-red-600 text-white border-red-600'
                             }
                           >
-                            {learningScreenData.honestyScore.isHonest ? '✅ Honest' : '❌ Dishonest'}
+                            {learningScreenData.honestyScore.isHonest ? 'Honest' : 'Dishonest'}
                           </Badge>
                         </div>
                         <Progress
@@ -2212,39 +2156,11 @@ export default function MuseDashboard() {
               </>
             )}
 
-            {!learningScreenLoading && !learningScreenData && (
-              <div className="text-center py-12 text-muted-foreground">
-                <GraduationCap className="size-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Click &quot;Load Learning&quot; to see how Muse is learning</p>
-              </div>
-            )}
+            {!learningScreenLoading && !learningScreenData && null}
           </TabsContent>
 
           {/* ===== OVERNIGHT SCREEN TAB (Day 13) ===== */}
           <TabsContent value="overnightscreen" className="space-y-6">
-            {/* Load Button */}
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={async () => {
-                  setOvernightScreenLoading(true);
-                  try {
-                    const res = await fetch('/api/dashboard/overnight');
-                    const json = await res.json();
-                    if (json.success) setOvernightScreenData(json.data);
-                  } catch { /* silently fail */ }
-                  setOvernightScreenLoading(false);
-                }}
-                disabled={overnightScreenLoading}
-                className="gap-2"
-              >
-                <Moon className="size-4" />
-                {overnightScreenLoading ? 'Loading…' : 'Load Overnight'}
-              </Button>
-              {overnightScreenData && (
-                <Badge variant="secondary" className="text-xs">Live</Badge>
-              )}
-            </div>
-
             {overnightScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">
@@ -2321,9 +2237,9 @@ export default function MuseDashboard() {
                               : 'border-indigo-500/30 text-indigo-400'
                         }`}
                       >
-                        {overnightScreenData.theatreStatus === 'complete' && '✅ Complete'}
-                        {overnightScreenData.theatreStatus === 'running' && '🔄 Running'}
-                        {overnightScreenData.theatreStatus === 'sleeping' && '💤 Sleeping'}
+                        {overnightScreenData.theatreStatus === 'complete' && 'Complete'}
+                        {overnightScreenData.theatreStatus === 'running' && 'Running'}
+                        {overnightScreenData.theatreStatus === 'sleeping' && 'Sleeping'}
                         {!['complete','running','sleeping'].includes(overnightScreenData.theatreStatus) && overnightScreenData.theatreStatus}
                       </Badge>
                     </div>
@@ -2337,10 +2253,10 @@ export default function MuseDashboard() {
                               {entry.time}
                             </span>
                             <span className="text-sm shrink-0">
-                              {entry.actor === 'creator' && '👤'}
-                              {entry.actor === 'muse' && '🧠'}
-                              {entry.actor === 'maker' && '🎨'}
-                              {!['creator','muse','maker'].includes(entry.actor) && '⚙️'}
+                              {entry.actor === 'creator' && 'Creator'}
+                              {entry.actor === 'muse' && 'Muse'}
+                              {entry.actor === 'maker' && 'Maker'}
+                              {!['creator','muse','maker'].includes(entry.actor) && entry.actor}
                             </span>
                             <span className="text-sm flex-1">{entry.action}</span>
                             <Badge variant="outline" className="text-[10px] shrink-0">
@@ -2382,7 +2298,7 @@ export default function MuseDashboard() {
                               : 'bg-red-600 text-white border-red-600 text-xs'
                             }
                           >
-                            {overnightScreenData.overnightOutput.evaluationPassed ? '✅ Passed' : '❌ Failed'}
+                            {overnightScreenData.overnightOutput.evaluationPassed ? 'Passed' : 'Failed'}
                           </Badge>
                           <Badge variant="secondary" className="text-xs">
                             Score: {overnightScreenData.overnightOutput.overallScore}
@@ -2425,42 +2341,11 @@ export default function MuseDashboard() {
               </>
             )}
 
-            {!overnightScreenLoading && !overnightScreenData && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Moon className="size-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Click &quot;Load Overnight&quot; to see what happened while you were offline</p>
-              </div>
-            )}
+            {!overnightScreenLoading && !overnightScreenData && null}
           </TabsContent>
 
           {/* ===== CONTROL SCREEN TAB (Day 13) ===== */}
           <TabsContent value="controlscreen" className="space-y-6">
-            {/* Load Button */}
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={async () => {
-                  setControlScreenLoading(true);
-                  try {
-                    const [controlRes, statsRes] = await Promise.all([
-                      fetch('/api/dashboard/control').then((r) => r.json()),
-                      fetch('/api/audit/stats').then((r) => r.json()).catch(() => null),
-                    ]);
-                    if (controlRes.success) setControlScreenData(controlRes.data);
-                    if (statsRes?.success) setAuditStatsData(statsRes.stats);
-                  } catch { /* silently fail */ }
-                  setControlScreenLoading(false);
-                }}
-                disabled={controlScreenLoading}
-                className="gap-2"
-              >
-                <Settings className="size-4" />
-                {controlScreenLoading ? 'Loading…' : 'Load Control'}
-              </Button>
-              {controlScreenData && (
-                <Badge variant="secondary" className="text-xs">Live</Badge>
-              )}
-            </div>
-
             {controlScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">
@@ -2520,7 +2405,7 @@ export default function MuseDashboard() {
                       <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">Auto-Publish</span>
-                          <span className="text-amber-400" title="Publishing requires explicit approval">🔒</span>
+                          <Shield className="size-3 text-amber-400" title="Publishing requires explicit approval" />
                         </div>
                         <Badge className="bg-red-600 text-white border-red-600 text-xs">OFF</Badge>
                       </div>
@@ -2714,7 +2599,7 @@ export default function MuseDashboard() {
                     ) : (
                       <div className="text-center py-6 text-muted-foreground">
                         <CheckCircle2 className="size-8 mx-auto mb-2 text-emerald-400 opacity-50" />
-                        <p className="text-sm">No items pending your review ✅</p>
+                        <p className="text-sm">No items pending your review</p>
                       </div>
                     )}
                     {/* Approval History Panel */}
@@ -2890,11 +2775,11 @@ export default function MuseDashboard() {
                                   {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                                 </span>
                                 <span className="text-sm shrink-0 mt-0.5">
-                                  {entry.actor === 'muse' && '🧠'}
-                                  {entry.actor === 'maker' && '🎨'}
-                                  {entry.actor === 'system' && '⚙️'}
-                                  {entry.actor === 'creator' && '👤'}
-                                  {!['muse','maker','system','creator'].includes(entry.actor) && '⚙️'}
+                                  {entry.actor === 'muse' && 'Muse'}
+                                  {entry.actor === 'maker' && 'Maker'}
+                                  {entry.actor === 'system' && 'System'}
+                                  {entry.actor === 'creator' && 'Creator'}
+                                  {!['muse','maker','system','creator'].includes(entry.actor) && entry.actor}
                                 </span>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium truncate">{entry.action}</p>
@@ -2948,11 +2833,7 @@ export default function MuseDashboard() {
                               return (
                                 <div key={actor} className="flex items-center gap-1">
                                   <span className="text-[10px]">
-                                    {actor === 'muse' && '🧠'}
-                                    {actor === 'maker' && '🎨'}
-                                    {actor === 'system' && '⚙️'}
-                                    {actor === 'creator' && '👤'}
-                                    {!['muse','maker','system','creator'].includes(actor) && '❓'}
+                                    {actor}
                                   </span>
                                   <span className="text-[10px] font-medium">{actor}</span>
                                   <Badge variant="outline" className="text-[9px]">{count} ({pct}%)</Badge>
@@ -2967,12 +2848,7 @@ export default function MuseDashboard() {
               </>
             )}
 
-            {!controlScreenLoading && !controlScreenData && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Settings className="size-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Click &quot;Load Control&quot; to view your autonomy settings</p>
-              </div>
-            )}
+            {!controlScreenLoading && !controlScreenData && null}
           </TabsContent>
         </Tabs>
       </main>
@@ -2980,7 +2856,7 @@ export default function MuseDashboard() {
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • E2E Validation ✅ • Honesty ✅ • Feedback Loop ✅ • Disclosed Sim ✅ • Polish ✅ • 🧊 Scope frozen</span>
+          <span>MUSE — Persistent AI Creative Team • Minds Platform • Track 1: Audience Growth &amp; Engagement</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
