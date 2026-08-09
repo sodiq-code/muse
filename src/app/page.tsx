@@ -72,6 +72,10 @@ import {
   Target,
   LineChart,
   Wand2,
+  FlaskConical,
+  ChevronDown,
+  ChevronUp,
+  Link2,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -482,6 +486,107 @@ interface HonestyCheckResponse {
   confidenceThresholds: Record<string, { minDataPoints: number; label: string }>;
 }
 
+// Day 8: Explanation System Types
+interface EvidenceSource {
+  type: string;
+  id: string;
+  label: string;
+  value: string;
+  capturedAt: string;
+}
+
+interface EvidenceStep {
+  step: number;
+  phase: 'OBSERVE' | 'COMPARE' | 'INFER' | 'UPDATE' | 'RECOMMEND';
+  description: string;
+  evidenceType: string;
+  confidence: 'low' | 'medium' | 'high';
+  dataPoints: number;
+  sources: EvidenceSource[];
+  derivedFrom: number[];
+}
+
+interface FullExplanation {
+  recommendationId: string;
+  recommendationTitle: string;
+  recommendationType: string;
+  summary: string;
+  narrative: string;
+  evidenceChain: EvidenceStep[];
+  confidence: 'low' | 'medium' | 'high';
+  overallDataPoints: number;
+  supportingContentCount: number;
+  patternHistory: { pattern: string; avgEffectiveness: number; sampleSize: number; confidence: string; lastSeen: string }[];
+  creatorSpecificContext: string;
+  generatedAt: string;
+  honestyVerified: boolean;
+}
+
+interface ExplainResponse {
+  success: boolean;
+  count?: number;
+  explanations?: FullExplanation[];
+  explanation?: FullExplanation;
+  error?: string;
+}
+
+// Day 8: Proof Experiment Types
+interface GenuineInsight {
+  id: string;
+  dayDiscovered: number;
+  type: 'pattern_emergence' | 'performance_signal' | 'recommendation_with_evidence' | 'confidence_upgrade';
+  title: string;
+  description: string;
+  evidenceType: string;
+  confidence: 'low' | 'medium' | 'high';
+  dataPoints: number;
+  supportingFacts: string[];
+  isGenuine: boolean;
+  verificationNote: string;
+}
+
+interface DayResult {
+  day: number;
+  date: string;
+  contentAnalyzed: number;
+  newObservations: string[];
+  newInferences: string[];
+  recommendations: { title: string; type: string; explanation: string; confidence: string; dataPoints: number; evidenceType: string; supportingFacts: string[] }[];
+  confidenceGrowth: { before: string; after: string };
+  dataPointGrowth: { before: number; after: number };
+  patternsDiscovered: string[];
+}
+
+interface ProofResponse {
+  success: boolean;
+  experimentId: string;
+  creatorId: string;
+  creatorName: string;
+  startedAt: string;
+  completedAt: string;
+  totalDays: number;
+  dayResults: DayResult[];
+  genuineInsights: GenuineInsight[];
+  totalGenuineInsights: number;
+  meetsThreshold: boolean;
+  summary: {
+    totalContentAnalyzed: number;
+    totalObservations: number;
+    totalInferences: number;
+    totalRecommendations: number;
+    confidenceProgression: string[];
+    dataPointProgression: number[];
+    insightByDay: number[];
+  };
+  honestyReport: {
+    allInsightsGenuine: boolean;
+    noFabricatedData: boolean;
+    evidenceChainsComplete: boolean;
+    confidenceHonest: boolean;
+  };
+  error?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
@@ -589,6 +694,13 @@ export default function MuseDashboard() {
   const [learningRunLoading, setLearningRunLoading] = useState(false);
   const [honestyCheckResult, setHonestyCheckResult] = useState<HonestyCheckResponse | null>(null);
   const [honestyCheckLoading, setHonestyCheckLoading] = useState(true);
+
+  // Day 8: Explanation & Proof State
+  const [explainResult, setExplainResult] = useState<ExplainResponse | null>(null);
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [expandedChains, setExpandedChains] = useState<Set<string>>(new Set());
+  const [proofResult, setProofResult] = useState<ProofResponse | null>(null);
+  const [proofLoading, setProofLoading] = useState(false);
 
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
@@ -779,7 +891,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 7 Learning Engine
+                Muse — Day 8 Evidence & Proof
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -810,7 +922,7 @@ export default function MuseDashboard() {
             <Badge variant="outline" className="gap-1 border-sky-500/40 text-sky-400">
               ❄️ Schema Frozen
             </Badge>
-            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">✅ Honest</Badge>
+            <Badge variant="secondary" className="bg-sky-500/10 text-sky-400 border-sky-500/20">🧊 Scope Frozen</Badge>
             {validation?.config && (
               <Badge variant="outline" className="gap-1">
                 <Users className="size-3" />
@@ -860,6 +972,14 @@ export default function MuseDashboard() {
             <TabsTrigger value="decisions" className="gap-1.5">
               <Scale className="size-3.5" />
               Decisions
+            </TabsTrigger>
+            <TabsTrigger value="explain" className="gap-1.5">
+              <Eye className="size-3.5" />
+              Why Chose This
+            </TabsTrigger>
+            <TabsTrigger value="proof" className="gap-1.5">
+              <FlaskConical className="size-3.5" />
+              7-Day Proof
             </TabsTrigger>
           </TabsList>
 
@@ -3712,13 +3832,465 @@ export default function MuseDashboard() {
               </Card>
             </section>
           </TabsContent>
+
+          {/* ===== DAY 8: WHY MUSE CHOSE THIS TAB ===== */}
+          <TabsContent value="explain" className="space-y-6">
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Eye className="size-4" />
+                  Why Muse Chose This — Evidence Chains
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={async () => {
+                    setExplainLoading(true);
+                    try {
+                      const res = await fetch('/api/learning/explain').then((r) => r.json());
+                      setExplainResult(res);
+                    } catch {
+                      setExplainResult({ success: false, error: 'Failed to fetch explanations' });
+                    } finally {
+                      setExplainLoading(false);
+                    }
+                  }}
+                  disabled={explainLoading}
+                >
+                  {explainLoading ? (
+                    <>
+                      <Activity className="size-3.5 animate-pulse" />
+                      Loading…
+                    </>
+                  ) : (
+                    <>
+                      <GitBranch className="size-3.5" />
+                      Load Explanations
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {explainLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <Activity className="size-6 animate-pulse text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Building evidence chains…</span>
+                </div>
+              )}
+
+              {!explainLoading && !explainResult && (
+                <Card className="border-dashed">
+                  <CardContent className="py-8 text-center">
+                    <GitBranch className="size-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Click "Load Explanations" to see why Muse chose each recommendation
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {!explainLoading && explainResult && !explainResult.success && (
+                <Card className="border-destructive/30">
+                  <CardContent className="py-4">
+                    <p className="text-sm text-destructive">Error: {explainResult.error || 'Unknown error'}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {!explainLoading && explainResult?.success && explainResult.explanations && (
+                <div className="space-y-4">
+                  <p className="text-xs text-muted-foreground">
+                    {explainResult.count} recommendation{explainResult.count !== 1 ? 's' : ''} with full evidence chains
+                  </p>
+                  {explainResult.explanations.map((exp) => {
+                    const isExpanded = expandedChains.has(exp.recommendationId);
+                    return (
+                      <Card key={exp.recommendationId} className="overflow-hidden">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between gap-2 flex-wrap">
+                            <CardTitle className="text-base">{exp.recommendationTitle}</CardTitle>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge variant="outline" className="text-xs">{exp.recommendationType}</Badge>
+                              <Badge variant="outline" className={`text-xs ${confidenceBadgeStyle(exp.confidence)}`}>
+                                {exp.confidence} confidence
+                              </Badge>
+                              {exp.honestyVerified ? (
+                                <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/20">✅ Honest</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs bg-rose-500/10 text-rose-400 border-rose-500/20">❌ Dishonest</Badge>
+                              )}
+                            </div>
+                          </div>
+                          <CardDescription className="text-sm">{exp.summary}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* Evidence Chain */}
+                          <div>
+                            <button
+                              className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline mb-2"
+                              onClick={() => {
+                                const next = new Set(expandedChains);
+                                if (next.has(exp.recommendationId)) next.delete(exp.recommendationId);
+                                else next.add(exp.recommendationId);
+                                setExpandedChains(next);
+                              }}
+                            >
+                              <Link2 className="size-3.5" />
+                              Evidence Chain ({exp.evidenceChain.length} steps)
+                              {isExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                            </button>
+                            {isExpanded && (
+                              <div className="space-y-2 pl-2">
+                                {exp.evidenceChain.map((step, idx) => (
+                                  <div key={step.step}>
+                                    <div className="flex items-start gap-2 bg-muted/30 rounded-md p-3">
+                                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                                        {step.step}
+                                      </div>
+                                      <div className="flex-1 min-w-0 space-y-1">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <Badge variant="secondary" className="text-xs font-mono">{step.phase}</Badge>
+                                          <Badge variant="outline" className={`text-xs ${confidenceBadgeStyle(step.confidence)}`}>
+                                            {step.confidence}
+                                          </Badge>
+                                          <Badge variant="outline" className="text-xs">{step.evidenceType}</Badge>
+                                          <span className="text-xs text-muted-foreground">{step.dataPoints} data pts</span>
+                                        </div>
+                                        <p className="text-sm">{step.description}</p>
+                                        {step.sources.length > 0 && (
+                                          <ScrollArea className="max-h-24 w-full">
+                                            <div className="space-y-0.5">
+                                              {step.sources.map((src, si) => (
+                                                <div key={si} className="text-xs text-muted-foreground flex items-center gap-1">
+                                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+                                                  <span className="font-medium">{src.label}</span>: {src.value}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </ScrollArea>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {idx < exp.evidenceChain.length - 1 && (
+                                      <div className="flex justify-center py-1">
+                                        <ArrowRight className="size-3.5 text-muted-foreground/50 rotate-90" />
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <Separator />
+
+                          {/* Narrative */}
+                          <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Narrative</p>
+                            <p className="text-sm leading-relaxed">{exp.narrative}</p>
+                          </div>
+
+                          <Separator />
+
+                          {/* Creator-Specific Context */}
+                          <div>
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Personalized For You</p>
+                            <p className="text-sm leading-relaxed bg-muted/30 rounded-md p-3">{exp.creatorSpecificContext}</p>
+                          </div>
+
+                          {/* Pattern History */}
+                          {exp.patternHistory.length > 0 && (
+                            <>
+                              <Separator />
+                              <div>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Pattern History</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {exp.patternHistory.map((ph) => (
+                                    <div key={ph.pattern} className="flex items-center justify-between text-xs bg-muted/20 rounded-md px-2 py-1.5">
+                                      <span className="font-medium truncate mr-2">{ph.pattern}</span>
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        <span>{(ph.avgEffectiveness * 100).toFixed(0)}%</span>
+                                        <Badge variant="outline" className={`text-[10px] ${confidenceBadgeStyle(ph.confidence)}`}>
+                                          {ph.confidence}
+                                        </Badge>
+                                        <span className="text-muted-foreground">n={ph.sampleSize}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </TabsContent>
+
+          {/* ===== DAY 8: 7-DAY PROOF TAB ===== */}
+          <TabsContent value="proof" className="space-y-6">
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <FlaskConical className="size-4" />
+                  7-Day Proof Experiment
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={async () => {
+                    setProofLoading(true);
+                    try {
+                      const res = await fetch('/api/learning/proof').then((r) => r.json());
+                      setProofResult(res);
+                    } catch {
+                      setProofResult({ success: false, error: 'Failed to run proof experiment', experimentId: '', creatorId: '', creatorName: '', startedAt: '', completedAt: '', totalDays: 0, dayResults: [], genuineInsights: [], totalGenuineInsights: 0, meetsThreshold: false, summary: { totalContentAnalyzed: 0, totalObservations: 0, totalInferences: 0, totalRecommendations: 0, confidenceProgression: [], dataPointProgression: [], insightByDay: [] }, honestyReport: { allInsightsGenuine: false, noFabricatedData: false, evidenceChainsComplete: false, confidenceHonest: false } });
+                    } finally {
+                      setProofLoading(false);
+                    }
+                  }}
+                  disabled={proofLoading}
+                >
+                  {proofLoading ? (
+                    <>
+                      <Activity className="size-3.5 animate-pulse" />
+                      Running…
+                    </>
+                  ) : (
+                    <>
+                      <FlaskConical className="size-3.5" />
+                      Run Proof Experiment
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {proofLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <Activity className="size-6 animate-pulse text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Running 7-day proof experiment…</span>
+                </div>
+              )}
+
+              {!proofLoading && !proofResult && (
+                <Card className="border-dashed">
+                  <CardContent className="py-8 text-center">
+                    <FlaskConical className="size-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Click "Run Proof Experiment" to simulate 7 days of learning
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Goal: ≥3 genuine insights discovered over 7 days
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {!proofLoading && proofResult && !proofResult.success && (
+                <Card className="border-destructive/30">
+                  <CardContent className="py-4">
+                    <p className="text-sm text-destructive">Error: {proofResult.error || 'Unknown error'}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {!proofLoading && proofResult?.success && (
+                <div className="space-y-6">
+                  {/* Experiment Header */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div>
+                          <CardTitle className="text-base">7-Day Proof Experiment</CardTitle>
+                          <CardDescription className="text-sm">
+                            {proofResult.creatorName} • {proofResult.totalDays} days • {proofResult.experimentId.slice(0, 20)}…
+                          </CardDescription>
+                        </div>
+                        <Badge variant="outline" className={`text-xs ${proofResult.meetsThreshold ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                          {proofResult.meetsThreshold ? '✅ ≥3 Genuine Insights' : '❌ <3 Insights'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <div className="text-center">
+                          <p className="text-lg font-bold">{proofResult.totalGenuineInsights}</p>
+                          <p className="text-xs text-muted-foreground">Total Insights</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-lg font-bold">{proofResult.summary.totalContentAnalyzed}</p>
+                          <p className="text-xs text-muted-foreground">Content Analyzed</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-lg font-bold">{proofResult.summary.totalObservations}</p>
+                          <p className="text-xs text-muted-foreground">Observations</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-lg font-bold">{proofResult.summary.totalInferences}</p>
+                          <p className="text-xs text-muted-foreground">Inferences</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-lg font-bold">{proofResult.summary.totalRecommendations}</p>
+                          <p className="text-xs text-muted-foreground">Recommendations</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Day-by-Day Timeline */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <History className="size-4" />
+                        Day-by-Day Timeline
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {proofResult.dayResults.map((day) => (
+                          <div key={day.day} className="border rounded-md p-3 space-y-2">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs font-mono">Day {day.day}</Badge>
+                                <span className="text-xs text-muted-foreground">{day.date}</span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant="outline" className="text-xs">{day.contentAnalyzed} items</Badge>
+                                <Badge variant="outline" className="text-xs">{day.newObservations.length} obs</Badge>
+                                {day.patternsDiscovered.length > 0 && (
+                                  <Badge variant="outline" className="text-xs bg-violet-500/10 text-violet-400 border-violet-500/20">
+                                    {day.patternsDiscovered.length} new pattern{day.patternsDiscovered.length !== 1 ? 's' : ''}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            {/* Confidence Growth */}
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-muted-foreground">Confidence:</span>
+                              <Badge variant="outline" className={`text-[10px] ${confidenceBadgeStyle(day.confidenceGrowth.before)}`}>{day.confidenceGrowth.before}</Badge>
+                              <ArrowRight className="size-3 text-muted-foreground" />
+                              <Badge variant="outline" className={`text-[10px] ${confidenceBadgeStyle(day.confidenceGrowth.after)}`}>{day.confidenceGrowth.after}</Badge>
+                            </div>
+                            {/* Data Point Growth */}
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-muted-foreground">Data points:</span>
+                              <span>{day.dataPointGrowth.before}</span>
+                              <ArrowRight className="size-3 text-muted-foreground" />
+                              <span className="font-medium">{day.dataPointGrowth.after}</span>
+                              <span className="text-muted-foreground">(+{day.dataPointGrowth.after - day.dataPointGrowth.before})</span>
+                            </div>
+                            {/* Patterns Discovered */}
+                            {day.patternsDiscovered.length > 0 && (
+                              <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                                <span className="text-muted-foreground">Discovered:</span>
+                                {day.patternsDiscovered.map((p) => (
+                                  <Badge key={p} variant="secondary" className="text-[10px]">{p}</Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Genuine Insights */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Lightbulb className="size-4" />
+                        Genuine Insights ({proofResult.genuineInsights.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="max-h-96">
+                        <div className="space-y-3">
+                          {proofResult.genuineInsights.map((insight) => {
+                            const typeColor: Record<string, string> = {
+                              pattern_emergence: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+                              performance_signal: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                              recommendation_with_evidence: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                              confidence_upgrade: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+                            };
+                            return (
+                              <div key={insight.id} className="border rounded-md p-3 space-y-1.5">
+                                <div className="flex items-start justify-between gap-2 flex-wrap">
+                                  <p className="text-sm font-medium">{insight.title}</p>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <Badge variant="outline" className={`text-[10px] ${typeColor[insight.type] || ''}`}>{insight.type.replace(/_/g, ' ')}</Badge>
+                                    <Badge variant="outline" className={`text-[10px] ${confidenceBadgeStyle(insight.confidence)}`}>{insight.confidence}</Badge>
+                                    <Badge variant="secondary" className="text-[10px]">Day {insight.dayDiscovered}</Badge>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{insight.description}</p>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  <span>{insight.dataPoints} data pts</span>
+                                  <span>{insight.evidenceType}</span>
+                                  <span className="flex items-center gap-1">
+                                    {insight.isGenuine ? <CheckCircle2 className="size-3 text-emerald-500" /> : <AlertTriangle className="size-3 text-rose-500" />}
+                                    {insight.verificationNote}
+                                  </span>
+                                </div>
+                                {insight.supportingFacts.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {insight.supportingFacts.map((fact, fi) => (
+                                      <span key={fi} className="text-[10px] bg-muted/40 rounded px-1.5 py-0.5">{fact}</span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+
+                  {/* Honesty Report */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Shield className="size-4" />
+                        Honesty Report
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {([
+                          ['All Insights Genuine', proofResult.honestyReport.allInsightsGenuine],
+                          ['No Fabricated Data', proofResult.honestyReport.noFabricatedData],
+                          ['Evidence Chains Complete', proofResult.honestyReport.evidenceChainsComplete],
+                          ['Confidence Honest', proofResult.honestyReport.confidenceHonest],
+                        ] as [string, boolean][]).map(([label, passed]) => (
+                          <div key={label} className="flex items-center gap-2 text-sm">
+                            {passed ? (
+                              <CheckCircle2 className="size-4 text-emerald-500 flex-shrink-0" />
+                            ) : (
+                              <AlertTriangle className="size-4 text-rose-500 flex-shrink-0" />
+                            )}
+                            <span>{label}</span>
+                            <span className="ml-auto text-xs">{passed ? '✅' : '❌'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </section>
+          </TabsContent>
         </Tabs>
       </main>
 
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>All 4 memory domains active • Learning engine DB-backed • Statistical honesty ✅ • Schema frozen ❄️ • 0 credits burned</span>
+          <span>Evidence chains ✅ • Proof experiment ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
