@@ -857,3 +857,64 @@ Stage Summary:
 - Memory tab fetches /api/dashboard/memory on button click, renders identity, voice radar, winning hooks, performance, decisions, and memory events
 - All existing tabs preserved intact; "today" is the new default tab
 - Build compiles successfully with no errors
+---
+Task ID: 12
+Agent: main
+Task: Day 12 — Dashboard screens: Screen 1 Today (home + morning brief) + Screen 2 Memory (4 domains + voice radar)
+
+Work Log:
+- Read blueprint Day 12 spec: "Screen 1: Today (home + morning brief) | Screen 2: Memory (4 domains + voice radar)"
+- Phase 5: DASHBOARD (Days 12-13) — building the 5 dashboard screens
+- Created src/lib/today-screen-service.ts — Today screen data service
+  - getTodayScreenData(creatorId): time-aware greeting, overnight brief, top signals, new data, try next, pending approvals
+  - Every data point has SOURCE and EVIDENCE per blueprint UX rule
+  - Overnight brief: counts audit events from last 12h (reviews, drafts, updates)
+  - Top signals: from hook pattern effectiveness + learning engine recommendations
+  - Try next: recommended hook pattern to try next
+  - Pending approvals: drafts awaiting creator action (with Approve/Modify/Reject)
+- Created src/lib/memory-screen-service.ts — Memory screen data service
+  - getMemoryScreenData(creatorId): identity, voice radar, winning hooks, performance, decisions
+  - Identity: niche, audience, tone, avoid from Creator model
+  - Voice Radar: 7 dimensions (directness=91, technicalDepth=88, storytelling=72, humor=34, hype=8) from Creator.voiceProfile JSON + MemoryEvent overrides
+  - Winning Hooks: aggregated from HookPattern table, sorted by avg effectiveness, top 5
+  - Performance: MemoryEvent (performance/pattern) + Recommendation insights
+  - Decisions: CreatorDecision (total count + recent 10)
+- Created /api/dashboard/today API route (GET)
+- Created /api/dashboard/memory API route (GET)
+- Built "Today" tab in page.tsx with:
+  - Morning greeting with time-of-day icon (Sunrise/CloudSun/Moon)
+  - Overnight Brief card with 3 stat counters (Reviewed/Drafted/Updated) + bullet items
+  - 3-column quick-stat cards: Top Signals, New Data, Try Next
+  - Pending Approvals section with draft cards and Approve/Modify/Reject buttons
+  - Every section shows SOURCE/EVIDENCE
+- Built "Memory" tab in page.tsx with:
+  - "What Muse Knows About You" header with memory events count
+  - Identity domain card: niche, audience, tone badges, avoid badges
+  - Voice Radar card: 7 horizontal bar charts with distinct colors per dimension
+  - Winning Hooks card: pattern + avgRetention + sampleSize + confidence
+  - Performance card: top signals + recent insights
+  - Decisions card: total count + scrollable recent decisions list
+  - Memory events summary
+- Updated header to "Day 12 Dashboard Screens"
+- Updated footer to "Today ✅ • Memory ✅ • Beat ✅ • Evaluation ✅ • Drafts ✅ • 🧊 Scope frozen"
+- Changed default tab to "today"
+- API verification:
+  - GET /api/dashboard/today: 200, greeting "Good afternoon, Jules.", 2 top signals, 3 pending approvals
+  - GET /api/dashboard/memory: 200, identity niche "AI / developer education", voice radar D=91 T=88 S=72 H=34 Hy=8, 5 winning hooks, 60 memory events
+- Browser verification:
+  - Today tab renders with greeting, overnight brief, top signals, new data, try next, pending approvals ✅
+  - Memory tab renders with identity, voice radar (7 bars), winning hooks, performance, decisions ✅
+  - All existing tabs still functional ✅
+  - Header "Day 12 Dashboard Screens" ✅
+  - Footer correct ✅
+  - No console errors ✅
+- Lint: 0 errors, 0 warnings
+- Schema unchanged (12 models, still frozen)
+- Pushed to GitHub: commit 21ba3ea
+
+Stage Summary:
+- Day 12 (Phase 5: DASHBOARD) complete — both Screen 1 (Today) and Screen 2 (Memory) working
+- Today screen: full morning brief with overnight activity, top signals, pending approvals with real data
+- Memory screen: 4 domains (Identity, Voice Radar, Winning Hooks, Performance) + Decisions, all with real DB data
+- Every data point shows SOURCE and EVIDENCE per blueprint key UX rule
+- Phase 5 continues on Day 13 (Screen 3 Learning, Screen 4 Overnight, Screen 5 Control)
