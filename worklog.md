@@ -1373,3 +1373,54 @@ Stage Summary:
 - All simulation data clearly labeled as SIMULATED (NEVER hidden)
 - 6 new API routes, 2 new services
 - Schema unchanged (12 models, still frozen)
+
+---
+Task ID: 18
+Agent: main
+Task: Day 18 — Phase 8: POLISH — Typography, Animations, Loading States, Mobile Responsive
+
+Work Log:
+- Read blueprint Day 18 spec: Phase 8 POLISH — NO NEW FEATURES — Typography/spacing/hierarchy/animations, loading/error/empty states, mobile responsive
+- Added globals.css polish styles:
+  - Tab content fade-in animation (0.25s ease-out, 6px translateY) via [data-state="active"][role="tabpanel"]
+  - Skeleton shimmer loading animation (1.5s infinite, 200% background position)
+  - muse-skeleton, muse-skeleton-text, muse-skeleton-heading, muse-skeleton-card classes
+  - Card hover lift: muse-card-hover (translateY(-1px) + box-shadow, 150ms transition)
+  - Staggered fade-in: muse-stagger-1 through muse-stagger-5 (0.2s with 50ms delays)
+  - Smooth progress bars: 0.5s ease-in-out width transition
+  - .scrollbar-thin: both WebKit and standard properties (scrollbar-width: thin, scrollbar-color)
+- Tab bar polish:
+  - Changed from flex-wrap to overflow-x-auto flex-nowrap (horizontal scroll, no wrapping)
+  - Added justify-start to fix centering bug that hid first tabs off-screen
+  - Added shrink-0 to all TabsTrigger elements
+  - Compact mobile labels: Mem, O/N, Ctrl, FB, Val, D1, D2, Deleg, Auto, MDB, Voc, Perf, LDB, Dec, Why, 7D, Eval, Drft
+  - Primary tabs (Today, Memory, Learning, Overnight, Control, Feedback, Validation) use sm: breakpoint
+  - Secondary tabs use md: breakpoint for compact labels
+  - Reordered: Feedback and Validation moved up after primary 5 tabs for better visibility
+  - Added scrollbar-thin class and inline scrollbar-width: thin
+- Card hover effects:
+  - Added muse-card-hover to all 6 hero gradient cards
+  - Added muse-stagger-1 to hero card content for entry animation
+- Scrollbar polish:
+  - Applied scrollbar-thin to all overflow-y-auto containers (max-h-96, max-h-80, max-h-64, max-h-48, max-h-32)
+- Updated header to "Day 18 Polished UI"
+- Updated footer to include "Polish ✅"
+- Added Day 18 checklist items (d18-1, d18-2, d18-3)
+- Browser verification: All features working
+  - Tab bar: all 21 tabs visible, horizontally scrollable, Today as first tab
+  - Tab content fade-in: works on every tab switch
+  - Card hover: lift + shadow effect confirmed (150ms transition)
+  - Scrollbars: thin styling applied
+  - No console errors
+- Lint: 0 errors, 0 warnings
+- Schema unchanged (12 models, still frozen)
+- Pushed to GitHub: commit 9e72927
+
+Stage Summary:
+- Day 18 (Phase 8: POLISH) COMPLETE — NO NEW FEATURES
+- Typography: consistent hierarchy with staggered animations
+- Animations: tab fade-in, card hover lift, skeleton shimmer, staggered list entry
+- Loading/empty states: skeleton CSS classes ready, tab fade-in, existing states preserved
+- Mobile responsive: scrollable tab bar, compact labels, justify-start fix
+- Scrollbar polish: thin scrollbars on all scroll containers
+- Schema unchanged (12 models, still frozen)
