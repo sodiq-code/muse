@@ -229,6 +229,108 @@ interface DelegationExecuteResponse {
   timestamp: string;
 }
 
+// Day 10: Evaluation & Drafts types
+interface EvaluationResponse {
+  success: boolean;
+  delegation?: {
+    instructionId: string;
+    mode: string;
+    delegationTime: number;
+    topic: string;
+    objective: string;
+  };
+  evaluation?: {
+    evaluationId: string;
+    timestamp: string;
+    overallScore: number;
+    confidenceLevel: string;
+    passed: boolean;
+    failReasons: string[];
+    passThreshold: number;
+    voiceMatch: {
+      overall: number;
+      toneAlignment: number;
+      paceConsistency: number;
+      vocabularyMatch: number;
+      avoidTopicsCompliance: number;
+      strengthUtilization: number;
+      breakdown: string[];
+      evidence: string[];
+    };
+    hookCompat: {
+      overall: number;
+      primaryHookPatternMatch: number;
+      historicalAlignment: number;
+      hookVariety: number;
+      hookStrength: number;
+      breakdown: string[];
+      evidence: string[];
+    };
+    contentQuality: {
+      overall: number;
+      scriptStructure: number;
+      ctaClarity: number;
+      titleEffectiveness: number;
+      captionAlignment: number;
+      breakdown: string[];
+      evidence: string[];
+    };
+    makerOutput: { title: string; hookCount: number; source: string };
+    evaluationEvidence: string[];
+    dataPointsUsed: number;
+  };
+  draft?: { stored: boolean; draftId: string; version: number; contentItemId: string };
+  makerOutput?: { title: string; voiceMatch: number; hookCompat: number; source: string; hookCount: number };
+}
+
+interface DraftsResponse {
+  success: boolean;
+  drafts: Array<{
+    id: string;
+    contentItemId: string | null;
+    version: number;
+    title: string;
+    evaluationScore: number;
+    evaluationPassed: boolean;
+    voiceMatch: number;
+    hookCompat: number;
+    contentQuality: number;
+    topic: string;
+    objective: string;
+    source: string;
+    generatedBy: string | null;
+    changeLog: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  summary: {
+    totalDrafts: number;
+    passedDrafts: number;
+    failedDrafts: number;
+    avgScore: number;
+    avgVoiceMatch: number;
+    avgHookCompat: number;
+  };
+}
+
+interface EvaluationThresholdsResponse {
+  success: boolean;
+  thresholds: {
+    passThreshold: number;
+    minIndividualScore: number;
+    weights: { voiceMatch: number; hookCompat: number; contentQuality: number };
+    description: string;
+  };
+  creatorContext: {
+    name: string;
+    platform: string;
+    voiceProfile: Record<string, unknown>;
+    hookPatternsCount: number;
+    historicalWinnersCount: number;
+    performanceSignalsCount: number;
+  };
+}
+
 interface AutonomyStatusResponse {
   success: boolean;
   status?: {
@@ -790,6 +892,13 @@ export default function MuseDashboard() {
   const [delegationExecuteLoading, setDelegationExecuteLoading] = useState(false);
   const [scriptExpanded, setScriptExpanded] = useState(false);
 
+  // Day 10: Evaluation & Drafts State
+  const [evalResult, setEvalResult] = useState<EvaluationResponse | null>(null);
+  const [evalLoading, setEvalLoading] = useState(false);
+  const [evalThresholds, setEvalThresholds] = useState<EvaluationThresholdsResponse | null>(null);
+  const [draftsData, setDraftsData] = useState<DraftsResponse | null>(null);
+  const [draftsLoading, setDraftsLoading] = useState(false);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -979,7 +1088,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 9 Delegation
+                Muse — Day 10 Evaluation & Drafts
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -1068,6 +1177,14 @@ export default function MuseDashboard() {
             <TabsTrigger value="proof" className="gap-1.5">
               <FlaskConical className="size-3.5" />
               7-Day Proof
+            </TabsTrigger>
+            <TabsTrigger value="evaluate" className="gap-1.5">
+              <Scale className="size-3.5" />
+              Evaluate
+            </TabsTrigger>
+            <TabsTrigger value="drafts" className="gap-1.5">
+              <FileText className="size-3.5" />
+              Drafts
             </TabsTrigger>
           </TabsList>
 
@@ -4761,13 +4878,468 @@ export default function MuseDashboard() {
               )}
             </section>
           </TabsContent>
+
+          {/* ===== EVALUATION TAB (Day 10) ===== */}
+          <TabsContent value="evaluate" className="space-y-6">
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Scale className="size-4" />
+                Maker Output Evaluation
+              </h2>
+
+              {/* Evaluation Controls */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Scale className="size-4" />
+                    Evaluate Pipeline
+                  </CardTitle>
+                  <CardDescription>
+                    Run the full Muse→Maker→Evaluate→Store pipeline. Maker output is evaluated for voice match, hook compatibility, and content quality before being stored as a Draft.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Topic (optional override)</label>
+                      <Input
+                        placeholder="Leave empty to use inferred topic"
+                        value={delegationTopic}
+                        onChange={(e) => setDelegationTopic(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground">Objective (optional override)</label>
+                      <Input
+                        placeholder="Leave empty to use inferred objective"
+                        value={delegationObjective}
+                        onChange={(e) => setDelegationObjective(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      disabled={evalLoading}
+                      onClick={async () => {
+                        setEvalLoading(true);
+                        setEvalThresholds(null);
+                        try {
+                          const res = await fetch('/api/delegation/evaluate');
+                          const data = await res.json();
+                          if (data.success) setEvalThresholds(data);
+                        } catch (e) {
+                          console.error('Threshold error:', e);
+                        } finally {
+                          setEvalLoading(false);
+                        }
+                      }}
+                    >
+                      <Eye className="size-4" />
+                      View Thresholds
+                    </Button>
+                    <Button
+                      className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+                      disabled={evalLoading}
+                      onClick={async () => {
+                        setEvalLoading(true);
+                        setEvalResult(null);
+                        try {
+                          const body: Record<string, string | boolean> = { storeDraft: true };
+                          if (delegationTopic) body.topic = delegationTopic;
+                          if (delegationObjective) body.objective = delegationObjective;
+                          const res = await fetch('/api/delegation/evaluate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body),
+                          });
+                          const data = await res.json();
+                          if (data.success) setEvalResult(data);
+                        } catch (e) {
+                          console.error('Evaluate error:', e);
+                        } finally {
+                          setEvalLoading(false);
+                        }
+                      }}
+                    >
+                      <Scale className="size-4" />
+                      {evalLoading ? 'Evaluating…' : 'Run Evaluate + Store Draft'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Thresholds Display */}
+              {evalThresholds && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Shield className="size-4" />
+                      Evaluation Criteria
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                        <p className="text-xs text-muted-foreground">Pass Threshold</p>
+                        <p className="text-lg font-bold text-violet-400">{(evalThresholds.thresholds.passThreshold * 100).toFixed(0)}%</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <p className="text-xs text-muted-foreground">Min Individual Score</p>
+                        <p className="text-lg font-bold text-amber-400">{(evalThresholds.thresholds.minIndividualScore * 100).toFixed(0)}%</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <p className="text-xs text-muted-foreground">Weights</p>
+                        <p className="text-sm font-medium text-emerald-400">V:{(evalThresholds.thresholds.weights.voiceMatch * 100).toFixed(0)}% H:{(evalThresholds.thresholds.weights.hookCompat * 100).toFixed(0)}% Q:{(evalThresholds.thresholds.weights.contentQuality * 100).toFixed(0)}%</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{evalThresholds.thresholds.description}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Creator</p>
+                        <p className="text-sm font-medium">{evalThresholds.creatorContext.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Platform</p>
+                        <p className="text-sm font-medium">{evalThresholds.creatorContext.platform}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Hook Patterns</p>
+                        <p className="text-sm font-medium">{evalThresholds.creatorContext.hookPatternsCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Historical Winners</p>
+                        <p className="text-sm font-medium">{evalThresholds.creatorContext.historicalWinnersCount}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Evaluation Results */}
+              {evalResult?.evaluation && (
+                <section className="space-y-4">
+                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <Zap className="size-4" />
+                    Evaluation Result
+                  </h2>
+
+                  {/* Pass/Fail + Overall Score */}
+                  <Card className={evalResult.evaluation.passed ? 'border-emerald-500/30' : 'border-rose-500/30'}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          {evalResult.evaluation.passed ? <CheckCircle2 className="size-5 text-emerald-400" /> : <AlertTriangle className="size-5 text-rose-400" />}
+                          {evalResult.evaluation.passed ? 'PASSED — Draft Stored' : 'FAILED — Output Rejected'}
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Badge className={evalResult.evaluation.passed ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-rose-600 text-white border-rose-600'}>
+                            {(evalResult.evaluation.overallScore * 100).toFixed(0)}%
+                          </Badge>
+                          <Badge variant="outline" className={`gap-1 ${confidenceColor(evalResult.evaluation.confidenceLevel)}`}>
+                            {evalResult.evaluation.confidenceLevel} confidence
+                          </Badge>
+                        </div>
+                      </div>
+                      <CardDescription>
+                        Threshold: {(evalResult.evaluation.passThreshold * 100).toFixed(0)}% • Data points: {evalResult.evaluation.dataPointsUsed}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Three Score Dimensions */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {/* Voice Match */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium flex items-center gap-1"><Mic className="size-3" /> Voice Match</p>
+                            <p className="text-xs text-violet-400 font-bold">{(evalResult.evaluation.voiceMatch.overall * 100).toFixed(0)}%</p>
+                          </div>
+                          <Progress value={evalResult.evaluation.voiceMatch.overall * 100} className="h-2" />
+                          <div className="space-y-1">
+                            <ScoreBar label="Tone" value={evalResult.evaluation.voiceMatch.toneAlignment} />
+                            <ScoreBar label="Pace" value={evalResult.evaluation.voiceMatch.paceConsistency} />
+                            <ScoreBar label="Vocab" value={evalResult.evaluation.voiceMatch.vocabularyMatch} />
+                            <ScoreBar label="Avoid" value={evalResult.evaluation.voiceMatch.avoidTopicsCompliance} />
+                            <ScoreBar label="Strengths" value={evalResult.evaluation.voiceMatch.strengthUtilization} />
+                          </div>
+                        </div>
+                        {/* Hook Compat */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium flex items-center gap-1"><Target className="size-3" /> Hook Compat</p>
+                            <p className="text-xs text-emerald-400 font-bold">{(evalResult.evaluation.hookCompat.overall * 100).toFixed(0)}%</p>
+                          </div>
+                          <Progress value={evalResult.evaluation.hookCompat.overall * 100} className="h-2" />
+                          <div className="space-y-1">
+                            <ScoreBar label="Pattern" value={evalResult.evaluation.hookCompat.primaryHookPatternMatch} />
+                            <ScoreBar label="History" value={evalResult.evaluation.hookCompat.historicalAlignment} />
+                            <ScoreBar label="Variety" value={evalResult.evaluation.hookCompat.hookVariety} />
+                            <ScoreBar label="Strength" value={evalResult.evaluation.hookCompat.hookStrength} />
+                          </div>
+                        </div>
+                        {/* Content Quality */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium flex items-center gap-1"><Wand2 className="size-3" /> Quality</p>
+                            <p className="text-xs text-amber-400 font-bold">{(evalResult.evaluation.contentQuality.overall * 100).toFixed(0)}%</p>
+                          </div>
+                          <Progress value={evalResult.evaluation.contentQuality.overall * 100} className="h-2" />
+                          <div className="space-y-1">
+                            <ScoreBar label="Structure" value={evalResult.evaluation.contentQuality.scriptStructure} />
+                            <ScoreBar label="CTA" value={evalResult.evaluation.contentQuality.ctaClarity} />
+                            <ScoreBar label="Title" value={evalResult.evaluation.contentQuality.titleEffectiveness} />
+                            <ScoreBar label="Caption" value={evalResult.evaluation.contentQuality.captionAlignment} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Breakdowns */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-xs font-medium text-violet-400 mb-1.5 flex items-center gap-1"><Mic className="size-3" /> Voice Breakdown</p>
+                          <div className="space-y-1">
+                            {evalResult.evaluation.voiceMatch.breakdown.map((b, i) => (
+                              <p key={i} className="text-xs text-muted-foreground">{b}</p>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-emerald-400 mb-1.5 flex items-center gap-1"><Target className="size-3" /> Hook Breakdown</p>
+                          <div className="space-y-1">
+                            {evalResult.evaluation.hookCompat.breakdown.map((b, i) => (
+                              <p key={i} className="text-xs text-muted-foreground">{b}</p>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-amber-400 mb-1.5 flex items-center gap-1"><Wand2 className="size-3" /> Quality Breakdown</p>
+                          <div className="space-y-1">
+                            {evalResult.evaluation.contentQuality.breakdown.map((b, i) => (
+                              <p key={i} className="text-xs text-muted-foreground">{b}</p>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Fail Reasons */}
+                      {!evalResult.evaluation.passed && evalResult.evaluation.failReasons.length > 0 && (
+                        <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                          <p className="text-xs font-medium text-rose-400 mb-1.5 flex items-center gap-1">
+                            <AlertTriangle className="size-3" />
+                            Fail Reasons
+                          </p>
+                          {evalResult.evaluation.failReasons.map((r, i) => (
+                            <p key={i} className="text-xs text-rose-300">• {r}</p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Draft Info */}
+                      {evalResult.draft && evalResult.draft.stored && (
+                        <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                          <p className="text-xs font-medium text-emerald-400 mb-1 flex items-center gap-1">
+                            <CheckCircle2 className="size-3" />
+                            Draft Stored (v{evalResult.draft.version})
+                          </p>
+                          <p className="text-xs text-muted-foreground">ID: {evalResult.draft.draftId.slice(0, 16)}…</p>
+                        </div>
+                      )}
+
+                      {/* Meta-evidence */}
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                          <Shield className="size-3" />
+                          Evaluation Evidence
+                        </p>
+                        <div className="space-y-1">
+                          {evalResult.evaluation.evaluationEvidence.map((ev, i) => (
+                            <p key={i} className="text-xs text-muted-foreground">• {ev}</p>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </section>
+              )}
+
+              {/* Empty state */}
+              {!evalResult && !evalThresholds && (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Scale className="size-10 text-muted-foreground/30 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Click <strong>View Thresholds</strong> to see evaluation criteria, or <strong>Run Evaluate + Store Draft</strong> to execute the full Muse→Maker→Evaluate→Store pipeline.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </section>
+          </TabsContent>
+
+          {/* ===== DRAFTS TAB (Day 10) ===== */}
+          <TabsContent value="drafts" className="space-y-6">
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <FileText className="size-4" />
+                Draft Pipeline
+              </h2>
+
+              <div className="flex items-center gap-3 mb-4">
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={draftsLoading}
+                  onClick={async () => {
+                    setDraftsLoading(true);
+                    try {
+                      const res = await fetch('/api/drafts');
+                      const data = await res.json();
+                      if (data.success) setDraftsData(data);
+                    } catch (e) {
+                      console.error('Drafts error:', e);
+                    } finally {
+                      setDraftsLoading(false);
+                    }
+                  }}
+                >
+                  <Database className="size-4" />
+                  {draftsLoading ? 'Loading…' : 'Load Drafts'}
+                </Button>
+              </div>
+
+              {draftsData && (
+                <>
+                  {/* Summary */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <BarChart3 className="size-4" />
+                        Draft Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Total</p>
+                          <p className="text-lg font-bold">{draftsData.summary.totalDrafts}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Passed</p>
+                          <p className="text-lg font-bold text-emerald-400">{draftsData.summary.passedDrafts}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Failed</p>
+                          <p className="text-lg font-bold text-rose-400">{draftsData.summary.failedDrafts}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Avg Score</p>
+                          <p className="text-lg font-bold">{(draftsData.summary.avgScore * 100).toFixed(0)}%</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Avg Voice</p>
+                          <p className="text-lg font-bold text-violet-400">{(draftsData.summary.avgVoiceMatch * 100).toFixed(0)}%</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Avg Hook</p>
+                          <p className="text-lg font-bold text-emerald-400">{(draftsData.summary.avgHookCompat * 100).toFixed(0)}%</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Draft List */}
+                  {draftsData.drafts.length > 0 ? (
+                    <div className="space-y-3">
+                      {draftsData.drafts.map((draft) => (
+                        <Card key={draft.id} className={draft.evaluationPassed ? 'border-emerald-500/20' : 'border-rose-500/20'}>
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <CardTitle className="text-sm flex items-center gap-2">
+                                {draft.evaluationPassed ? <CheckCircle2 className="size-4 text-emerald-400" /> : <AlertTriangle className="size-4 text-rose-400" />}
+                                {draft.title}
+                              </CardTitle>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">v{draft.version}</Badge>
+                                <Badge className={draft.evaluationPassed ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-rose-600 text-white border-rose-600'}>
+                                  {(draft.evaluationScore * 100).toFixed(0)}%
+                                </Badge>
+                                <Badge variant="outline" className={`text-xs ${draft.source === 'live' ? 'border-emerald-500/40 text-emerald-400' : 'border-amber-500/40 text-amber-400'}`}>
+                                  {draft.source}
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0 space-y-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                              <div>
+                                <p className="text-xs text-muted-foreground">Voice</p>
+                                <div className="flex items-center gap-1.5">
+                                  <Progress value={draft.voiceMatch * 100} className="h-1.5 flex-1" />
+                                  <span className="text-xs text-violet-400">{(draft.voiceMatch * 100).toFixed(0)}%</span>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Hook</p>
+                                <div className="flex items-center gap-1.5">
+                                  <Progress value={draft.hookCompat * 100} className="h-1.5 flex-1" />
+                                  <span className="text-xs text-emerald-400">{(draft.hookCompat * 100).toFixed(0)}%</span>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Quality</p>
+                                <div className="flex items-center gap-1.5">
+                                  <Progress value={draft.contentQuality * 100} className="h-1.5 flex-1" />
+                                  <span className="text-xs text-amber-400">{(draft.contentQuality * 100).toFixed(0)}%</span>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Topic</p>
+                                <p className="text-xs font-medium truncate">{draft.topic}</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Created</p>
+                                <p className="text-xs font-medium">{new Date(draft.createdAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                            {draft.changeLog && (
+                              <p className="text-xs text-muted-foreground italic">{draft.changeLog}</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <Card>
+                      <CardContent className="py-8 text-center">
+                        <p className="text-sm text-muted-foreground">No drafts yet. Run the Evaluate pipeline to create one.</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+
+              {!draftsData && !draftsLoading && (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <FileText className="size-10 text-muted-foreground/30 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Click <strong>Load Drafts</strong> to see all stored drafts from Maker evaluations.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </section>
+          </TabsContent>
         </Tabs>
       </main>
 
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Muse→Maker delegation ✅ • 🧊 Scope frozen</span>
+          <span>Evaluation ✅ • Drafts ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
@@ -4781,6 +5353,21 @@ export default function MuseDashboard() {
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
+
+function ScoreBar({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-muted-foreground w-14 shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full bg-current transition-all"
+          style={{ width: `${Math.min(100, value * 100)}%`, color: value >= 0.7 ? '#10b981' : value >= 0.5 ? '#f59e0b' : '#ef4444' }}
+        />
+      </div>
+      <span className="text-[10px] text-muted-foreground w-8 text-right">{(value * 100).toFixed(0)}%</span>
+    </div>
+  );
+}
 
 function MindCard({
   title,
