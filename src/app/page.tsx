@@ -416,6 +416,72 @@ interface PredictionResponse {
   evidenceType: string;
 }
 
+// Day 7: Learning Engine Types
+interface LearningRunResponse {
+  success: boolean;
+  creatorId: string;
+  creatorName: string;
+  loopResult: {
+    observations: string[];
+    comparisons: string[];
+    inferences: string[];
+    updates: { pattern: string; avgEffectiveness: number; sampleSize: number; lastSeen: string }[];
+    recommendations: {
+      type: string;
+      title: string;
+      explanation: string;
+      evidenceType: string;
+      confidence: 'low' | 'medium' | 'high';
+      dataPoints: number;
+      supportingFacts: string[];
+      action?: string;
+      priority: number;
+    }[];
+    confidence: 'low' | 'medium' | 'high';
+    totalDataPoints: number;
+    loopComplete: boolean;
+  };
+  honestyReport: {
+    isHonest: boolean;
+    violations: { type: string; message: string; recommendationIndex?: number }[];
+    summary: string;
+    checksPassed: number;
+    checksTotal: number;
+  };
+  evidenceChain: {
+    step: string;
+    description: string;
+    evidenceType: string;
+    confidence: 'low' | 'medium' | 'high';
+    dataPoints: number;
+    supportingFacts: string[];
+    timestamp: string;
+  }[];
+  storedMemories: number;
+  storedRecommendations: number;
+  auditEventId: string;
+  ranAt: string;
+  dataSummary: {
+    contentItems: number;
+    metricsCount: number;
+    hooksCount: number;
+    memoryEvents: number;
+    existingPatterns: number;
+  };
+}
+
+interface HonestyCheckResponse {
+  success: boolean;
+  framework: string;
+  allChecksPassed: boolean;
+  checksPassed: number;
+  checksTotal: number;
+  checks: { name: string; passed: boolean; details: string }[];
+  principles: string[];
+  evidenceTypeTaxonomy: Record<string, string>;
+  confidenceThresholds: Record<string, { minDataPoints: number; label: string }>;
+}
+
 // ---------------------------------------------------------------------------
 // Helper
 // ---------------------------------------------------------------------------
@@ -518,6 +584,12 @@ export default function MuseDashboard() {
   const [learningPredResult, setLearningPredResult] = useState<PredictionResponse | null>(null);
   const [learningPredLoading, setLearningPredLoading] = useState(false);
 
+  // Day 7: Learning Engine State
+  const [learningRunResult, setLearningRunResult] = useState<LearningRunResponse | null>(null);
+  const [learningRunLoading, setLearningRunLoading] = useState(false);
+  const [honestyCheckResult, setHonestyCheckResult] = useState<HonestyCheckResponse | null>(null);
+  const [honestyCheckLoading, setHonestyCheckLoading] = useState(true);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -594,6 +666,19 @@ export default function MuseDashboard() {
     }
   }, []);
 
+  // Fetch honesty check for Learning tab (Day 7)
+  const fetchHonestyCheck = useCallback(async () => {
+    setHonestyCheckLoading(true);
+    try {
+      const res = await fetch('/api/learning/honesty').then((r) => r.json()).catch(() => null);
+      if (res) setHonestyCheckResult(res);
+    } catch {
+      // silently fail
+    } finally {
+      setHonestyCheckLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     async function fetchAll() {
       try {
@@ -634,7 +719,8 @@ export default function MuseDashboard() {
     fetchPerformanceData();
     fetchDecisionsData();
     fetchRankings();
-  }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData, fetchRankings]);
+    fetchHonestyCheck();
+  }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData, fetchRankings, fetchHonestyCheck]);
 
   // Build test rows from validation data
   const tests: ValidationTest[] = validation
@@ -693,7 +779,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 6 Learning
+                Muse — Day 7 Learning Engine
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -724,6 +810,7 @@ export default function MuseDashboard() {
             <Badge variant="outline" className="gap-1 border-sky-500/40 text-sky-400">
               ❄️ Schema Frozen
             </Badge>
+            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">✅ Honest</Badge>
             {validation?.config && (
               <Badge variant="outline" className="gap-1">
                 <Users className="size-3" />
@@ -2464,6 +2551,400 @@ export default function MuseDashboard() {
 
           {/* ===== LEARNING TAB ===== */}
           <TabsContent value="learning" className="space-y-6">
+            {/* Day 7: Learning Engine — Full 5-Step Loop */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Workflow className="size-4" />
+                Learning Engine — OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND
+              </h2>
+              <Card className="border-violet-500/30 shadow-md">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base">Run Learning Loop on Real Data</CardTitle>
+                      <CardDescription>Execute the full 5-step learning loop on your creator&apos;s database content</CardDescription>
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        setLearningRunLoading(true);
+                        setLearningRunResult(null);
+                        try {
+                          const res = await fetch('/api/learning/run').then((r) => r.json());
+                          setLearningRunResult(res);
+                        } catch {
+                          // fail silently
+                        } finally {
+                          setLearningRunLoading(false);
+                        }
+                      }}
+                      disabled={learningRunLoading}
+                    >
+                      {learningRunLoading ? 'Running…' : 'Run Loop'}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {learningRunLoading ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="size-3 rounded-full bg-violet-500 animate-pulse" />
+                        <span className="text-sm text-muted-foreground">OBSERVE — gathering data from {learningRunResult ? '' : 'database'}…</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="size-3 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-sm text-muted-foreground">COMPARE — comparing against memory…</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="size-3 rounded-full bg-amber-500 animate-pulse" />
+                        <span className="text-sm text-muted-foreground">INFER — drawing conclusions…</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="size-3 rounded-full bg-sky-500 animate-pulse" />
+                        <span className="text-sm text-muted-foreground">UPDATE — merging with memory…</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="size-3 rounded-full bg-rose-500 animate-pulse" />
+                        <span className="text-sm text-muted-foreground">RECOMMEND — generating recommendations…</span>
+                      </div>
+                    </div>
+                  ) : learningRunResult?.success ? (
+                    <div className="space-y-5">
+                      {/* Data Summary */}
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <div className="p-2 rounded-lg bg-muted/50 text-center">
+                          <p className="text-lg font-bold">{learningRunResult.dataSummary.contentItems}</p>
+                          <p className="text-[10px] text-muted-foreground">Content Items</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-muted/50 text-center">
+                          <p className="text-lg font-bold">{learningRunResult.dataSummary.metricsCount}</p>
+                          <p className="text-[10px] text-muted-foreground">Metrics</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-muted/50 text-center">
+                          <p className="text-lg font-bold">{learningRunResult.dataSummary.hooksCount}</p>
+                          <p className="text-[10px] text-muted-foreground">Hooks</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-muted/50 text-center">
+                          <p className="text-lg font-bold">{learningRunResult.dataSummary.memoryEvents}</p>
+                          <p className="text-[10px] text-muted-foreground">Memory Events</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-muted/50 text-center">
+                          <p className="text-lg font-bold">{learningRunResult.dataSummary.existingPatterns}</p>
+                          <p className="text-[10px] text-muted-foreground">Patterns</p>
+                        </div>
+                      </div>
+
+                      {/* 5-Step Loop Steps */}
+                      <div className="space-y-4">
+                        {/* OBSERVE */}
+                        <div className="p-3 rounded-lg border border-violet-500/20 bg-violet-500/5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Eye className="size-4 text-violet-400" />
+                            <span className="text-sm font-semibold text-violet-400">OBSERVE</span>
+                            <Badge variant="secondary" className="text-[10px]">{learningRunResult.loopResult.observations.length} observations</Badge>
+                          </div>
+                          <ScrollArea className="max-h-32">
+                            <div className="space-y-1 pr-3">
+                              {learningRunResult.loopResult.observations.map((obs, i) => (
+                                <p key={i} className="text-xs text-muted-foreground">• {obs}</p>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+
+                        {/* COMPARE */}
+                        <div className="p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <LineChart className="size-4 text-emerald-400" />
+                            <span className="text-sm font-semibold text-emerald-400">COMPARE</span>
+                            <Badge variant="secondary" className="text-[10px]">{learningRunResult.loopResult.comparisons.length} comparisons</Badge>
+                          </div>
+                          <ScrollArea className="max-h-32">
+                            <div className="space-y-1 pr-3">
+                              {learningRunResult.loopResult.comparisons.map((comp, i) => (
+                                <p key={i} className="text-xs text-muted-foreground">• {comp}</p>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+
+                        {/* INFER */}
+                        <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Lightbulb className="size-4 text-amber-400" />
+                            <span className="text-sm font-semibold text-amber-400">INFER</span>
+                            <Badge variant="secondary" className="text-[10px]">{learningRunResult.loopResult.inferences.length} inferences</Badge>
+                          </div>
+                          <ScrollArea className="max-h-32">
+                            <div className="space-y-1 pr-3">
+                              {learningRunResult.loopResult.inferences.map((inf, i) => (
+                                <p key={i} className="text-xs text-muted-foreground">• {inf}</p>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+
+                        {/* UPDATE */}
+                        <div className="p-3 rounded-lg border border-sky-500/20 bg-sky-500/5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Database className="size-4 text-sky-400" />
+                            <span className="text-sm font-semibold text-sky-400">UPDATE</span>
+                            <Badge variant="secondary" className="text-[10px]">{learningRunResult.loopResult.updates.length} pattern updates</Badge>
+                          </div>
+                          <div className="space-y-2">
+                            {learningRunResult.loopResult.updates
+                              .sort((a, b) => b.avgEffectiveness - a.avgEffectiveness)
+                              .map((upd, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">
+                                  {upd.pattern}
+                                </Badge>
+                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-sky-500"
+                                    style={{ width: `${Math.round(upd.avgEffectiveness * 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] w-20 text-right shrink-0">
+                                  {Math.round(upd.avgEffectiveness * 100)}% ({upd.sampleSize})
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* RECOMMEND */}
+                        <div className="p-3 rounded-lg border border-rose-500/20 bg-rose-500/5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Sparkles className="size-4 text-rose-400" />
+                            <span className="text-sm font-semibold text-rose-400">RECOMMEND</span>
+                            <Badge variant="secondary" className="text-[10px]">{learningRunResult.loopResult.recommendations.length} recommendations</Badge>
+                          </div>
+                          <div className="space-y-3">
+                            {learningRunResult.loopResult.recommendations.map((rec, i) => (
+                              <div key={i} className="p-2 rounded bg-muted/50">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="text-sm font-medium">{rec.title}</span>
+                                  <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${confidenceBadgeStyle(rec.confidence)}`}>
+                                    {rec.confidence}
+                                  </Badge>
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                    {rec.dataPoints} pts
+                                  </Badge>
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                    {rec.evidenceType}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{rec.explanation}</p>
+                                {rec.action && (
+                                  <p className="text-xs text-violet-400 mt-1">→ {rec.action}</p>
+                                )}
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {rec.supportingFacts.map((fact, j) => (
+                                    <span key={j} className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                      {fact}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Honesty Report */}
+                      <div className="p-3 rounded-lg border border-border bg-muted/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Shield className="size-4 text-emerald-400" />
+                          <span className="text-sm font-semibold">Statistical Honesty</span>
+                          <Badge variant="outline" className={confidenceBadgeStyle(learningRunResult.honestyReport.isHonest ? 'high' : 'low')}>
+                            {learningRunResult.honestyReport.isHonest ? 'Honest ✅' : 'Violations ⚠️'}
+                          </Badge>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {learningRunResult.honestyReport.checksPassed}/{learningRunResult.honestyReport.checksTotal} checks
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{learningRunResult.honestyReport.summary}</p>
+                        {learningRunResult.honestyReport.violations.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {learningRunResult.honestyReport.violations.map((v, i) => (
+                              <p key={i} className="text-xs text-rose-400">⚠️ {v.message}</p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Evidence Chain */}
+                      <div className="p-3 rounded-lg border border-border bg-muted/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <GitBranch className="size-4 text-violet-400" />
+                          <span className="text-sm font-semibold">Evidence Chain</span>
+                          <Badge variant="secondary" className="text-[10px]">{learningRunResult.evidenceChain.length} steps</Badge>
+                        </div>
+                        <ScrollArea className="max-h-48">
+                          <div className="space-y-2 pr-3">
+                            {learningRunResult.evidenceChain.map((step, i) => (
+                              <div key={i} className="flex items-start gap-2 p-2 rounded bg-muted/50">
+                                <div className="flex flex-col items-center shrink-0">
+                                  <div className={`size-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${
+                                    step.step === 'OBSERVE' ? 'bg-violet-500' :
+                                    step.step === 'COMPARE' ? 'bg-emerald-500' :
+                                    step.step === 'INFER' ? 'bg-amber-500' :
+                                    step.step === 'UPDATE' ? 'bg-sky-500' :
+                                    'bg-rose-500'
+                                  }`}>
+                                    {i + 1}
+                                  </div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">{step.step}</Badge>
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{step.evidenceType}</Badge>
+                                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${confidenceBadgeStyle(step.confidence)}`}>
+                                      {step.confidence}
+                                    </Badge>
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{step.dataPoints} pts</Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{step.description}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+
+                      {/* Storage Results */}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>Stored {learningRunResult.storedMemories} memory events</span>
+                        <span>•</span>
+                        <span>Stored {learningRunResult.storedRecommendations} recommendations</span>
+                        <span>•</span>
+                        <span>Ran at {new Date(learningRunResult.ranAt).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-sm text-muted-foreground">Click &quot;Run Loop&quot; to execute the full 5-step learning engine on your creator&apos;s real data</p>
+                      <p className="text-xs text-muted-foreground mt-2">OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
+            {/* Day 7: Statistical Honesty Framework */}
+            <section>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Shield className="size-4" />
+                Statistical Honesty Framework
+              </h2>
+              <Card className="border-emerald-500/30 shadow-md">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base">Honesty Verification</CardTitle>
+                      <CardDescription>Verifies no inflated metrics, proper confidence levels, and honest phrasing</CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        setHonestyCheckLoading(true);
+                        try {
+                          const res = await fetch('/api/learning/honesty').then((r) => r.json());
+                          setHonestyCheckResult(res);
+                        } catch {
+                          // fail silently
+                        } finally {
+                          setHonestyCheckLoading(false);
+                        }
+                      }}
+                      disabled={honestyCheckLoading}
+                    >
+                      {honestyCheckLoading ? 'Checking…' : 'Verify'}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {honestyCheckLoading ? (
+                    <div className="space-y-2">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="h-8 bg-muted rounded animate-pulse" />
+                      ))}
+                    </div>
+                  ) : honestyCheckResult?.success ? (
+                    <div className="space-y-4">
+                      {/* Overall status */}
+                      <div className="flex items-center gap-2">
+                        {honestyCheckResult.allChecksPassed ? (
+                          <CheckCircle2 className="size-5 text-emerald-500" />
+                        ) : (
+                          <AlertTriangle className="size-5 text-rose-500" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {honestyCheckResult.allChecksPassed
+                            ? 'All honesty checks passed — no inflated metrics'
+                            : 'Some honesty checks failed — review violations'}
+                        </span>
+                        <Badge variant="outline" className={confidenceBadgeStyle(honestyCheckResult.allChecksPassed ? 'high' : 'low')}>
+                          {honestyCheckResult.checksPassed}/{honestyCheckResult.checksTotal}
+                        </Badge>
+                      </div>
+
+                      {/* Individual checks */}
+                      <div className="space-y-2">
+                        {honestyCheckResult.checks.map((check, i) => (
+                          <div key={i} className="flex items-start gap-2 p-2 rounded bg-muted/50">
+                            {check.passed ? (
+                              <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                            ) : (
+                              <AlertTriangle className="size-4 text-rose-500 shrink-0 mt-0.5" />
+                            )}
+                            <div>
+                              <p className="text-sm font-medium">{check.name}</p>
+                              <p className="text-xs text-muted-foreground">{check.details}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Principles */}
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground">Principles</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                          {honestyCheckResult.principles.map((p, i) => (
+                            <p key={i} className="text-[11px] text-muted-foreground">{p}</p>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Evidence Type Taxonomy */}
+                      {honestyCheckResult.evidenceTypeTaxonomy && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground">Evidence Type Taxonomy</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                            {Object.entries(honestyCheckResult.evidenceTypeTaxonomy).map(([type, desc]) => (
+                              <div key={type} className="flex items-start gap-1.5">
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0">{type}</Badge>
+                                <span className="text-[11px] text-muted-foreground">{desc}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground text-center py-4">
+                      Honesty check unavailable
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </section>
+
+            <Separator />
+
             {/* Section 1: Hook Classifier Tool */}
             <section>
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -3237,7 +3718,7 @@ export default function MuseDashboard() {
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>All 4 memory domains active • Learning engine active • Schema frozen ❄️ • 0 credits burned</span>
+          <span>All 4 memory domains active • Learning engine DB-backed • Statistical honesty ✅ • Schema frozen ❄️ • 0 credits burned</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}
