@@ -1,7 +1,8 @@
 // ============================================================================
-// Learning Loop Engine — Day 2
+// Learning Loop Engine — Day 2 → Enhanced Day 7
 // Implements the core learning loop: OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND
 // Statistical honesty is NON-NEGOTIABLE — no inflated metrics
+// Day 7 enhancements: Evidence type system, honest labeling, confidence guardrails
 // ============================================================================
 
 // ---------------------------------------------------------------------------
@@ -39,6 +40,34 @@ export interface LearnedPattern {
 
 export type ConfidenceLevel = 'low' | 'medium' | 'high';
 
+// Day 7: Formal evidence type taxonomy
+export type EvidenceType = 'observed' | 'correlation' | 'recommendation' | 'insufficient' | 'statistical' | 'absence' | 'observational';
+
+// Day 7: Forbidden phrases that imply inflated claims
+const FORBIDDEN_PHRASES = [
+  'AI discovered',
+  'AI found',
+  'proven',
+  'guaranteed',
+  'always',
+  'never',
+  '100%',
+  'causes',
+  'caused',
+  'will result in',
+  'ensures',
+  'definitely',
+  'absolutely',
+  'certainly',
+];
+
+// Day 7: Confidence thresholds — data must meet these to earn each level
+export const CONFIDENCE_THRESHOLDS = {
+  low: { minDataPoints: 0, label: 'Low — treat as hypothesis' },
+  medium: { minDataPoints: 5, label: 'Medium — directionally correct' },
+  high: { minDataPoints: 16, label: 'High — statistically meaningful' },
+} as const;
+
 export interface LearningRecommendation {
   type: string;
   title: string;
@@ -67,13 +96,64 @@ export interface LearningLoopResult {
 // ---------------------------------------------------------------------------
 
 export function computeConfidence(dataPointCount: number): ConfidenceLevel {
-  if (dataPointCount < 5) return 'low';
-  if (dataPointCount <= 15) return 'medium';
+  if (dataPointCount < CONFIDENCE_THRESHOLDS.medium.minDataPoints) return 'low';
+  if (dataPointCount < CONFIDENCE_THRESHOLDS.high.minDataPoints) return 'medium';
   return 'high';
 }
 
 export function honestPhrase(dataPoints: number, pattern: string, avgValue: number): string {
   return `Based on ${dataPoints} posts, ${pattern} pattern averages ${(avgValue * 100).toFixed(1)}%`;
+}
+
+// Day 7: Determine evidence type from data characteristics
+export function classifyEvidenceType(
+  dataPoints: number,
+  hasComparison: boolean,
+  hasCausationRisk: boolean
+): EvidenceType {
+  if (dataPoints === 0) return 'insufficient';
+  if (dataPoints < 3) return 'observed';
+  if (hasComparison && dataPoints >= 10) return 'statistical';
+  if (hasComparison) return 'correlation';
+  if (hasCausationRisk) return 'correlation'; // downgrade causation claims to correlation
+  return 'observational';
+}
+
+// Day 7: Check if a phrase violates statistical honesty
+export function hasInflatedLanguage(text: string): { violated: boolean; phrases: string[] } {
+  const lower = text.toLowerCase();
+  const found = FORBIDDEN_PHRASES.filter((p) => lower.includes(p.toLowerCase()));
+  return { violated: found.length > 0, phrases: found };
+}
+
+// Day 7: Generate confidence-qualified phrasing
+export function qualifiedPhrase(
+  dataPoints: number,
+  pattern: string,
+  avgValue: number,
+  baseline?: number
+): string {
+  const confidence = computeConfidence(dataPoints);
+  const base = honestPhrase(dataPoints, pattern, avgValue);
+
+  if (confidence === 'low') {
+    return `${base} (Low confidence — treat as hypothesis, not fact)`;
+  }
+
+  if (baseline !== undefined && baseline > 0) {
+    const diff = avgValue - baseline;
+    const pctChange = (diff / baseline) * 100;
+    if (Math.abs(pctChange) > 5) {
+      const direction = pctChange > 0 ? 'above' : 'below';
+      return `${base} (${Math.abs(pctChange).toFixed(0)}% ${direction} your baseline, ${confidence} confidence)`;
+    }
+  }
+
+  if (confidence === 'medium') {
+    return `${base} (Medium confidence — directionally correct, more data recommended)`;
+  }
+
+  return `${base} (High confidence)`;
 }
 
 // ---------------------------------------------------------------------------
@@ -317,12 +397,14 @@ function recommend(
   // Recommendation 1: Best hook pattern
   if (sorted.length > 0) {
     const best = sorted[0];
+    // Day 7 fix: Use pattern-specific confidence, not overall confidence
+    const patternConfidence = computeConfidence(best.sampleSize);
     recommendations.push({
       type: 'hook_pattern',
       title: `Use ${best.pattern} hooks more often`,
       explanation: honestPhrase(best.sampleSize, best.pattern, best.avgEffectiveness),
-      evidenceType: best.sampleSize >= 5 ? 'statistical' : 'observational',
-      confidence,
+      evidenceType: best.sampleSize >= 10 ? 'statistical' : best.sampleSize >= 5 ? 'correlation' : 'observational',
+      confidence: patternConfidence,
       dataPoints: best.sampleSize,
       supportingFacts: [
         `${best.sampleSize} content items analyzed`,
