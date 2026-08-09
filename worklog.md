@@ -1190,3 +1190,63 @@ Stage Summary:
 - Audit trail: Every autonomous action logged to AuditEvent table
 - Approve/Reject APIs working with real DB operations
 - Phase 6 continues on Day 15 (Implement approval gate + audit logging — both partially done today)
+
+---
+Task ID: 15
+Agent: main
+Task: Day 15 — Approval gate refinement + Audit logging polish
+
+Work Log:
+- Read existing overnight-scheduler-service.ts, control-screen-service.ts, and page.tsx Control tab
+- Identified gaps: approve/reject buttons not wired, no expiry logic, no CreatorDecision on approve, no audit filters, no expandable delta, no export
+- Added CreatorDecision creation on approveAction (mirrors reject flow) with draft contentItemId lookup
+- Built expireStaleApprovals() function: auto-expires pending approvals older than N hours (default 48h), audit-logs every expiry
+- Built getApprovalHistory() function: returns all approval statuses (pending/approved/rejected/expired) with resolved titles
+- Built getAuditStats() function: aggregated counts by actor, action, targetType + time-bounded counts (24h, 7d)
+- Built getFilteredAuditTrail() function: filter by actor, action, targetType, date range, search query with pagination
+- Created 5 new API routes:
+  - GET /api/audit/stats — audit statistics dashboard data
+  - GET /api/audit/filtered — filtered audit trail with pagination
+  - GET /api/audit/export — export audit trail as CSV or JSON download
+  - POST /api/autonomy/expire — expire stale pending approvals
+  - GET /api/autonomy/approval-history — full approval history with all statuses
+- Enhanced control-screen-service types: added age, reviewedAt, expired status to ApprovalQueueItem; added targetType, targetId, delta to AuditLogEntry
+- Added formatAge() helper for human-readable approval age ("2h ago", "1d ago")
+- Polished Control tab UI:
+  - Wired approve/reject buttons to actual API calls (approveActionHandler/rejectActionHandler)
+  - Added rejection reason textarea with Confirm/Cancel flow
+  - Added color-coded status badges: pending=amber, approved=emerald, rejected=red, expired=gray
+  - Added itemType and action badges on each approval item
+  - Added age display ("23m ago") on each item
+  - Added "Expire Stale" button to trigger manual expiry (48h threshold)
+  - Added "History" button to show full approval history panel
+  - Added expire result notification banner
+  - Added approval history scrollable panel with status badges
+- Polished Audit Log UI:
+  - Added audit stats summary grid (Total, Last 24h, Last 7d, Actors count)
+  - Added actor filter dropdown (All/Muse/Maker/System/Creator)
+  - Added time range toggle tabs (24h/7d/All)
+  - Added search input for filtering by action, detail, target, or delta content
+  - Added expandable JSON delta view (click to expand/collapse pretty-printed JSON)
+  - Added target info line on each entry (→ targetType #targetId...)
+  - Added "Export CSV" button that downloads audit trail as CSV file
+  - Added actor distribution bar at bottom showing emoji, name, count, percentage
+  - Increased scroll area from max-h-64 to max-h-80
+- Updated approveActionHandler/rejectActionHandler to also refresh control screen data
+- Added 10 new state variables for Day 15 features (auditFilterActor, auditTimeRange, auditSearchQuery, expandedDeltaId, auditStatsData, expireLoading, expireResult, approvalHistoryData, approvalHistoryLoading)
+- Updated Load Control button to also fetch audit stats
+- Added Day 15 progress items to checklist
+- Updated header to "Day 15 Approval + Audit Engine"
+- Updated footer to include "Expiry ✅ • CSV Export ✅"
+- All APIs tested with curl: /audit/stats (75 total events, 3 actors), /audit/filtered, /audit/export (CSV download), /autonomy/expire, /autonomy/approval-history (5 items)
+- Approve flow tested: CreatorDecision created with "accepted" decision type
+- Browser verification passed: all features working, no errors
+- Lint check: clean
+
+Stage Summary:
+- Day 15 (Approval gate refinement + Audit logging polish) COMPLETE
+- Approval gate now has: expiry logic, CreatorDecision on approve, wired approve/reject buttons, rejection reason input, color-coded status badges, age display, history panel
+- Audit log now has: stats dashboard, actor filter, time range filter, search, expandable JSON delta, target info, CSV export, actor distribution bar
+- 5 new API routes: /audit/stats, /audit/filtered, /audit/export, /autonomy/expire, /autonomy/approval-history
+- 4 new service functions: expireStaleApprovals, getApprovalHistory, getAuditStats, getFilteredAuditTrail
+- Schema unchanged (12 models, still frozen)
