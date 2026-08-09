@@ -1052,6 +1052,17 @@ export default function MuseDashboard() {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
 
+  // Day 15: Approval gate refinement + audit logging polish state
+  const [auditFilterActor, setAuditFilterActor] = useState<string>('all');
+  const [auditTimeRange, setAuditTimeRange] = useState<'24h' | '7d' | 'all'>('all');
+  const [auditSearchQuery, setAuditSearchQuery] = useState('');
+  const [expandedDeltaId, setExpandedDeltaId] = useState<string | null>(null);
+  const [auditStatsData, setAuditStatsData] = useState<any>(null);
+  const [expireLoading, setExpireLoading] = useState(false);
+  const [expireResult, setExpireResult] = useState<any>(null);
+  const [approvalHistoryData, setApprovalHistoryData] = useState<any>(null);
+  const [approvalHistoryLoading, setApprovalHistoryLoading] = useState(false);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -1145,9 +1156,13 @@ export default function MuseDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalId }),
       });
-      // Refresh autonomy status
-      const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
+      // Refresh autonomy status + control screen
+      const [statusRes, controlRes] = await Promise.all([
+        fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
+        fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null),
+      ]);
       if (statusRes) setAutonomyData(statusRes);
+      if (controlRes?.success) setControlScreenData(controlRes.data);
     } catch {
       // silently fail
     } finally {
@@ -1164,9 +1179,13 @@ export default function MuseDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalId, reason }),
       });
-      // Refresh autonomy status
-      const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
+      // Refresh autonomy status + control screen
+      const [statusRes, controlRes] = await Promise.all([
+        fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
+        fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null),
+      ]);
       if (statusRes) setAutonomyData(statusRes);
+      if (controlRes?.success) setControlScreenData(controlRes.data);
       setShowRejectInput(null);
       setRejectReason('');
     } catch {
@@ -1266,6 +1285,8 @@ export default function MuseDashboard() {
     { id: 'd2-5', label: 'Autonomy Scheduler — overnight pipeline with approval gates', done: true },
     { id: 'd14-1', label: 'DB-Backed Overnight Scheduler — full overnight loop with delegation beat + approval gates', done: true },
     { id: 'd14-2', label: 'Overnight API Routes — /run-overnight, /approve, /reject', done: true },
+    { id: 'd15-1', label: 'Approval Gate Refinement — expiry logic, CreatorDecision on approve, wired approve/reject buttons, rejection reason', done: true },
+    { id: 'd15-2', label: 'Audit Logging Polish — stats, filters, search, expandable delta, export CSV, actor distribution', done: true },
     { id: 'd2-6', label: 'Creator Recruitment — outreach templates + onboarding conversation', done: true },
     { id: 'd2-7', label: 'API Routes — draft, analyze, hooks, autonomy, recruit', done: true },
     { id: 'd2-8', label: 'Dashboard V2 — Day 2 status with live data', done: true },
@@ -1304,7 +1325,7 @@ export default function MuseDashboard() {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold tracking-tight">
-                Muse — Day 14 Autonomy Engine
+                Muse — Day 15 Approval + Audit Engine
               </h1>
               <p className="text-xs text-muted-foreground">
                 The AI Creative Team That Learns You
@@ -2434,9 +2455,12 @@ export default function MuseDashboard() {
                 onClick={async () => {
                   setControlScreenLoading(true);
                   try {
-                    const res = await fetch('/api/dashboard/control');
-                    const json = await res.json();
-                    if (json.success) setControlScreenData(json.data);
+                    const [controlRes, statsRes] = await Promise.all([
+                      fetch('/api/dashboard/control').then((r) => r.json()),
+                      fetch('/api/audit/stats').then((r) => r.json()).catch(() => null),
+                    ]);
+                    if (controlRes.success) setControlScreenData(controlRes.data);
+                    if (statsRes?.success) setAuditStatsData(statsRes.stats);
                   } catch { /* silently fail */ }
                   setControlScreenLoading(false);
                 }}
@@ -2535,36 +2559,169 @@ export default function MuseDashboard() {
                   </Card>
                 )}
 
-                {/* Approval Queue */}
+                {/* Approval Queue — Refined Day 15 */}
                 <Card className="rounded-xl">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                      <CheckCircle2 className="size-4 text-emerald-400" />
-                      Approval Queue
-                      <Badge variant="secondary" className="text-xs ml-1">
-                        {controlScreenData.pendingCount ?? 0} pending
-                      </Badge>
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                        <CheckCircle2 className="size-4 text-emerald-400" />
+                        Approval Queue
+                        <Badge variant="secondary" className="text-xs ml-1">
+                          {controlScreenData.pendingCount ?? 0} pending
+                        </Badge>
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        {/* Expire Stale Approvals */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1"
+                          disabled={expireLoading}
+                          onClick={async () => {
+                            setExpireLoading(true);
+                            try {
+                              const res = await fetch('/api/autonomy/expire', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ maxAgeHours: 48 }),
+                              });
+                              const json = await res.json();
+                              setExpireResult(json);
+                              // Refresh control screen
+                              const controlRes = await fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null);
+                              if (controlRes?.success) setControlScreenData(controlRes.data);
+                            } catch { /* fail */ }
+                            setExpireLoading(false);
+                          }}
+                        >
+                          <Clock className="size-3" />
+                          {expireLoading ? 'Expiring…' : 'Expire Stale'}
+                        </Button>
+                        {/* View Full History */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1"
+                          disabled={approvalHistoryLoading}
+                          onClick={async () => {
+                            setApprovalHistoryLoading(true);
+                            try {
+                              const res = await fetch('/api/autonomy/approval-history');
+                              const json = await res.json();
+                              if (json.success) setApprovalHistoryData(json);
+                            } catch { /* fail */ }
+                            setApprovalHistoryLoading(false);
+                          }}
+                        >
+                          <History className="size-3" />
+                          History
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
+                    {/* Expire result notification */}
+                    {expireResult && (
+                      <div className={`mb-3 p-2 rounded-lg text-xs ${expireResult.success && expireResult.result?.expired > 0 ? 'bg-amber-500/10 border border-amber-500/20 text-amber-300' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-300'}`}>
+                        {expireResult.message || 'Done'}
+                      </div>
+                    )}
                     {controlScreenData.approvalQueue && controlScreenData.approvalQueue.length > 0 ? (
                       <div className="space-y-3">
                         {controlScreenData.approvalQueue.map((item: any, i: number) => (
-                          <div key={i} className="p-3 rounded-lg border bg-muted/30 space-y-2">
+                          <div key={item.id || i} className={`p-3 rounded-lg border space-y-2 ${
+                            item.status === 'pending' ? 'bg-amber-500/5 border-amber-500/20' :
+                            item.status === 'approved' ? 'bg-emerald-500/5 border-emerald-500/20' :
+                            item.status === 'rejected' ? 'bg-red-500/5 border-red-500/20' :
+                            item.status === 'expired' ? 'bg-muted/30 border-muted' :
+                            'bg-muted/30'
+                          }`}>
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm truncate">{item.title || item.type || 'Pending item'}</p>
-                                {item.type && <Badge variant="outline" className="text-xs mt-1">{item.type}</Badge>}
+                                <p className="font-semibold text-sm truncate">{item.title || item.itemType || 'Pending item'}</p>
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <Badge variant="outline" className="text-[10px]">{item.itemType}</Badge>
+                                  <Badge variant="outline" className="text-[10px]">{item.action}</Badge>
+                                  {/* Status badge */}
+                                  {item.status === 'pending' && (
+                                    <Badge className="bg-amber-500 text-white border-amber-500 text-[10px]">Pending</Badge>
+                                  )}
+                                  {item.status === 'approved' && (
+                                    <Badge className="bg-emerald-600 text-white border-emerald-600 text-[10px]">Approved</Badge>
+                                  )}
+                                  {item.status === 'rejected' && (
+                                    <Badge className="bg-red-600 text-white border-red-600 text-[10px]">Rejected</Badge>
+                                  )}
+                                  {item.status === 'expired' && (
+                                    <Badge className="bg-gray-500 text-white border-gray-500 text-[10px]">Expired</Badge>
+                                  )}
+                                  {/* Age */}
+                                  {item.age && (
+                                    <span className="text-[10px] text-muted-foreground">{item.age}</span>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Button size="sm" variant="default" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700">
-                                  <Check className="size-3" /> Approve
-                                </Button>
-                                <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
-                                  <X className="size-3" /> Reject
-                                </Button>
-                              </div>
+                              {/* Action buttons — only for pending items */}
+                              {item.status === 'pending' && (
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
+                                    disabled={approvalActionLoading === item.id}
+                                    onClick={() => approveActionHandler(item.id)}
+                                  >
+                                    <Check className="size-3" /> Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                                    disabled={approvalActionLoading === item.id}
+                                    onClick={() => setShowRejectInput(item.id)}
+                                  >
+                                    <X className="size-3" /> Reject
+                                  </Button>
+                                </div>
+                              )}
                             </div>
+                            {/* Reject reason input */}
+                            {showRejectInput === item.id && (
+                              <div className="space-y-2 mt-2 pt-2 border-t border-muted">
+                                <Textarea
+                                  placeholder="Why are you rejecting this? (optional)"
+                                  value={rejectReason}
+                                  onChange={(e) => setRejectReason(e.target.value)}
+                                  className="text-xs min-h-[60px]"
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="h-7 text-xs gap-1"
+                                    onClick={() => rejectActionHandler(item.id, rejectReason || undefined)}
+                                    disabled={approvalActionLoading === item.id}
+                                  >
+                                    Confirm Reject
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 text-xs"
+                                    onClick={() => { setShowRejectInput(null); setRejectReason(''); }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                            {/* Loading spinner */}
+                            {approvalActionLoading === item.id && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                <div className="animate-spin size-3 border-2 border-current border-t-transparent rounded-full" />
+                                Processing…
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -2574,10 +2731,34 @@ export default function MuseDashboard() {
                         <p className="text-sm">No items pending your review ✅</p>
                       </div>
                     )}
+                    {/* Approval History Panel */}
+                    {approvalHistoryData && approvalHistoryData.history && (
+                      <div className="mt-4 pt-4 border-t border-muted">
+                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                          <History className="size-3" /> Approval History ({approvalHistoryData.count})
+                        </p>
+                        <ScrollArea className="max-h-48 overflow-y-auto">
+                          <div className="space-y-2">
+                            {approvalHistoryData.history.map((h: any) => (
+                              <div key={h.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/20 text-xs">
+                                <Badge className={`text-[9px] shrink-0 ${
+                                  h.status === 'approved' ? 'bg-emerald-600 text-white' :
+                                  h.status === 'rejected' ? 'bg-red-600 text-white' :
+                                  h.status === 'expired' ? 'bg-gray-500 text-white' :
+                                  'bg-amber-500 text-white'
+                                }`}>{h.status}</Badge>
+                                <span className="truncate flex-1">{h.title || h.itemType}</span>
+                                <span className="text-muted-foreground shrink-0">{h.age || ''}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
-                {/* Audit Log */}
+                {/* Audit Log — Polished Day 15 */}
                 <Card className="rounded-xl">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -2585,38 +2766,216 @@ export default function MuseDashboard() {
                         <History className="size-4 text-violet-400" />
                         Audit Log
                       </CardTitle>
-                      {controlScreenData.totalAuditEvents !== undefined && (
-                        <Badge variant="outline" className="text-xs">
-                          {controlScreenData.totalAuditEvents} total events
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {controlScreenData.totalAuditEvents !== undefined && (
+                          <Badge variant="outline" className="text-xs">
+                            {controlScreenData.totalAuditEvents} total
+                          </Badge>
+                        )}
+                        {/* Export button */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1"
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/audit/export?format=csv');
+                              if (res.ok) {
+                                const text = await res.text();
+                                const blob = new Blob([text], { type: 'text/csv' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `audit-export-${new Date().toISOString().split('T')[0]}.csv`;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                              }
+                            } catch { /* fail */ }
+                          }}
+                        >
+                          <FileText className="size-3" /> Export CSV
+                        </Button>
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">Every action logged. Always.</p>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="max-h-64 overflow-y-auto">
-                      <div className="space-y-2">
-                        {controlScreenData.auditLog?.map((entry: any, i: number) => (
-                          <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30">
-                            <span className="font-mono text-[10px] text-muted-foreground w-14 shrink-0 mt-0.5">
-                              {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                            </span>
-                            <span className="text-sm shrink-0 mt-0.5">
-                              {entry.actor === 'muse' && '🧠'}
-                              {entry.actor === 'maker' && '🎨'}
-                              {entry.actor === 'system' && '⚙️'}
-                              {!['muse','maker','system'].includes(entry.actor) && '⚙️'}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{entry.action}</p>
-                              {entry.detail && (
-                                <p className="text-xs text-muted-foreground truncate">{entry.detail}</p>
-                              )}
-                            </div>
-                          </div>
+                    {/* Audit Stats Summary */}
+                    {auditStatsData && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                        <div className="p-2 rounded-lg bg-muted/30 text-center">
+                          <p className="text-lg font-bold">{auditStatsData.totalEvents}</p>
+                          <p className="text-[10px] text-muted-foreground">Total</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-muted/30 text-center">
+                          <p className="text-lg font-bold">{auditStatsData.last24h}</p>
+                          <p className="text-[10px] text-muted-foreground">Last 24h</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-muted/30 text-center">
+                          <p className="text-lg font-bold">{auditStatsData.last7d}</p>
+                          <p className="text-[10px] text-muted-foreground">Last 7d</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-muted/30 text-center">
+                          <p className="text-lg font-bold">{Object.keys(auditStatsData.byActor || {}).length}</p>
+                          <p className="text-[10px] text-muted-foreground">Actors</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Filter Controls */}
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      {/* Actor filter */}
+                      <Select value={auditFilterActor} onValueChange={setAuditFilterActor}>
+                        <SelectTrigger className="h-7 text-xs w-[120px]">
+                          <SelectValue placeholder="Actor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Actors</SelectItem>
+                          <SelectItem value="muse">Muse</SelectItem>
+                          <SelectItem value="maker">Maker</SelectItem>
+                          <SelectItem value="system">System</SelectItem>
+                          <SelectItem value="creator">Creator</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {/* Time range tabs */}
+                      <div className="flex items-center gap-1 bg-muted/30 rounded-md p-0.5">
+                        {(['24h', '7d', 'all'] as const).map((range) => (
+                          <button
+                            key={range}
+                            onClick={() => setAuditTimeRange(range)}
+                            className={`px-2 py-0.5 text-[10px] rounded-sm transition-colors ${
+                              auditTimeRange === range
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                          >
+                            {range === 'all' ? 'All' : range}
+                          </button>
                         ))}
                       </div>
+                      {/* Search */}
+                      <Input
+                        placeholder="Search audit…"
+                        value={auditSearchQuery}
+                        onChange={(e) => setAuditSearchQuery(e.target.value)}
+                        className="h-7 text-xs w-[140px]"
+                      />
+                    </div>
+
+                    {/* Audit Log Entries */}
+                    <ScrollArea className="max-h-80 overflow-y-auto">
+                      <div className="space-y-1">
+                        {controlScreenData.auditLog
+                          ?.filter((entry: any) => {
+                            // Actor filter
+                            if (auditFilterActor !== 'all' && entry.actor !== auditFilterActor) return false;
+                            // Time range filter
+                            if (auditTimeRange !== 'all' && entry.timestamp) {
+                              const entryDate = new Date(entry.timestamp).getTime();
+                              const now = Date.now();
+                              if (auditTimeRange === '24h' && entryDate < now - 24*60*60*1000) return false;
+                              if (auditTimeRange === '7d' && entryDate < now - 7*24*60*60*1000) return false;
+                            }
+                            // Search filter
+                            if (auditSearchQuery) {
+                              const q = auditSearchQuery.toLowerCase();
+                              const matchAction = (entry.action || '').toLowerCase().includes(q);
+                              const matchDetail = (entry.detail || '').toLowerCase().includes(q);
+                              const matchTarget = (entry.targetType || '').toLowerCase().includes(q);
+                              const matchDelta = (entry.delta || '').toLowerCase().includes(q);
+                              if (!matchAction && !matchDetail && !matchTarget && !matchDelta) return false;
+                            }
+                            return true;
+                          })
+                          .map((entry: any, i: number) => {
+                          const eventId = `${entry.timestamp}-${entry.actor}-${entry.action}-${i}`;
+                          const isExpanded = expandedDeltaId === eventId;
+                          return (
+                            <div key={i} className="group">
+                              <div
+                                className={`flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30 cursor-pointer ${isExpanded ? 'bg-muted/30' : ''}`}
+                                onClick={() => {
+                                  if (entry.delta) {
+                                    setExpandedDeltaId(isExpanded ? null : eventId);
+                                  }
+                                }}
+                              >
+                                <span className="font-mono text-[10px] text-muted-foreground w-14 shrink-0 mt-0.5">
+                                  {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                </span>
+                                <span className="text-sm shrink-0 mt-0.5">
+                                  {entry.actor === 'muse' && '🧠'}
+                                  {entry.actor === 'maker' && '🎨'}
+                                  {entry.actor === 'system' && '⚙️'}
+                                  {entry.actor === 'creator' && '👤'}
+                                  {!['muse','maker','system','creator'].includes(entry.actor) && '⚙️'}
+                                </span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{entry.action}</p>
+                                  {entry.detail && (
+                                    <p className="text-xs text-muted-foreground truncate">{entry.detail}</p>
+                                  )}
+                                  {/* Target info */}
+                                  {entry.targetType && (
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                                      → {entry.targetType}{entry.targetId ? ` #${entry.targetId.slice(0,8)}…` : ''}
+                                    </p>
+                                  )}
+                                </div>
+                                {/* Expand indicator */}
+                                {entry.delta && (
+                                  <span className="text-[10px] text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {isExpanded ? '▼' : '▶'} JSON
+                                  </span>
+                                )}
+                              </div>
+                              {/* Expandable delta view */}
+                              {isExpanded && entry.delta && (
+                                <div className="ml-[68px] mr-2 mb-1 p-2 rounded-md bg-muted/50 border border-muted">
+                                  <pre className="text-[10px] font-mono text-muted-foreground whitespace-pre-wrap break-all overflow-x-auto max-h-40 overflow-y-auto">
+                                    {(() => {
+                                      try {
+                                        return JSON.stringify(JSON.parse(entry.delta), null, 2);
+                                      } catch {
+                                        return entry.delta;
+                                      }
+                                    })()}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </ScrollArea>
+
+                    {/* Actor distribution bar */}
+                    {auditStatsData?.byActor && (
+                      <div className="mt-3 pt-3 border-t border-muted">
+                        <p className="text-[10px] text-muted-foreground mb-2">Actor Distribution</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {Object.entries(auditStatsData.byActor as Record<string, number>)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([actor, count]) => {
+                              const total = auditStatsData.totalEvents || 1;
+                              const pct = Math.round((count / total) * 100);
+                              return (
+                                <div key={actor} className="flex items-center gap-1">
+                                  <span className="text-[10px]">
+                                    {actor === 'muse' && '🧠'}
+                                    {actor === 'maker' && '🎨'}
+                                    {actor === 'system' && '⚙️'}
+                                    {actor === 'creator' && '👤'}
+                                    {!['muse','maker','system','creator'].includes(actor) && '❓'}
+                                  </span>
+                                  <span className="text-[10px] font-medium">{actor}</span>
+                                  <Badge variant="outline" className="text-[9px]">{count} ({pct}%)</Badge>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </>
@@ -7554,7 +7913,7 @@ Confidence: ${beatResult.beat.instruction.confidenceLevel} (${beatResult.beat.in
       {/* ===== Footer ===== */}
       <footer className="border-t border-border bg-card mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • 🧊 Scope frozen</span>
+          <span>Autonomy ✅ • Overnight Loop ✅ • Approval Gate ✅ • Audit Trail ✅ • Expiry ✅ • CSV Export ✅ • 🧊 Scope frozen</span>
           <span className="flex items-center gap-1">
             <Server className="size-3" />
             {status?.mode === 'live' ? 'Live API' : 'Simulated'}

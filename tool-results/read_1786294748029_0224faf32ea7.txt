@@ -1,0 +1,2002 @@
+     1→'use client';
+     2→
+     3→import { useEffect, useState, useCallback } from 'react';
+     4→import {
+     5→  Card,
+     6→  CardContent,
+     7→  CardDescription,
+     8→  CardHeader,
+     9→  CardTitle,
+    10→  CardFooter,
+    11→} from '@/components/ui/card';
+    12→import { Badge } from '@/components/ui/badge';
+    13→import { Separator } from '@/components/ui/separator';
+    14→import { Progress } from '@/components/ui/progress';
+    15→import { Checkbox } from '@/components/ui/checkbox';
+    16→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    17→import { ScrollArea } from '@/components/ui/scroll-area';
+    18→import { Button } from '@/components/ui/button';
+    19→import { Input } from '@/components/ui/input';
+    20→import { Textarea } from '@/components/ui/textarea';
+    21→import {
+    22→  Select,
+    23→  SelectContent,
+    24→  SelectItem,
+    25→  SelectTrigger,
+    26→  SelectValue,
+    27→} from '@/components/ui/select';
+    28→import {
+    29→  Activity,
+    30→  Brain,
+    31→  Bot,
+    32→  CheckCircle2,
+    33→  CircleDashed,
+    34→  AlertTriangle,
+    35→  ArrowRight,
+    36→  Zap,
+    37→  Shield,
+    38→  Eye,
+    39→  Layers,
+    40→  Workflow,
+    41→  Clock,
+    42→  Server,
+    43→  Users,
+    44→  Lightbulb,
+    45→  Cpu,
+    46→  Sparkles,
+    47→  GraduationCap,
+    48→  BarChart3,
+    49→  Radio,
+    50→  Moon,
+    51→  UserPlus,
+    52→  Flame,
+    53→  FileText,
+    54→  MessageSquare,
+    55→  User,
+    56→  Fingerprint,
+    57→  History,
+    58→  Pencil,
+    59→  X,
+    60→  Save,
+    61→  Database,
+    62→  Mic,
+    63→  TrendingUp,
+    64→  Award,
+    65→  PieChart,
+    66→  Plus,
+    67→  Upload,
+    68→  Scale,
+    69→  ThumbsUp,
+    70→  ThumbsDown,
+    71→  GitBranch,
+    72→  Target,
+    73→  LineChart,
+    74→  Wand2,
+    75→  FlaskConical,
+    76→  ChevronDown,
+    77→  ChevronUp,
+    78→  Link2,
+    79→  Send,
+    80→  SendHorizontal,
+    81→  Sun,
+    82→  CloudSun,
+    83→  Sunrise,
+    84→  MapPin,
+    85→  Check,
+    86→  RotateCcw,
+    87→  Trophy,
+    88→  Settings,
+    89→} from 'lucide-react';
+    90→
+    91→// ---------------------------------------------------------------------------
+    92→// Types
+    93→// ---------------------------------------------------------------------------
+    94→
+    95→interface MindStatus {
+    96→  mind: {
+    97→    mindId: string;
+    98→    name?: string | null;
+    99→    email?: string | null;
+   100→    isEnabled?: boolean;
+   101→    species?: string | null;
+   102→    model?: string | null;
+   103→    walletAddress?: string | null;
+   104→    chain?: string | null;
+   105→  } | null;
+   106→  balance: { mindId: string; cognition: number };
+   107→  skills: { skillId: string; name?: string; source?: string }[];
+   108→  circleMembers: { email?: string; name?: string; partyType?: number }[];
+   109→  error?: string | null;
+   110→}
+   111→
+   112→interface StatusResponse {
+   113→  mode: string;
+   114→  connected: boolean;
+   115→  muse: MindStatus;
+   116→  maker: MindStatus;
+   117→}
+   118→
+   119→interface ValidationTest {
+   120→  key: string;
+   121→  name: string;
+   122→  status: 'pass' | 'fail' | 'warn';
+   123→  evidence: string;
+   124→  duration: string;
+   125→}
+   126→
+   127→interface ValidationResponse {
+   128→  mode: string;
+   129→  cached: {
+   130→    test1_mindCreation: { status: string; evidence: string; duration: string };
+   131→    test2_persistence: { status: string; evidence: string; duration: string };
+   132→    test3_ltm: { status: string; evidence: string; duration: string };
+   133→    test4_skillEquipping: { status: string; evidence: string; duration: string };
+   134→    test5_circleDelegation: { status: string; evidence: string; duration: string };
+   135→    test6_sseEvents: { status: string; evidence: string; duration: string };
+   136→    latencyBaseline: string;
+   137→    makerCredits: number;
+   138→    verdict: string;
+   139→    gatesPassing: number;
+   140→    gatesTotal: number;
+   141→  };
+   142→  liveChecks?: Record<string, { ok: boolean; detail?: string }>;
+   143→  config?: { museId: string; makerId: string; creatorName: string; creatorPlatform: string };
+   144→}
+   145→
+   146→interface DraftResponse {
+   147→  success: boolean;
+   148→  draft?: {
+   149→    title: string;
+   150→    caption: string;
+   151→    cta: string;
+   152→    voiceMatch: number;
+   153→    hookCompat: number;
+   154→    source: string;
+   155→    alternativeHooks: string[];
+   156→  };
+   157→  metadata?: {
+   158→    hookPatternsAvailable: number;
+   159→    creditsUsed: number;
+   160→  };
+   161→}
+   162→
+   163→interface DelegationPreviewResponse {
+   164→  success: boolean;
+   165→  preview: boolean;
+   166→  context: {
+   167→    creatorName: string;
+   168→    platform: string;
+   169→    niche: string | null;
+   170→    audience: string | null;
+   171→    voiceProfile: {
+   172→      tone: string;
+   173→      pace: string;
+   174→      vocabulary: string;
+   175→      avoidTopics: string[];
+   176→      strengths: string[];
+   177→      directness?: number;
+   178→      technicalDepth?: number;
+   179→      humor?: number;
+   180→      storytelling?: number;
+   181→    };
+   182→    bestHookPatterns: Array<{
+   183→      pattern: string;
+   184→      avgEffectiveness: number;
+   185→      sampleSize: number;
+   186→      confidence: string;
+   187→    }>;
+   188→    recentWinners: string[];
+   189→    performanceSignals: string[];
+   190→    topic: string;
+   191→    objective: string;
+   192→  };
+   193→  instruction: {
+   194→    instructionId: string;
+   195→    from: string;
+   196→    to: string;
+   197→    timestamp: string;
+   198→    makerInput: {
+   199→      creator: string;
+   200→      topic: string;
+   201→      objective: string;
+   202→      audience: string;
+   203→      voice: {
+   204→        tone: string;
+   205→        pace: string;
+   206→        vocabulary: string;
+   207→        avoidTopics: string[];
+   208→        strengths: string[];
+   209→      };
+   210→      historicalWinners: string[];
+   211→      instruction: string;
+   212→    };
+   213→    reasoning: string;
+   214→    evidenceUsed: string[];
+   215→    confidenceLevel: string;
+   216→    dataPointsUsed: number;
+   217→  };
+   218→}
+   219→
+   220→interface DelegationExecuteResponse {
+   221→  success: boolean;
+   222→  instruction: DelegationPreviewResponse['instruction'];
+   223→  makerOutput: {
+   224→    title: string;
+   225→    caption: string;
+   226→    cta: string;
+   227→    script: string;
+   228→    alternativeHooks: string[];
+   229→    thumbnailConcept?: string;
+   230→    voiceMatch: number;
+   231→    hookCompat: number;
+   232→    source: string;
+   233→  };
+   234→  mode: 'live' | 'simulated';
+   235→  delegationTime: number;
+   236→  auditEventId: string;
+   237→  timestamp: string;
+   238→}
+   239→
+   240→// Day 10: Evaluation & Drafts types
+   241→interface EvaluationResponse {
+   242→  success: boolean;
+   243→  delegation?: {
+   244→    instructionId: string;
+   245→    mode: string;
+   246→    delegationTime: number;
+   247→    topic: string;
+   248→    objective: string;
+   249→  };
+   250→  evaluation?: {
+   251→    evaluationId: string;
+   252→    timestamp: string;
+   253→    overallScore: number;
+   254→    confidenceLevel: string;
+   255→    passed: boolean;
+   256→    failReasons: string[];
+   257→    passThreshold: number;
+   258→    voiceMatch: {
+   259→      overall: number;
+   260→      toneAlignment: number;
+   261→      paceConsistency: number;
+   262→      vocabularyMatch: number;
+   263→      avoidTopicsCompliance: number;
+   264→      strengthUtilization: number;
+   265→      breakdown: string[];
+   266→      evidence: string[];
+   267→    };
+   268→    hookCompat: {
+   269→      overall: number;
+   270→      primaryHookPatternMatch: number;
+   271→      historicalAlignment: number;
+   272→      hookVariety: number;
+   273→      hookStrength: number;
+   274→      breakdown: string[];
+   275→      evidence: string[];
+   276→    };
+   277→    contentQuality: {
+   278→      overall: number;
+   279→      scriptStructure: number;
+   280→      ctaClarity: number;
+   281→      titleEffectiveness: number;
+   282→      captionAlignment: number;
+   283→      breakdown: string[];
+   284→      evidence: string[];
+   285→    };
+   286→    makerOutput: { title: string; hookCount: number; source: string };
+   287→    evaluationEvidence: string[];
+   288→    dataPointsUsed: number;
+   289→  };
+   290→  draft?: { stored: boolean; draftId: string; version: number; contentItemId: string };
+   291→  makerOutput?: { title: string; voiceMatch: number; hookCompat: number; source: string; hookCount: number };
+   292→}
+   293→
+   294→interface DraftsResponse {
+   295→  success: boolean;
+   296→  drafts: Array<{
+   297→    id: string;
+   298→    contentItemId: string | null;
+   299→    version: number;
+   300→    title: string;
+   301→    evaluationScore: number;
+   302→    evaluationPassed: boolean;
+   303→    voiceMatch: number;
+   304→    hookCompat: number;
+   305→    contentQuality: number;
+   306→    topic: string;
+   307→    objective: string;
+   308→    source: string;
+   309→    generatedBy: string | null;
+   310→    changeLog: string | null;
+   311→    createdAt: string;
+   312→    updatedAt: string;
+   313→  }>;
+   314→  summary: {
+   315→    totalDrafts: number;
+   316→    passedDrafts: number;
+   317→    failedDrafts: number;
+   318→    avgScore: number;
+   319→    avgVoiceMatch: number;
+   320→    avgHookCompat: number;
+   321→  };
+   322→}
+   323→
+   324→// Day 11: Delegation Beat types
+   325→interface BeatStepData {
+   326→  step: number;
+   327→  name: string;
+   328→  description: string;
+   329→  status: 'pending' | 'running' | 'complete' | 'failed';
+   330→  startTime: number;
+   331→  endTime: number;
+   332→  duration: number;
+   333→  evidence: string[];
+   334→  data: Record<string, unknown>;
+   335→}
+   336→
+   337→interface DelegationBeatResponse {
+   338→  success: boolean;
+   339→  beat: {
+   340→    beatId: string;
+   341→    timestamp: string;
+   342→    creatorId: string;
+   343→    creatorName: string;
+   344→    mode: 'live' | 'simulated';
+   345→    totalDuration: number;
+   346→    steps: BeatStepData[];
+   347→    success: boolean;
+   348→    evaluationPassed: boolean;
+   349→    draftStored: boolean;
+   350→    evaluation: {
+   351→      evaluationId: string;
+   352→      overallScore: number;
+   353→      voiceMatch: { overall: number; toneAlignment: number; paceConsistency: number; vocabularyMatch: number; avoidTopicsCompliance: number; strengthUtilization: number; breakdown: string[]; evidence: string[] };
+   354→      hookCompat: { overall: number; primaryHookPatternMatch: number; historicalAlignment: number; hookVariety: number; hookStrength: number; breakdown: string[]; evidence: string[] };
+   355→      contentQuality: { overall: number; scriptStructure: number; ctaClarity: number; titleEffectiveness: number; captionAlignment: number; breakdown: string[]; evidence: string[] };
+   356→      passed: boolean;
+   357→      failReasons: string[];
+   358→      confidenceLevel: string;
+   359→      dataPointsUsed: number;
+   360→    } | null;
+   361→    instruction: {
+   362→      instructionId: string;
+   363→      makerInput: { creator: string; topic: string; objective: string; audience: string; instruction: string };
+   364→      reasoning: string;
+   365→      evidenceUsed: string[];
+   366→      confidenceLevel: string;
+   367→      dataPointsUsed: number;
+   368→    } | null;
+   369→    makerOutput: {
+   370→      title: string;
+   371→      script: string;
+   372→      caption: string;
+   373→      cta: string;
+   374→      alternativeHooks: string[];
+   375→      voiceMatch: number;
+   376→      hookCompat: number;
+   377→      source: string;
+   378→    } | null;
+   379→    draft: {
+   380→      success: boolean;
+   381→      draftId: string;
+   382→      version: number;
+   383→      contentItemId: string;
+   384→      evaluationPassed: boolean;
+   385→    } | null;
+   386→    auditSummary: {
+   387→      totalAuditEvents: number;
+   388→      delegationAuditId: string;
+   389→      evaluationId: string;
+   390→      draftAuditId: string;
+   391→    };
+   392→  };
+   393→}
+   394→
+   395→interface BeatHistoryResponse {
+   396→  success: boolean;
+   397→  history: Array<{
+   398→    beatId: string;
+   399→    timestamp: string;
+   400→    mode: string;
+   401→    success: boolean;
+   402→    evaluationPassed: boolean;
+   403→    draftStored: boolean;
+   404→    totalDuration: number;
+   405→    scores: { voiceMatch: number; hookCompat: number; contentQuality: number; overall: number };
+   406→  }>;
+   407→  count: number;
+   408→}
+   409→
+   410→interface EvaluationThresholdsResponse {
+   411→  success: boolean;
+   412→  thresholds: {
+   413→    passThreshold: number;
+   414→    minIndividualScore: number;
+   415→    weights: { voiceMatch: number; hookCompat: number; contentQuality: number };
+   416→    description: string;
+   417→  };
+   418→  creatorContext: {
+   419→    name: string;
+   420→    platform: string;
+   421→    voiceProfile: Record<string, unknown>;
+   422→    hookPatternsCount: number;
+   423→    historicalWinnersCount: number;
+   424→    performanceSignalsCount: number;
+   425→  };
+   426→}
+   427→
+   428→interface AutonomyStatusResponse {
+   429→  success: boolean;
+   430→  status?: {
+   431→    phase: string;
+   432→    equipped: boolean;
+   433→    pendingApprovals: number;
+   434→    isRunning: boolean;
+   435→    totalRuns: number;
+   436→    drafts: { id: string; title: string; approvalStatus: string; hookPattern: string }[];
+   437→    briefs: { id: string; date: string }[];
+   438→    auditLog: { id: string; timestamp: string; actor: string; action: string; detail: string }[];
+   439→    creditBurnEstimate: number;
+   440→    approvalQueue?: { id: string; itemType: string; itemId: string | null; action: string; status: string; createdAt: string; title?: string }[];
+   441→  };
+   442→  scheduleInfo?: {
+   443→    schedule: { wakeTime: string; draftTime: string; briefTime: string };
+   444→    lastRun: { id: string; status: string; startedAt: string; completedAt: string | null; taskType: string; trigger: string } | null;
+   445→    lastRunTime: string | null;
+   446→    totalRuns: number;
+   447→    pendingApprovals: number;
+   448→    isRunning: boolean;
+   449→    recentRuns: { id: string; status: string; startedAt: string; completedAt: string | null; taskType: string }[];
+   450→  };
+   451→}
+   452→
+   453→interface OvernightCycleResponse {
+   454→  success: boolean;
+   455→  result?: {
+   456→    runId: string;
+   457→    creatorId: string;
+   458→    success: boolean;
+   459→    steps: { step: number; name: string; status: string; duration: number; auditEventId: string; data: Record<string, unknown> }[];
+   460→    delegationBeat: any;
+   461→    approvalId: string | null;
+   462→    morningBrief: { id: string; date: string; summary: string; draftTitle: string | null; draftScore: number | null; recommendationsCount: number; newInsights: string[]; generatedAt: string };
+   463→    startedAt: string;
+   464→    completedAt: string;
+   465→    totalDuration: number;
+   466→  };
+   467→  message?: string;
+   468→}
+   469→
+   470→interface HookClassResponse {
+   471→  success: boolean;
+   472→  classification?: {
+   473→    pattern: string;
+   474→    confidence: number;
+   475→    reasoning: string;
+   476→    allScores?: Record<string, number>;
+   477→  };
+   478→  patterns?: { id: string; label: string }[];
+   479→}
+   480→
+   481→interface CreatorResponse {
+   482→  success: boolean;
+   483→  creator?: {
+   484→    id: string;
+   485→    email: string;
+   486→    name: string;
+   487→    niche: string | null;
+   488→    audience: string | null;
+   489→    tone: string[];
+   490→    avoid: string[];
+   491→    platform: string;
+   492→    voiceProfile: Record<string, number>;
+   493→    mindsHumanId: string | null;
+   494→    mindsMuseId: string | null;
+   495→    mindsMakerId: string | null;
+   496→    createdAt: string;
+   497→    updatedAt: string;
+   498→  };
+   499→  identityDomain?: {
+   500→    name: string;
+   501→    niche: string | null;
+   502→    audience: string | null;
+   503→    tone: string[];
+   504→    avoid: string[];
+   505→    platform: string;
+   506→    email: string;
+   507→  };
+   508→  stats?: {
+   509→    memoryEvents: number;
+   510→    auditEvents: number;
+   511→  };
+   512→}
+   513→
+   514→interface MemoryEventItem {
+   515→  id: string;
+   516→  creatorId: string;
+   517→  category: string;
+   518→  key: string;
+   519→  value: string;
+   520→  confidence: number;
+   521→  source: string;
+   522→  sessionId: string | null;
+   523→  createdAt: string;
+   524→}
+   525→
+   526→interface AuditEventItem {
+   527→  id: string;
+   528→  creatorId: string;
+   529→  actor: string;
+   530→  action: string;
+   531→  targetType: string;
+   532→  targetId: string | null;
+   533→  delta: string | null;
+   534→  createdAt: string;
+   535→}
+   536→
+   537→interface MemoryResponse {
+   538→  success: boolean;
+   539→  events: MemoryEventItem[];
+   540→  count: number;
+   541→  category: string;
+   542→}
+   543→
+   544→interface AuditResponse {
+   545→  success: boolean;
+   546→  events: AuditEventItem[];
+   547→  count: number;
+   548→}
+   549→
+   550→// Voice Domain Types
+   551→interface VoiceProfileResponse {
+   552→  success: boolean;
+   553→  profile?: Record<string, number>;
+   554→  dimensions?: string[];
+   555→}
+   556→
+   557→interface VoiceAnalysisResult {
+   558→  dimension: string;
+   559→  score: number;
+   560→  indicator: string;
+   561→  reasoning: string;
+   562→}
+   563→
+   564→interface VoiceMatchResult {
+   565→  overallMatch: number;
+   566→  dimensionMatches: { dimension: string; profileScore: number; contentScore: number; match: number; isMismatch: boolean }[];
+   567→  mismatchCount: number;
+   568→}
+   569→
+   570→interface VoiceAnalyzeResponse {
+   571→  success: boolean;
+   572→  analysis?: VoiceAnalysisResult[];
+   573→  match?: VoiceMatchResult;
+   574→  error?: string;
+   575→}
+   576→
+   577→// Performance Domain Types
+   578→interface ContentItem {
+   579→  id: string;
+   580→  title: string;
+   581→  type: string;
+   582→  status: string;
+   583→  hookPattern: string | null;
+   584→  hookText: string | null;
+   585→  metricsCount: number;
+   586→  publishedAt: string | null;
+   587→  createdAt: string;
+   588→}
+   589→
+   590→interface ContentListResponse {
+   591→  success: boolean;
+   592→  items: ContentItem[];
+   593→  count: number;
+   594→}
+   595→
+   596→interface HookPatternStat {
+   597→  pattern: string;
+   598→  count: number;
+   599→  avgEffectiveness: number;
+   600→  sampleSize: number;
+   601→}
+   602→
+   603→interface PerformanceInsight {
+   604→  title: string;
+   605→  detail: string;
+   606→  confidence: 'low' | 'medium' | 'high';
+   607→  dataPoints: number;
+   608→  evidenceType: string;
+   609→}
+   610→
+   611→interface PerformanceResponse {
+   612→  success: boolean;
+   613→  hookPatterns: HookPatternStat[];
+   614→  insights: PerformanceInsight[];
+   615→  bestPattern: string | null;
+   616→  worstPattern: string | null;
+   617→}
+   618→
+   619→interface ContentMetricsResponse {
+   620→  success: boolean;
+   621→  message?: string;
+   622→  error?: string;
+   623→}
+   624→
+   625→// Decisions Domain Types
+   626→interface DecisionItem {
+   627→  id: string;
+   628→  contentItemId: string;
+   629→  contentItemTitle: string;
+   630→  decisionType: 'accepted' | 'modified' | 'rejected' | 'ignored';
+   631→  category: string;
+   632→  reason: string;
+   633→  modifications: string | null;
+   634→  createdAt: string;
+   635→}
+   636→
+   637→interface DecisionLearning {
+   638→  insight: string;
+   639→  confidence: 'low' | 'medium' | 'high';
+   640→  dataPoints: number;
+   641→}
+   642→
+   643→interface DecisionsResponse {
+   644→  success: boolean;
+   645→  decisions: DecisionItem[];
+   646→  learnings: DecisionLearning[];
+   647→  summary: {
+   648→    total: number;
+   649→    accepted: number;
+   650→    modified: number;
+   651→    rejected: number;
+   652→    ignored: number;
+   653→    acceptanceRate: number;
+   654→    modificationRate: number;
+   655→    mostRejectedCategory: string;
+   656→  };
+   657→}
+   658→
+   659→interface IngestStatusResponse {
+   660→  success: boolean;
+   661→  totalContentItems: number;
+   662→  totalHooks: number;
+   663→  totalMetrics: number;
+   664→  hookPatternCoverage: number;
+   665→  meetsMinimum: boolean;
+   666→  lastIngestAt: string | null;
+   667→}
+   668→
+   669→// Learning Domain Types
+   670→interface HookClassificationResult {
+   671→  pattern: string;
+   672→  confidence: number;
+   673→  reasoning: string;
+   674→  allScores?: Record<string, number>;
+   675→}
+   676→
+   677→interface HookComparisonResponse {
+   678→  success: boolean;
+   679→  hookClassification: HookClassificationResult;
+   680→  historicalComparison: {
+   681→    patternAvg: number;
+   682→    creatorOverallAvg: number;
+   683→    diff: number;
+   684→    diffPercent: number;
+   685→    message: string;
+   686→    confidence: 'low' | 'medium' | 'high';
+   687→    evidenceType: string;
+   688→    sampleSize: number;
+   689→  };
+   690→  creatorSpecific: {
+   691→    patternRank: number;
+   692→    totalPatterns: number;
+   693→    betterPatterns: string[];
+   694→    worsePatterns: string[];
+   695→  };
+   696→}
+   697→
+   698→interface PatternRankingItem {
+   699→  pattern: string;
+   700→  label: string;
+   701→  avgEffectiveness: number;
+   702→  sampleSize: number;
+   703→  rank: number;
+   704→  confidence: 'low' | 'medium' | 'high';
+   705→  status: 'tested' | 'untested';
+   706→}
+   707→
+   708→interface HookRankingsResponse {
+   709→  success: boolean;
+   710→  rankings: PatternRankingItem[];
+   711→  overallConfidence: 'low' | 'medium' | 'high';
+   712→  totalSamples: number;
+   713→}
+   714→
+   715→interface PredictionResponse {
+   716→  success: boolean;
+   717→  pattern: string;
+   718→  patternLabel: string;
+   719→  predictedEffectiveness: number;
+   720→  confidence: 'low' | 'medium' | 'high';
+   721→  historicalSampleSize: number;
+   722→  similarHooks: { text: string; effectiveness: number }[];
+   723→  message: string;
+   724→  evidenceType: string;
+   725→}
+   726→
+   727→// Day 7: Learning Engine Types
+   728→interface LearningRunResponse {
+   729→  success: boolean;
+   730→  creatorId: string;
+   731→  creatorName: string;
+   732→  loopResult: {
+   733→    observations: string[];
+   734→    comparisons: string[];
+   735→    inferences: string[];
+   736→    updates: { pattern: string; avgEffectiveness: number; sampleSize: number; lastSeen: string }[];
+   737→    recommendations: {
+   738→      type: string;
+   739→      title: string;
+   740→      explanation: string;
+   741→      evidenceType: string;
+   742→      confidence: 'low' | 'medium' | 'high';
+   743→      dataPoints: number;
+   744→      supportingFacts: string[];
+   745→      action?: string;
+   746→      priority: number;
+   747→    }[];
+   748→    confidence: 'low' | 'medium' | 'high';
+   749→    totalDataPoints: number;
+   750→    loopComplete: boolean;
+   751→  };
+   752→  honestyReport: {
+   753→    isHonest: boolean;
+   754→    violations: { type: string; message: string; recommendationIndex?: number }[];
+   755→    summary: string;
+   756→    checksPassed: number;
+   757→    checksTotal: number;
+   758→  };
+   759→  evidenceChain: {
+   760→    step: string;
+   761→    description: string;
+   762→    evidenceType: string;
+   763→    confidence: 'low' | 'medium' | 'high';
+   764→    dataPoints: number;
+   765→    supportingFacts: string[];
+   766→    timestamp: string;
+   767→  }[];
+   768→  storedMemories: number;
+   769→  storedRecommendations: number;
+   770→  auditEventId: string;
+   771→  ranAt: string;
+   772→  dataSummary: {
+   773→    contentItems: number;
+   774→    metricsCount: number;
+   775→    hooksCount: number;
+   776→    memoryEvents: number;
+   777→    existingPatterns: number;
+   778→  };
+   779→}
+   780→
+   781→interface HonestyCheckResponse {
+   782→  success: boolean;
+   783→  framework: string;
+   784→  allChecksPassed: boolean;
+   785→  checksPassed: number;
+   786→  checksTotal: number;
+   787→  checks: { name: string; passed: boolean; details: string }[];
+   788→  principles: string[];
+   789→  evidenceTypeTaxonomy: Record<string, string>;
+   790→  confidenceThresholds: Record<string, { minDataPoints: number; label: string }>;
+   791→}
+   792→
+   793→// Day 8: Explanation System Types
+   794→interface EvidenceSource {
+   795→  type: string;
+   796→  id: string;
+   797→  label: string;
+   798→  value: string;
+   799→  capturedAt: string;
+   800→}
+   801→
+   802→interface EvidenceStep {
+   803→  step: number;
+   804→  phase: 'OBSERVE' | 'COMPARE' | 'INFER' | 'UPDATE' | 'RECOMMEND';
+   805→  description: string;
+   806→  evidenceType: string;
+   807→  confidence: 'low' | 'medium' | 'high';
+   808→  dataPoints: number;
+   809→  sources: EvidenceSource[];
+   810→  derivedFrom: number[];
+   811→}
+   812→
+   813→interface FullExplanation {
+   814→  recommendationId: string;
+   815→  recommendationTitle: string;
+   816→  recommendationType: string;
+   817→  summary: string;
+   818→  narrative: string;
+   819→  evidenceChain: EvidenceStep[];
+   820→  confidence: 'low' | 'medium' | 'high';
+   821→  overallDataPoints: number;
+   822→  supportingContentCount: number;
+   823→  patternHistory: { pattern: string; avgEffectiveness: number; sampleSize: number; confidence: string; lastSeen: string }[];
+   824→  creatorSpecificContext: string;
+   825→  generatedAt: string;
+   826→  honestyVerified: boolean;
+   827→}
+   828→
+   829→interface ExplainResponse {
+   830→  success: boolean;
+   831→  count?: number;
+   832→  explanations?: FullExplanation[];
+   833→  explanation?: FullExplanation;
+   834→  error?: string;
+   835→}
+   836→
+   837→// Day 8: Proof Experiment Types
+   838→interface GenuineInsight {
+   839→  id: string;
+   840→  dayDiscovered: number;
+   841→  type: 'pattern_emergence' | 'performance_signal' | 'recommendation_with_evidence' | 'confidence_upgrade';
+   842→  title: string;
+   843→  description: string;
+   844→  evidenceType: string;
+   845→  confidence: 'low' | 'medium' | 'high';
+   846→  dataPoints: number;
+   847→  supportingFacts: string[];
+   848→  isGenuine: boolean;
+   849→  verificationNote: string;
+   850→}
+   851→
+   852→interface DayResult {
+   853→  day: number;
+   854→  date: string;
+   855→  contentAnalyzed: number;
+   856→  newObservations: string[];
+   857→  newInferences: string[];
+   858→  recommendations: { title: string; type: string; explanation: string; confidence: string; dataPoints: number; evidenceType: string; supportingFacts: string[] }[];
+   859→  confidenceGrowth: { before: string; after: string };
+   860→  dataPointGrowth: { before: number; after: number };
+   861→  patternsDiscovered: string[];
+   862→}
+   863→
+   864→interface ProofResponse {
+   865→  success: boolean;
+   866→  experimentId: string;
+   867→  creatorId: string;
+   868→  creatorName: string;
+   869→  startedAt: string;
+   870→  completedAt: string;
+   871→  totalDays: number;
+   872→  dayResults: DayResult[];
+   873→  genuineInsights: GenuineInsight[];
+   874→  totalGenuineInsights: number;
+   875→  meetsThreshold: boolean;
+   876→  summary: {
+   877→    totalContentAnalyzed: number;
+   878→    totalObservations: number;
+   879→    totalInferences: number;
+   880→    totalRecommendations: number;
+   881→    confidenceProgression: string[];
+   882→    dataPointProgression: number[];
+   883→    insightByDay: number[];
+   884→  };
+   885→  honestyReport: {
+   886→    allInsightsGenuine: boolean;
+   887→    noFabricatedData: boolean;
+   888→    evidenceChainsComplete: boolean;
+   889→    confidenceHonest: boolean;
+   890→  };
+   891→  error?: string;
+   892→}
+   893→
+   894→// ---------------------------------------------------------------------------
+   895→// Helper
+   896→// ---------------------------------------------------------------------------
+   897→
+   898→function truncateId(id: string, len = 8): string {
+   899→  return id.length > len ? `${id.slice(0, len)}…` : id;
+   900→}
+   901→
+   902→function statusIcon(status: 'pass' | 'fail' | 'warn') {
+   903→  if (status === 'pass') return <CheckCircle2 className="size-4 text-emerald-500" />;
+   904→  if (status === 'fail') return <AlertTriangle className="size-4 text-red-500" />;
+   905→  return <CircleDashed className="size-4 text-amber-500" />;
+   906→}
+   907→
+   908→function voiceBarColor(value: number): string {
+   909→  if (value >= 70) return 'bg-emerald-500';
+   910→  if (value >= 40) return 'bg-amber-500';
+   911→  return 'bg-rose-400';
+   912→}
+   913→
+   914→function voiceBadgeColor(value: number): string {
+   915→  if (value >= 70) return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+   916→  if (value >= 40) return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+   917→  return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+   918→}
+   919→
+   920→function statusBadgeStyle(status: string): string {
+   921→  switch (status) {
+   922→    case 'published': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+   923→    case 'drafting': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+   924→    case 'idea': return 'bg-violet-500/10 text-violet-400 border-violet-500/20';
+   925→    case 'archived': return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+   926→    default: return '';
+   927→  }
+   928→}
+   929→
+   930→function confidenceBadgeStyle(confidence: string): string {
+   931→  switch (confidence) {
+   932→    case 'high': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+   933→    case 'medium': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+   934→    case 'low': return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+   935→    default: return '';
+   936→  }
+   937→}
+   938→
+   939→// ---------------------------------------------------------------------------
+   940→// Main Page
+   941→// ---------------------------------------------------------------------------
+   942→
+   943→export default function MuseDashboard() {
+   944→  const [status, setStatus] = useState<StatusResponse | null>(null);
+   945→  const [validation, setValidation] = useState<ValidationResponse | null>(null);
+   946→  const [draftData, setDraftData] = useState<DraftResponse | null>(null);
+   947→  const [autonomyData, setAutonomyData] = useState<AutonomyStatusResponse | null>(null);
+   948→  const [hookData, setHookData] = useState<HookClassResponse | null>(null);
+   949→  const [creatorData, setCreatorData] = useState<CreatorResponse | null>(null);
+   950→  const [memoryData, setMemoryData] = useState<MemoryResponse | null>(null);
+   951→  const [auditData, setAuditData] = useState<AuditResponse | null>(null);
+   952→  const [editingIdentity, setEditingIdentity] = useState(false);
+   953→  const [editForm, setEditForm] = useState({ name: '', niche: '', audience: '', tone: '', avoid: '' });
+   954→  const [saving, setSaving] = useState(false);
+   955→  const [loading, setLoading] = useState(true);
+   956→  const [error, setError] = useState<string | null>(null);
+   957→
+   958→  // Voice Domain State
+   959→  const [voiceProfile, setVoiceProfile] = useState<VoiceProfileResponse | null>(null);
+   960→  const [voiceLoading, setVoiceLoading] = useState(true);
+   961→  const [analyzeText, setAnalyzeText] = useState('');
+   962→  const [analyzeLoading, setAnalyzeLoading] = useState(false);
+   963→  const [analyzeResult, setAnalyzeResult] = useState<VoiceAnalyzeResponse | null>(null);
+   964→  const [updateProfileToggle, setUpdateProfileToggle] = useState(true);
+   965→
+   966→  // Performance Domain State
+   967→  const [contentItems, setContentItems] = useState<ContentListResponse | null>(null);
+   968→  const [perfData, setPerfData] = useState<PerformanceResponse | null>(null);
+   969→  const [perfLoading, setPerfLoading] = useState(true);
+   970→  const [showAddContent, setShowAddContent] = useState(false);
+   971→  const [showIngestMetrics, setShowIngestMetrics] = useState(false);
+   972→  const [newContent, setNewContent] = useState({ title: '', type: 'short_form', hookText: '' });
+   973→  const [newMetrics, setNewMetrics] = useState({ contentId: '', views: '', likes: '', shares: '', comments: '' });
+   974→  const [addingContent, setAddingContent] = useState(false);
+   975→  const [addingMetrics, setAddingMetrics] = useState(false);
+   976→
+   977→  // Decisions Domain State
+   978→  const [decisionsData, setDecisionsData] = useState<DecisionsResponse | null>(null);
+   979→  const [decisionsLoading, setDecisionsLoading] = useState(true);
+   980→  const [ingestStatus, setIngestStatus] = useState<IngestStatusResponse | null>(null);
+   981→  const [decisionForm, setDecisionForm] = useState({ contentItemId: '', decisionType: 'accepted', category: '', reason: '' });
+   982→  const [submittingDecision, setSubmittingDecision] = useState(false);
+   983→
+   984→  // Learning Domain State
+   985→  const [learningHookText, setLearningHookText] = useState('');
+   986→  const [learningClassResult, setLearningClassResult] = useState<HookClassResponse | null>(null);
+   987→  const [learningClassLoading, setLearningClassLoading] = useState(false);
+   988→  const [learningCompResult, setLearningCompResult] = useState<HookComparisonResponse | null>(null);
+   989→  const [learningCompLoading, setLearningCompLoading] = useState(false);
+   990→  const [learningRankings, setLearningRankings] = useState<HookRankingsResponse | null>(null);
+   991→  const [learningRankingsLoading, setLearningRankingsLoading] = useState(true);
+   992→  const [learningPredText, setLearningPredText] = useState('');
+   993→  const [learningPredResult, setLearningPredResult] = useState<PredictionResponse | null>(null);
+   994→  const [learningPredLoading, setLearningPredLoading] = useState(false);
+   995→
+   996→  // Day 7: Learning Engine State
+   997→  const [learningRunResult, setLearningRunResult] = useState<LearningRunResponse | null>(null);
+   998→  const [learningRunLoading, setLearningRunLoading] = useState(false);
+   999→  const [honestyCheckResult, setHonestyCheckResult] = useState<HonestyCheckResponse | null>(null);
+  1000→  const [honestyCheckLoading, setHonestyCheckLoading] = useState(true);
+  1001→
+  1002→  // Day 8: Explanation & Proof State
+  1003→  const [explainResult, setExplainResult] = useState<ExplainResponse | null>(null);
+  1004→  const [explainLoading, setExplainLoading] = useState(false);
+  1005→  const [expandedChains, setExpandedChains] = useState<Set<string>>(new Set());
+  1006→  const [proofResult, setProofResult] = useState<ProofResponse | null>(null);
+  1007→  const [proofLoading, setProofLoading] = useState(false);
+  1008→
+  1009→  // Day 9: Delegation State
+  1010→  const [delegationPreview, setDelegationPreview] = useState<DelegationPreviewResponse | null>(null);
+  1011→  const [delegationResult, setDelegationResult] = useState<DelegationExecuteResponse | null>(null);
+  1012→  const [delegationTopic, setDelegationTopic] = useState('');
+  1013→  const [delegationObjective, setDelegationObjective] = useState('');
+  1014→  const [delegationPreviewLoading, setDelegationPreviewLoading] = useState(false);
+  1015→  const [delegationExecuteLoading, setDelegationExecuteLoading] = useState(false);
+  1016→  const [scriptExpanded, setScriptExpanded] = useState(false);
+  1017→
+  1018→  // Day 10: Evaluation & Drafts State
+  1019→  const [evalResult, setEvalResult] = useState<EvaluationResponse | null>(null);
+  1020→  const [evalLoading, setEvalLoading] = useState(false);
+  1021→  const [evalThresholds, setEvalThresholds] = useState<EvaluationThresholdsResponse | null>(null);
+  1022→  const [draftsData, setDraftsData] = useState<DraftsResponse | null>(null);
+  1023→  const [draftsLoading, setDraftsLoading] = useState(false);
+  1024→
+  1025→  // Day 11: Delegation Beat State
+  1026→  const [beatResult, setBeatResult] = useState<DelegationBeatResponse | null>(null);
+  1027→
+  1028→  // Day 12: Today + Memory screen state
+  1029→  const [todayScreenData, setTodayScreenData] = useState<any>(null);
+  1030→  const [todayScreenLoading, setTodayScreenLoading] = useState(false);
+  1031→  const [memoryScreenData, setMemoryScreenData] = useState<any>(null);
+  1032→  const [memoryScreenLoading, setMemoryScreenLoading] = useState(false);
+  1033→
+  1034→  // Day 13: Learning, Overnight, Control screen state
+  1035→  const [learningScreenData, setLearningScreenData] = useState<any>(null);
+  1036→  const [learningScreenLoading, setLearningScreenLoading] = useState(false);
+  1037→  const [overnightScreenData, setOvernightScreenData] = useState<any>(null);
+  1038→  const [overnightScreenLoading, setOvernightScreenLoading] = useState(false);
+  1039→  const [controlScreenData, setControlScreenData] = useState<any>(null);
+  1040→  const [controlScreenLoading, setControlScreenLoading] = useState(false);
+  1041→  const [beatLoading, setBeatLoading] = useState(false);
+  1042→  const [beatHistory, setBeatHistory] = useState<BeatHistoryResponse | null>(null);
+  1043→  const [beatHistoryLoading, setBeatHistoryLoading] = useState(false);
+  1044→  const [beatTopic, setBeatTopic] = useState('');
+  1045→  const [beatObjective, setBeatObjective] = useState('');
+  1046→  const [activeBeatStep, setActiveBeatStep] = useState<number | null>(null);
+  1047→
+  1048→  // Day 14: DB-backed overnight scheduler state
+  1049→  const [overnightCycleRunning, setOvernightCycleRunning] = useState(false);
+  1050→  const [overnightCycleResult, setOvernightCycleResult] = useState<OvernightCycleResponse | null>(null);
+  1051→  const [approvalActionLoading, setApprovalActionLoading] = useState<string | null>(null);
+  1052→  const [rejectReason, setRejectReason] = useState('');
+  1053→  const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
+  1054→
+  1055→  // Fetch creator/memory/audit data
+  1056→  const fetchCreatorData = useCallback(async () => {
+  1057→    try {
+  1058→      const [creatorRes, memRes, auditRes] = await Promise.all([
+  1059→        fetch('/api/creator').then((r) => r.json()).catch(() => null),
+  1060→        fetch('/api/creator/memory').then((r) => r.json()).catch(() => null),
+  1061→        fetch('/api/creator/audit').then((r) => r.json()).catch(() => null),
+  1062→      ]);
+  1063→      if (creatorRes) setCreatorData(creatorRes);
+  1064→      if (memRes) setMemoryData(memRes);
+  1065→      if (auditRes) setAuditData(auditRes);
+  1066→    } catch {
+  1067→      // silently fail
+  1068→    }
+  1069→  }, []);
+  1070→
+  1071→  // Fetch voice profile
+  1072→  const fetchVoiceProfile = useCallback(async () => {
+  1073→    setVoiceLoading(true);
+  1074→    try {
+  1075→      const res = await fetch('/api/creator/voice').then((r) => r.json()).catch(() => null);
+  1076→      if (res) setVoiceProfile(res);
+  1077→    } catch {
+  1078→      // silently fail
+  1079→    } finally {
+  1080→      setVoiceLoading(false);
+  1081→    }
+  1082→  }, []);
+  1083→
+  1084→  // Fetch performance data
+  1085→  const fetchPerformanceData = useCallback(async () => {
+  1086→    setPerfLoading(true);
+  1087→    try {
+  1088→      const [contentRes, perfRes] = await Promise.all([
+  1089→        fetch('/api/content').then((r) => r.json()).catch(() => null),
+  1090→        fetch('/api/content/performance').then((r) => r.json()).catch(() => null),
+  1091→      ]);
+  1092→      if (contentRes) setContentItems(contentRes);
+  1093→      if (perfRes) setPerfData(perfRes);
+  1094→    } catch {
+  1095→      // silently fail
+  1096→    } finally {
+  1097→      setPerfLoading(false);
+  1098→    }
+  1099→  }, []);
+  1100→
+  1101→  // Fetch decisions and ingest data
+  1102→  const fetchDecisionsData = useCallback(async () => {
+  1103→    setDecisionsLoading(true);
+  1104→    try {
+  1105→      const [decisionsRes, ingestRes] = await Promise.all([
+  1106→        fetch('/api/creator/decisions').then((r) => r.json()).catch(() => null),
+  1107→        fetch('/api/content/ingest').then((r) => r.json()).catch(() => null),
+  1108→      ]);
+  1109→      if (decisionsRes) setDecisionsData(decisionsRes);
+  1110→      if (ingestRes) setIngestStatus(ingestRes);
+  1111→    } catch {
+  1112→      // silently fail
+  1113→    } finally {
+  1114→      setDecisionsLoading(false);
+  1115→    }
+  1116→  }, []);
+  1117→
+  1118→  // Day 14: Run overnight cycle
+  1119→  const runOvernightCycleAction = useCallback(async () => {
+  1120→    setOvernightCycleRunning(true);
+  1121→    try {
+  1122→      const res = await fetch('/api/autonomy/run-overnight', {
+  1123→        method: 'POST',
+  1124→        headers: { 'Content-Type': 'application/json' },
+  1125→        body: JSON.stringify({}),
+  1126→      });
+  1127→      const json = await res.json();
+  1128→      setOvernightCycleResult(json);
+  1129→      // Refresh autonomy status
+  1130→      const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
+  1131→      if (statusRes) setAutonomyData(statusRes);
+  1132→    } catch (e) {
+  1133→      setOvernightCycleResult({ success: false, message: String(e) });
+  1134→    } finally {
+  1135→      setOvernightCycleRunning(false);
+  1136→    }
+  1137→  }, []);
+  1138→
+  1139→  // Day 14: Approve an action
+  1140→  const approveActionHandler = useCallback(async (approvalId: string) => {
+  1141→    setApprovalActionLoading(approvalId);
+  1142→    try {
+  1143→      await fetch('/api/autonomy/approve', {
+  1144→        method: 'POST',
+  1145→        headers: { 'Content-Type': 'application/json' },
+  1146→        body: JSON.stringify({ approvalId }),
+  1147→      });
+  1148→      // Refresh autonomy status
+  1149→      const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
+  1150→      if (statusRes) setAutonomyData(statusRes);
+  1151→    } catch {
+  1152→      // silently fail
+  1153→    } finally {
+  1154→      setApprovalActionLoading(null);
+  1155→    }
+  1156→  }, []);
+  1157→
+  1158→  // Day 14: Reject an action
+  1159→  const rejectActionHandler = useCallback(async (approvalId: string, reason?: string) => {
+  1160→    setApprovalActionLoading(approvalId);
+  1161→    try {
+  1162→      await fetch('/api/autonomy/reject', {
+  1163→        method: 'POST',
+  1164→        headers: { 'Content-Type': 'application/json' },
+  1165→        body: JSON.stringify({ approvalId, reason }),
+  1166→      });
+  1167→      // Refresh autonomy status
+  1168→      const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
+  1169→      if (statusRes) setAutonomyData(statusRes);
+  1170→      setShowRejectInput(null);
+  1171→      setRejectReason('');
+  1172→    } catch {
+  1173→      // silently fail
+  1174→    } finally {
+  1175→      setApprovalActionLoading(null);
+  1176→    }
+  1177→  }, []);
+  1178→
+  1179→  // Fetch hook rankings for Learning tab
+  1180→  const fetchRankings = useCallback(async () => {
+  1181→    setLearningRankingsLoading(true);
+  1182→    try {
+  1183→      const res = await fetch('/api/learning/rankings').then((r) => r.json()).catch(() => null);
+  1184→      if (res) setLearningRankings(res);
+  1185→    } catch {
+  1186→      // silently fail
+  1187→    } finally {
+  1188→      setLearningRankingsLoading(false);
+  1189→    }
+  1190→  }, []);
+  1191→
+  1192→  // Fetch honesty check for Learning tab (Day 7)
+  1193→  const fetchHonestyCheck = useCallback(async () => {
+  1194→    setHonestyCheckLoading(true);
+  1195→    try {
+  1196→      const res = await fetch('/api/learning/honesty').then((r) => r.json()).catch(() => null);
+  1197→      if (res) setHonestyCheckResult(res);
+  1198→    } catch {
+  1199→      // silently fail
+  1200→    } finally {
+  1201→      setHonestyCheckLoading(false);
+  1202→    }
+  1203→  }, []);
+  1204→
+  1205→  useEffect(() => {
+  1206→    async function fetchAll() {
+  1207→      try {
+  1208→        const [statusRes, valRes, draftRes, autoRes, hookRes, creatorRes, memRes, auditRes] = await Promise.all([
+  1209→          fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
+  1210→          fetch('/api/validation/day1').then((r) => r.json()).catch(() => null),
+  1211→          fetch('/api/minds/draft', {
+  1212→            method: 'POST',
+  1213→            headers: { 'Content-Type': 'application/json' },
+  1214→            body: JSON.stringify({ topic: 'AI agents in production', objective: 'build reliable systems' }),
+  1215→          }).then((r) => r.json()).catch(() => null),
+  1216→          fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
+  1217→          fetch('/api/learning/hooks', {
+  1218→            method: 'POST',
+  1219→            headers: { 'Content-Type': 'application/json' },
+  1220→            body: JSON.stringify({ text: 'Everyone says AI agents are the future. They\'re wrong — and here\'s why.' }),
+  1221→          }).then((r) => r.json()).catch(() => null),
+  1222→          fetch('/api/creator').then((r) => r.json()).catch(() => null),
+  1223→          fetch('/api/creator/memory').then((r) => r.json()).catch(() => null),
+  1224→          fetch('/api/creator/audit').then((r) => r.json()).catch(() => null),
+  1225→        ]);
+  1226→        setStatus(statusRes);
+  1227→        setValidation(valRes);
+  1228→        setDraftData(draftRes);
+  1229→        setAutonomyData(autoRes);
+  1230→        setHookData(hookRes);
+  1231→        if (creatorRes) setCreatorData(creatorRes);
+  1232→        if (memRes) setMemoryData(memRes);
+  1233→        if (auditRes) setAuditData(auditRes);
+  1234→      } catch (e) {
+  1235→        setError(String(e));
+  1236→      } finally {
+  1237→        setLoading(false);
+  1238→      }
+  1239→    }
+  1240→    fetchAll();
+  1241→    fetchVoiceProfile();
+  1242→    fetchPerformanceData();
+  1243→    fetchDecisionsData();
+  1244→    fetchRankings();
+  1245→    fetchHonestyCheck();
+  1246→  }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData, fetchRankings, fetchHonestyCheck]);
+  1247→
+  1248→  // Build test rows from validation data
+  1249→  const tests: ValidationTest[] = validation
+  1250→    ? [
+  1251→        { key: 't1', name: 'Mind Creation', status: 'pass', evidence: validation.cached.test1_mindCreation.evidence, duration: validation.cached.test1_mindCreation.duration },
+  1252→        { key: 't2', name: 'Persistence', status: 'pass', evidence: validation.cached.test2_persistence.evidence, duration: validation.cached.test2_persistence.duration },
+  1253→        { key: 't3', name: 'Long-Term Memory', status: 'pass', evidence: validation.cached.test3_ltm.evidence, duration: validation.cached.test3_ltm.duration },
+  1254→        { key: 't4', name: 'Skill Equipping', status: 'pass', evidence: validation.cached.test4_skillEquipping.evidence, duration: validation.cached.test4_skillEquipping.duration },
+  1255→        { key: 't5', name: 'Circle / Delegation', status: 'pass', evidence: validation.cached.test5_circleDelegation.evidence, duration: validation.cached.test5_circleDelegation.duration },
+  1256→        { key: 't6', name: 'SSE Events', status: 'pass', evidence: validation.cached.test6_sseEvents.evidence, duration: validation.cached.test6_sseEvents.duration },
+  1257→      ]
+  1258→    : [];
+  1259→
+  1260→  // Day 2 completed tasks
+  1261→  const day2Completed = [
+  1262→    { id: 'd2-1', label: 'Maker Simulator — 8 hook patterns, voice matching, zero-credit drafts', done: true },
+  1263→    { id: 'd2-2', label: 'Learning Loop Engine — OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND', done: true },
+  1264→    { id: 'd2-3', label: 'Hook Classifier — 8-pattern taxonomy with confidence scoring', done: true },
+  1265→    { id: 'd2-4', label: 'SSE Events Hook — real-time streaming with simulated fallback', done: true },
+  1266→    { id: 'd2-5', label: 'Autonomy Scheduler — overnight pipeline with approval gates', done: true },
+  1267→    { id: 'd14-1', label: 'DB-Backed Overnight Scheduler — full overnight loop with delegation beat + approval gates', done: true },
+  1268→    { id: 'd14-2', label: 'Overnight API Routes — /run-overnight, /approve, /reject', done: true },
+  1269→    { id: 'd2-6', label: 'Creator Recruitment — outreach templates + onboarding conversation', done: true },
+  1270→    { id: 'd2-7', label: 'API Routes — draft, analyze, hooks, autonomy, recruit', done: true },
+  1271→    { id: 'd2-8', label: 'Dashboard V2 — Day 2 status with live data', done: true },
+  1272→  ];
+  1273→
+  1274→  const day2Pending = [
+  1275→    { id: 'd2p-1', label: 'Creator Onboarding — capture identity via Muse conversation' },
+  1276→    { id: 'd2p-2', label: 'Memory Graph — persist all learned facts as MemoryEvent records' },
+  1277→    { id: 'd2p-3', label: 'Content Recommendation Pipeline — Muse → Maker → Draft → Approval → Publish' },
+  1278→  ];
+  1279→
+  1280→  const completedCount = day2Completed.filter((t) => t.done).length;
+  1281→  const totalCount = day2Completed.length + day2Pending.length;
+  1282→
+  1283→  // Voice profile dimensions for display (sorted descending)
+  1284→  const voiceProfileEntries = voiceProfile?.profile
+  1285→    ? Object.entries(voiceProfile.profile).sort(([, a], [, b]) => b - a)
+  1286→    : creatorData?.creator?.voiceProfile
+  1287→      ? Object.entries(creatorData.creator.voiceProfile).sort(([, a], [, b]) => b - a)
+  1288→      : [];
+  1289→
+  1290→  // Performance overview computed values
+  1291→  const totalContentItems = contentItems?.count ?? 0;
+  1292→  const totalHooksTracked = perfData?.hookPatterns?.reduce((sum, p) => sum + p.count, 0) ?? 0;
+  1293→  const bestPatternEntry = perfData?.hookPatterns?.find((p) => p.pattern === perfData.bestPattern);
+  1294→  const worstPatternEntry = perfData?.hookPatterns?.find((p) => p.pattern === perfData.worstPattern);
+  1295→
+  1296→  return (
+  1297→    <div className="min-h-screen flex flex-col bg-background text-foreground">
+  1298→      {/* ===== Header ===== */}
+  1299→      <header className="border-b border-border bg-card">
+  1300→        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+  1301→          <div className="flex items-center gap-3">
+  1302→            <div className="size-10 rounded-xl bg-gradient-to-br from-violet-500 to-emerald-500 flex items-center justify-center">
+  1303→              <Brain className="size-5 text-white" />
+  1304→            </div>
+  1305→            <div>
+  1306→              <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+  1307→                Muse — Day 14 Autonomy Engine
+  1308→              </h1>
+  1309→              <p className="text-xs text-muted-foreground">
+  1310→                The AI Creative Team That Learns You
+  1311→              </p>
+  1312→            </div>
+  1313→          </div>
+  1314→          <div className="flex items-center gap-2 flex-wrap">
+  1315→            {loading ? (
+  1316→              <Badge variant="secondary" className="gap-1">
+  1317→                <Server className="size-3 animate-pulse" />
+  1318→                Loading…
+  1319→              </Badge>
+  1320→            ) : status?.connected ? (
+  1321→              <Badge className="gap-1 bg-emerald-600 text-white border-emerald-600">
+  1322→                <CheckCircle2 className="size-3" />
+  1323→                Minds {status.mode === 'live' ? 'Live' : 'Simulated'}
+  1324→              </Badge>
+  1325→            ) : (
+  1326→              <Badge variant="destructive" className="gap-1">
+  1327→                <AlertTriangle className="size-3" />
+  1328→                Disconnected
+  1329→              </Badge>
+  1330→            )}
+  1331→            <Badge variant="outline" className="gap-1 border-violet-500/40 text-violet-400">
+  1332→              <Sparkles className="size-3" />
+  1333→              Dual-Role: Orchestrator + Creative
+  1334→            </Badge>
+  1335→            <Badge variant="outline" className="gap-1 border-sky-500/40 text-sky-400">
+  1336→              ❄️ Schema Frozen
+  1337→            </Badge>
+  1338→            <Badge variant="secondary" className="bg-sky-500/10 text-sky-400 border-sky-500/20">🧊 Scope Frozen</Badge>
+  1339→            {validation?.config && (
+  1340→              <Badge variant="outline" className="gap-1">
+  1341→                <Users className="size-3" />
+  1342→                {validation.config.creatorName}
+  1343→              </Badge>
+  1344→            )}
+  1345→          </div>
+  1346→        </div>
+  1347→      </header>
+  1348→
+  1349→      {/* ===== Main ===== */}
+  1350→      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+  1351→        <Tabs defaultValue="today" className="w-full">
+  1352→          <TabsList className="w-full sm:w-auto flex-wrap">
+  1353→            <TabsTrigger value="today" className="gap-1.5">
+  1354→              <Sun className="size-3.5" />
+  1355→              Today
+  1356→            </TabsTrigger>
+  1357→            <TabsTrigger value="memoryscreen" className="gap-1.5">
+  1358→              <Brain className="size-3.5" />
+  1359→              Memory
+  1360→            </TabsTrigger>
+  1361→            <TabsTrigger value="learningscreen" className="gap-1.5">
+  1362→              <GraduationCap className="size-3.5" />
+  1363→              Learning
+  1364→            </TabsTrigger>
+  1365→            <TabsTrigger value="overnightscreen" className="gap-1.5">
+  1366→              <Moon className="size-3.5" />
+  1367→              Overnight
+  1368→            </TabsTrigger>
+  1369→            <TabsTrigger value="controlscreen" className="gap-1.5">
+  1370→              <Settings className="size-3.5" />
+  1371→              Control
+  1372→            </TabsTrigger>
+  1373→            <TabsTrigger value="day1" className="gap-1.5">
+  1374→              <Shield className="size-3.5" />
+  1375→              Day 1
+  1376→            </TabsTrigger>
+  1377→            <TabsTrigger value="day2" className="gap-1.5">
+  1378→              <Sparkles className="size-3.5" />
+  1379→              Day 2
+  1380→            </TabsTrigger>
+  1381→            <TabsTrigger value="draft" className="gap-1.5">
+  1382→              <SendHorizontal className="size-3.5" />
+  1383→              Delegation
+  1384→            </TabsTrigger>
+  1385→            <TabsTrigger value="autonomy" className="gap-1.5">
+  1386→              <Moon className="size-3.5" />
+  1387→              Autonomy
+  1388→            </TabsTrigger>
+  1389→            <TabsTrigger value="memory" className="gap-1.5">
+  1390→              <Database className="size-3.5" />
+  1391→              Memory
+  1392→            </TabsTrigger>
+  1393→            <TabsTrigger value="voice" className="gap-1.5">
+  1394→              <Mic className="size-3.5" />
+  1395→              Voice
+  1396→            </TabsTrigger>
+  1397→            <TabsTrigger value="performance" className="gap-1.5">
+  1398→              <TrendingUp className="size-3.5" />
+  1399→              Performance
+  1400→            </TabsTrigger>
+  1401→            <TabsTrigger value="learning" className="gap-1.5">
+  1402→              <GraduationCap className="size-3.5" />
+  1403→              Learning
+  1404→            </TabsTrigger>
+  1405→            <TabsTrigger value="decisions" className="gap-1.5">
+  1406→              <Scale className="size-3.5" />
+  1407→              Decisions
+  1408→            </TabsTrigger>
+  1409→            <TabsTrigger value="explain" className="gap-1.5">
+  1410→              <Eye className="size-3.5" />
+  1411→              Why Chose This
+  1412→            </TabsTrigger>
+  1413→            <TabsTrigger value="proof" className="gap-1.5">
+  1414→              <FlaskConical className="size-3.5" />
+  1415→              7-Day Proof
+  1416→            </TabsTrigger>
+  1417→            <TabsTrigger value="evaluate" className="gap-1.5">
+  1418→              <Scale className="size-3.5" />
+  1419→              Evaluate
+  1420→            </TabsTrigger>
+  1421→            <TabsTrigger value="drafts" className="gap-1.5">
+  1422→              <FileText className="size-3.5" />
+  1423→              Drafts
+  1424→            </TabsTrigger>
+  1425→            <TabsTrigger value="beat" className="gap-1.5">
+  1426→              <Workflow className="size-3.5" />
+  1427→              Beat
+  1428→            </TabsTrigger>
+  1429→          </TabsList>
+  1430→
+  1431→          {/* ===== TODAY TAB (Day 12) ===== */}
+  1432→          <TabsContent value="today" className="space-y-6">
+  1433→            {/* Load Button */}
+  1434→            <div className="flex items-center gap-3">
+  1435→              <Button
+  1436→                onClick={async () => {
+  1437→                  setTodayScreenLoading(true);
+  1438→                  try {
+  1439→                    const res = await fetch('/api/dashboard/today');
+  1440→                    const json = await res.json();
+  1441→                    if (json.success) setTodayScreenData(json.data);
+  1442→                  } catch { /* silently fail */ }
+  1443→                  setTodayScreenLoading(false);
+  1444→                }}
+  1445→                disabled={todayScreenLoading}
+  1446→                className="gap-2"
+  1447→              >
+  1448→                <Sun className="size-4" />
+  1449→                {todayScreenLoading ? 'Loading…' : 'Load Today'}
+  1450→              </Button>
+  1451→              {todayScreenData && (
+  1452→                <Badge variant="secondary" className="text-xs">Live</Badge>
+  1453→              )}
+  1454→            </div>
+  1455→
+  1456→            {todayScreenLoading && (
+  1457→              <div className="flex items-center justify-center py-12 text-muted-foreground">
+  1458→                <div className="animate-pulse flex items-center gap-2">
+  1459→                  <Sun className="size-5 animate-spin" />
+  1460→                  Loading today&apos;s brief…
+  1461→                </div>
+  1462→              </div>
+  1463→            )}
+  1464→
+  1465→            {todayScreenData && (
+  1466→              <>
+  1467→                {/* Morning Greeting */}
+  1468→                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+  1469→                  <CardContent className="p-6">
+  1470→                    <div className="flex items-center gap-3">
+  1471→                      {todayScreenData.greeting?.timeOfDay === 'morning' ? (
+  1472→                        <Sunrise className="size-8 text-amber-400" />
+  1473→                      ) : todayScreenData.greeting?.timeOfDay === 'evening' || todayScreenData.greeting?.timeOfDay === 'night' ? (
+  1474→                        <Moon className="size-8 text-indigo-400" />
+  1475→                      ) : (
+  1476→                        <CloudSun className="size-8 text-sky-400" />
+  1477→                      )}
+  1478→                      <div>
+  1479→                        <h2 className="text-2xl font-bold tracking-tight">
+  1480→                          {todayScreenData.greeting?.text || 'Good day!'}
+  1481→                        </h2>
+  1482→                        <p className="text-sm text-muted-foreground mt-1">
+  1483→                          {todayScreenData.creatorName ? `Your daily briefing, ${todayScreenData.creatorName}.` : 'Your daily briefing.'}
+  1484→                        </p>
+  1485→                      </div>
+  1486→                    </div>
+  1487→                  </CardContent>
+  1488→                </Card>
+  1489→
+  1490→                {/* Overnight Brief */}
+  1491→                {todayScreenData.overnightBrief && (
+  1492→                  <Card className="rounded-xl">
+  1493→                    <CardHeader className="pb-3">
+  1494→                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1495→                        <Moon className="size-4 text-indigo-400" />
+  1496→                        Overnight Brief
+  1497→                      </CardTitle>
+  1498→                    </CardHeader>
+  1499→                    <CardContent className="space-y-3">
+  1500→                      <div className="grid grid-cols-3 gap-3">
+  1501→                        <div className="text-center p-3 rounded-lg bg-muted/50">
+  1502→                          <p className="font-mono text-lg font-bold text-emerald-400">{todayScreenData.overnightBrief.reviewedCount ?? 0}</p>
+  1503→                          <p className="text-xs text-muted-foreground">Reviewed</p>
+  1504→                        </div>
+  1505→                        <div className="text-center p-3 rounded-lg bg-muted/50">
+  1506→                          <p className="font-mono text-lg font-bold text-violet-400">{todayScreenData.overnightBrief.draftedCount ?? 0}</p>
+  1507→                          <p className="text-xs text-muted-foreground">Drafted</p>
+  1508→                        </div>
+  1509→                        <div className="text-center p-3 rounded-lg bg-muted/50">
+  1510→                          <p className="font-mono text-lg font-bold text-sky-400">{todayScreenData.overnightBrief.updatedCount ?? 0}</p>
+  1511→                          <p className="text-xs text-muted-foreground">Updated</p>
+  1512→                        </div>
+  1513→                      </div>
+  1514→                      {todayScreenData.overnightBrief.items?.length > 0 && (
+  1515→                        <ul className="space-y-1">
+  1516→                          {todayScreenData.overnightBrief.items.map((item: string, i: number) => (
+  1517→                            <li key={i} className="text-sm flex items-start gap-2">
+  1518→                              <span className="text-muted-foreground mt-0.5">•</span>
+  1519→                              {item}
+  1520→                            </li>
+  1521→                          ))}
+  1522→                        </ul>
+  1523→                      )}
+  1524→                      {todayScreenData.overnightBrief.source && (
+  1525→                        <p className="text-xs text-muted-foreground">
+  1526→                          <span className="font-semibold">SOURCE:</span> {todayScreenData.overnightBrief.source}
+  1527→                        </p>
+  1528→                      )}
+  1529→                    </CardContent>
+  1530→                  </Card>
+  1531→                )}
+  1532→
+  1533→                {/* 3 Quick-Stat Cards */}
+  1534→                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  1535→                  {/* Top Signals */}
+  1536→                  {todayScreenData.topSignals && todayScreenData.topSignals.length > 0 && (
+  1537→                    <Card className="rounded-xl">
+  1538→                      <CardHeader className="pb-2">
+  1539→                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1540→                          <Zap className="size-4 text-amber-400" />
+  1541→                          Top Signals
+  1542→                        </CardTitle>
+  1543→                      </CardHeader>
+  1544→                      <CardContent className="space-y-2">
+  1545→                        {todayScreenData.topSignals.map((sig: any, i: number) => (
+  1546→                          <div key={i} className="p-2 rounded-lg bg-muted/50">
+  1547→                            <p className="font-semibold text-sm">{sig.label}</p>
+  1548→                            <p className="font-mono text-xs text-violet-400">{sig.value}</p>
+  1549→                            {sig.evidence && (
+  1550→                              <p className="text-xs italic text-muted-foreground mt-1">{sig.evidence}</p>
+  1551→                            )}
+  1552→                            {sig.source && (
+  1553→                              <p className="text-xs text-muted-foreground mt-0.5">
+  1554→                                <span className="font-semibold">SRC:</span> {sig.source}
+  1555→                              </p>
+  1556→                            )}
+  1557→                          </div>
+  1558→                        ))}
+  1559→                      </CardContent>
+  1560→                    </Card>
+  1561→                  )}
+  1562→
+  1563→                  {/* New Data */}
+  1564→                  {todayScreenData.newData && (
+  1565→                    <Card className="rounded-xl">
+  1566→                      <CardHeader className="pb-2">
+  1567→                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1568→                          <Database className="size-4 text-sky-400" />
+  1569→                          New Data
+  1570→                        </CardTitle>
+  1571→                      </CardHeader>
+  1572→                      <CardContent className="space-y-2">
+  1573→                        <p className="font-semibold text-sm">{todayScreenData.newData.label}</p>
+  1574→                        <p className="font-mono text-2xl font-bold text-emerald-400">{todayScreenData.newData.value}</p>
+  1575→                        {todayScreenData.newData.source && (
+  1576→                          <p className="text-xs text-muted-foreground">
+  1577→                            <span className="font-semibold">SRC:</span> {todayScreenData.newData.source}
+  1578→                          </p>
+  1579→                        )}
+  1580→                      </CardContent>
+  1581→                    </Card>
+  1582→                  )}
+  1583→
+  1584→                  {/* Try Next */}
+  1585→                  {todayScreenData.tryNext && (
+  1586→                    <Card className="rounded-xl">
+  1587→                      <CardHeader className="pb-2">
+  1588→                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1589→                          <Lightbulb className="size-4 text-amber-400" />
+  1590→                          Try Next
+  1591→                        </CardTitle>
+  1592→                      </CardHeader>
+  1593→                      <CardContent className="space-y-2">
+  1594→                        <p className="font-semibold text-sm">{todayScreenData.tryNext.label}</p>
+  1595→                        <p className="text-sm text-muted-foreground">{todayScreenData.tryNext.description}</p>
+  1596→                        <div className="flex items-center gap-2 mt-1">
+  1597→                          <Badge variant="outline" className="text-xs">{todayScreenData.tryNext.hookPattern}</Badge>
+  1598→                          <Badge variant="secondary" className="text-xs">{todayScreenData.tryNext.confidence} confidence</Badge>
+  1599→                        </div>
+  1600→                        {todayScreenData.tryNext.evidence && (
+  1601→                          <p className="text-xs italic text-muted-foreground">{todayScreenData.tryNext.evidence}</p>
+  1602→                        )}
+  1603→                      </CardContent>
+  1604→                    </Card>
+  1605→                  )}
+  1606→                </div>
+  1607→
+  1608→                {/* Pending Approvals */}
+  1609→                {todayScreenData.pendingApprovals && todayScreenData.pendingApprovals.length > 0 && (
+  1610→                  <Card className="rounded-xl">
+  1611→                    <CardHeader className="pb-3">
+  1612→                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1613→                        <CheckCircle2 className="size-4 text-emerald-400" />
+  1614→                        Pending Approvals
+  1615→                        <Badge variant="secondary" className="ml-1">{todayScreenData.pendingApprovals.length}</Badge>
+  1616→                      </CardTitle>
+  1617→                    </CardHeader>
+  1618→                    <CardContent>
+  1619→                      <div className="max-h-64 overflow-y-auto space-y-3">
+  1620→                        {todayScreenData.pendingApprovals.map((draft: any, i: number) => (
+  1621→                          <div key={draft.draftId || i} className="p-3 rounded-lg border bg-muted/30 space-y-2">
+  1622→                            <div className="flex items-start justify-between gap-2">
+  1623→                              <div className="flex-1 min-w-0">
+  1624→                                <p className="font-semibold text-sm truncate">{draft.title}</p>
+  1625→                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+  1626→                                  {draft.hookType && <Badge variant="outline" className="text-xs">{draft.hookType}</Badge>}
+  1627→                                  {draft.source && <span className="text-xs text-muted-foreground">{draft.source}</span>}
+  1628→                                </div>
+  1629→                              </div>
+  1630→                              <div className="text-right shrink-0">
+  1631→                                <p className="font-mono text-sm font-bold">{draft.avgScore ?? '—'}</p>
+  1632→                                <p className="text-xs text-muted-foreground">avg score</p>
+  1633→                              </div>
+  1634→                            </div>
+  1635→                            <div className="flex items-center gap-2 flex-wrap">
+  1636→                              <Button size="sm" variant="default" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700">
+  1637→                                <Check className="size-3" /> Approve
+  1638→                              </Button>
+  1639→                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+  1640→                                <Pencil className="size-3" /> Modify
+  1641→                              </Button>
+  1642→                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
+  1643→                                <X className="size-3" /> Reject
+  1644→                              </Button>
+  1645→                            </div>
+  1646→                            {draft.evidenceCount !== undefined && (
+  1647→                              <p className="text-xs text-muted-foreground">{draft.evidenceCount} evidence items</p>
+  1648→                            )}
+  1649→                          </div>
+  1650→                        ))}
+  1651→                      </div>
+  1652→                    </CardContent>
+  1653→                  </Card>
+  1654→                )}
+  1655→              </>
+  1656→            )}
+  1657→
+  1658→            {!todayScreenLoading && !todayScreenData && (
+  1659→              <div className="text-center py-12 text-muted-foreground">
+  1660→                <Sun className="size-12 mx-auto mb-3 opacity-30" />
+  1661→                <p className="text-sm">Click &quot;Load Today&quot; to fetch your daily briefing</p>
+  1662→              </div>
+  1663→            )}
+  1664→          </TabsContent>
+  1665→
+  1666→          {/* ===== MEMORY SCREEN TAB (Day 12) ===== */}
+  1667→          <TabsContent value="memoryscreen" className="space-y-6">
+  1668→            {/* Load Button */}
+  1669→            <div className="flex items-center gap-3">
+  1670→              <Button
+  1671→                onClick={async () => {
+  1672→                  setMemoryScreenLoading(true);
+  1673→                  try {
+  1674→                    const res = await fetch('/api/dashboard/memory');
+  1675→                    const json = await res.json();
+  1676→                    if (json.success) setMemoryScreenData(json.data);
+  1677→                  } catch { /* silently fail */ }
+  1678→                  setMemoryScreenLoading(false);
+  1679→                }}
+  1680→                disabled={memoryScreenLoading}
+  1681→                className="gap-2"
+  1682→              >
+  1683→                <Brain className="size-4" />
+  1684→                {memoryScreenLoading ? 'Loading…' : 'Load Memory'}
+  1685→              </Button>
+  1686→              {memoryScreenData && (
+  1687→                <Badge variant="secondary" className="text-xs">Live</Badge>
+  1688→              )}
+  1689→            </div>
+  1690→
+  1691→            {memoryScreenLoading && (
+  1692→              <div className="flex items-center justify-center py-12 text-muted-foreground">
+  1693→                <div className="animate-pulse flex items-center gap-2">
+  1694→                  <Brain className="size-5 animate-bounce" />
+  1695→                  Loading memory…
+  1696→                </div>
+  1697→              </div>
+  1698→            )}
+  1699→
+  1700→            {memoryScreenData && (
+  1701→              <>
+  1702→                {/* Header: What Muse Knows About You */}
+  1703→                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+  1704→                  <CardContent className="p-6">
+  1705→                    <div className="flex items-center gap-3">
+  1706→                      <Brain className="size-8 text-violet-400" />
+  1707→                      <div>
+  1708→                        <h2 className="text-2xl font-bold tracking-tight">
+  1709→                          What Muse Knows About {memoryScreenData.creatorName || 'You'}
+  1710→                        </h2>
+  1711→                        <p className="text-sm text-muted-foreground mt-1">
+  1712→                          {memoryScreenData.memoryEvents ?? 0} memory events recorded
+  1713→                        </p>
+  1714→                      </div>
+  1715→                    </div>
+  1716→                  </CardContent>
+  1717→                </Card>
+  1718→
+  1719→                {/* Identity Domain */}
+  1720→                {memoryScreenData.identity && (
+  1721→                  <Card className="rounded-xl">
+  1722→                    <CardHeader className="pb-3">
+  1723→                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1724→                        <Fingerprint className="size-4 text-violet-400" />
+  1725→                        Identity
+  1726→                      </CardTitle>
+  1727→                      {memoryScreenData.identity.source && (
+  1728→                        <CardDescription className="text-xs text-muted-foreground">
+  1729→                          SRC: {memoryScreenData.identity.source}
+  1730→                        </CardDescription>
+  1731→                      )}
+  1732→                    </CardHeader>
+  1733→                    <CardContent className="space-y-3">
+  1734→                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  1735→                        <div className="p-3 rounded-lg bg-muted/50">
+  1736→                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Niche</p>
+  1737→                          <p className="text-sm font-semibold">{memoryScreenData.identity.niche}</p>
+  1738→                        </div>
+  1739→                        <div className="p-3 rounded-lg bg-muted/50">
+  1740→                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Audience</p>
+  1741→                          <p className="text-sm font-semibold">{memoryScreenData.identity.audience}</p>
+  1742→                        </div>
+  1743→                      </div>
+  1744→                      <div>
+  1745→                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Tone</p>
+  1746→                        <div className="flex flex-wrap gap-1.5">
+  1747→                          {memoryScreenData.identity.tone?.map((t: string) => (
+  1748→                            <Badge key={t} variant="outline" className="text-xs border-violet-500/30 text-violet-300">{t}</Badge>
+  1749→                          ))}
+  1750→                        </div>
+  1751→                      </div>
+  1752→                      <div>
+  1753→                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Avoid</p>
+  1754→                        <div className="flex flex-wrap gap-1.5">
+  1755→                          {memoryScreenData.identity.avoid?.map((a: string) => (
+  1756→                            <Badge key={a} variant="outline" className="text-xs border-destructive/30 text-destructive">{a}</Badge>
+  1757→                          ))}
+  1758→                        </div>
+  1759→                      </div>
+  1760→                    </CardContent>
+  1761→                  </Card>
+  1762→                )}
+  1763→
+  1764→                {/* Voice Radar */}
+  1765→                {memoryScreenData.voiceRadar && (
+  1766→                  <Card className="rounded-xl">
+  1767→                    <CardHeader className="pb-3">
+  1768→                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1769→                        <Radio className="size-4 text-sky-400" />
+  1770→                        Voice Radar
+  1771→                      </CardTitle>
+  1772→                      {memoryScreenData.voiceRadar.source && (
+  1773→                        <CardDescription className="text-xs text-muted-foreground">
+  1774→                          SRC: {memoryScreenData.voiceRadar.source}
+  1775→                        </CardDescription>
+  1776→                      )}
+  1777→                    </CardHeader>
+  1778→                    <CardContent className="space-y-3">
+  1779→                      {[
+  1780→                        { key: 'directness', label: 'Directness', color: 'bg-violet-500' },
+  1781→                        { key: 'technicalDepth', label: 'Technical Depth', color: 'bg-sky-500' },
+  1782→                        { key: 'storytelling', label: 'Storytelling', color: 'bg-amber-500' },
+  1783→                        { key: 'humor', label: 'Humor', color: 'bg-emerald-500' },
+  1784→                        { key: 'hype', label: 'Hype', color: 'bg-rose-500' },
+  1785→                        { key: 'sentenceLength', label: 'Sentence Length', color: 'bg-indigo-500' },
+  1786→                        { key: 'ctaIntensity', label: 'CTA Intensity', color: 'bg-orange-500' },
+  1787→                      ].map(({ key, label, color }) => {
+  1788→                        const val = memoryScreenData.voiceRadar[key] ?? 0;
+  1789→                        return (
+  1790→                          <div key={key} className="space-y-1">
+  1791→                            <div className="flex items-center justify-between">
+  1792→                              <span className="text-xs font-medium">{label}</span>
+  1793→                              <span className="font-mono text-xs text-muted-foreground">{val}%</span>
+  1794→                            </div>
+  1795→                            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+  1796→                              <div
+  1797→                                className={`h-full rounded-full ${color} transition-all duration-500`}
+  1798→                                style={{ width: `${Math.min(100, Math.max(0, val))}%` }}
+  1799→                              />
+  1800→                            </div>
+  1801→                          </div>
+  1802→                        );
+  1803→                      })}
+  1804→                      {memoryScreenData.voiceRadar.evidence && (
+  1805→                        <p className="text-xs italic text-muted-foreground pt-2">{memoryScreenData.voiceRadar.evidence}</p>
+  1806→                      )}
+  1807→                    </CardContent>
+  1808→                  </Card>
+  1809→                )}
+  1810→
+  1811→                {/* Winning Hooks */}
+  1812→                {memoryScreenData.winningHooks && memoryScreenData.winningHooks.length > 0 && (
+  1813→                  <Card className="rounded-xl">
+  1814→                    <CardHeader className="pb-3">
+  1815→                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1816→                        <Trophy className="size-4 text-amber-400" />
+  1817→                        Winning Hooks
+  1818→                      </CardTitle>
+  1819→                    </CardHeader>
+  1820→                    <CardContent>
+  1821→                      <div className="space-y-2">
+  1822→                        {memoryScreenData.winningHooks.map((hook: any, i: number) => (
+  1823→                          <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+  1824→                            <div className="flex items-center gap-2">
+  1825→                              <Badge variant="outline" className="text-xs">{hook.pattern}</Badge>
+  1826→                              <span className="text-xs text-muted-foreground">
+  1827→                                n={hook.sampleSize ?? 0}
+  1828→                              </span>
+  1829→                            </div>
+  1830→                            <div className="flex items-center gap-2">
+  1831→                              <span className="font-mono text-sm font-bold text-amber-400">{hook.avgRetention}%</span>
+  1832→                              <Badge variant="secondary" className="text-xs">{hook.confidence}</Badge>
+  1833→                            </div>
+  1834→                          </div>
+  1835→                        ))}
+  1836→                      </div>
+  1837→                    </CardContent>
+  1838→                  </Card>
+  1839→                )}
+  1840→
+  1841→                {/* Performance */}
+  1842→                {memoryScreenData.performance && (
+  1843→                  <Card className="rounded-xl">
+  1844→                    <CardHeader className="pb-3">
+  1845→                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1846→                        <TrendingUp className="size-4 text-emerald-400" />
+  1847→                        Performance
+  1848→                      </CardTitle>
+  1849→                      {memoryScreenData.performance.source && (
+  1850→                        <CardDescription className="text-xs text-muted-foreground">
+  1851→                          SRC: {memoryScreenData.performance.source}
+  1852→                        </CardDescription>
+  1853→                      )}
+  1854→                    </CardHeader>
+  1855→                    <CardContent className="space-y-3">
+  1856→                      {memoryScreenData.performance.topSignals?.length > 0 && (
+  1857→                        <div>
+  1858→                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Top Signals</p>
+  1859→                          <ul className="space-y-1">
+  1860→                            {memoryScreenData.performance.topSignals.map((sig: string, i: number) => (
+  1861→                              <li key={i} className="text-sm flex items-start gap-2">
+  1862→                                <Zap className="size-3 text-amber-400 mt-0.5 shrink-0" />
+  1863→                                {sig}
+  1864→                              </li>
+  1865→                            ))}
+  1866→                          </ul>
+  1867→                        </div>
+  1868→                      )}
+  1869→                      {memoryScreenData.performance.recentInsights?.length > 0 && (
+  1870→                        <div>
+  1871→                          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Recent Insights</p>
+  1872→                          <ul className="space-y-1">
+  1873→                            {memoryScreenData.performance.recentInsights.map((ins: string, i: number) => (
+  1874→                              <li key={i} className="text-sm flex items-start gap-2">
+  1875→                                <Lightbulb className="size-3 text-sky-400 mt-0.5 shrink-0" />
+  1876→                                {ins}
+  1877→                              </li>
+  1878→                            ))}
+  1879→                          </ul>
+  1880→                        </div>
+  1881→                      )}
+  1882→                    </CardContent>
+  1883→                  </Card>
+  1884→                )}
+  1885→
+  1886→                {/* Decisions */}
+  1887→                {memoryScreenData.decisions && (
+  1888→                  <Card className="rounded-xl">
+  1889→                    <CardHeader className="pb-3">
+  1890→                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+  1891→                        <Scale className="size-4 text-violet-400" />
+  1892→                        Decisions
+  1893→                        <Badge variant="secondary" className="ml-1">{memoryScreenData.decisions.totalDecisions ?? 0}</Badge>
+  1894→                      </CardTitle>
+  1895→                      {memoryScreenData.decisions.source && (
+  1896→                        <CardDescription className="text-xs text-muted-foreground">
+  1897→                          SRC: {memoryScreenData.decisions.source}
+  1898→                        </CardDescription>
+  1899→                      )}
+  1900→                    </CardHeader>
+  1901→                    <CardContent>
+  1902→                      {memoryScreenData.decisions.recentDecisions?.length > 0 ? (
+  1903→                        <div className="max-h-48 overflow-y-auto space-y-2">
+  1904→                          {memoryScreenData.decisions.recentDecisions.map((dec: any, i: number) => (
+  1905→                            <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-muted/50">
+  1906→                              {dec.type === 'accepted' ? (
+  1907→                                <CheckCircle2 className="size-4 text-emerald-400 mt-0.5 shrink-0" />
+  1908→                              ) : dec.type === 'rejected' ? (
+  1909→                                <X className="size-4 text-destructive mt-0.5 shrink-0" />
+  1910→                              ) : (
+  1911→                                <Pencil className="size-4 text-amber-400 mt-0.5 shrink-0" />
+  1912→                              )}
+  1913→                              <div className="min-w-0">
+  1914→                                <p className="text-sm font-medium">{dec.description}</p>
+  1915→                                <p className="text-xs text-muted-foreground">{dec.date}</p>
+  1916→                              </div>
+  1917→                            </div>
+  1918→                          ))}
+  1919→                        </div>
+  1920→                      ) : (
+  1921→                        <p className="text-sm text-muted-foreground">No recent decisions</p>
+  1922→                      )}
+  1923→                    </CardContent>
+  1924→                  </Card>
+  1925→                )}
+  1926→
+  1927→                {/* Memory Events Summary */}
+  1928→                <Card className="rounded-xl">
+  1929→                  <CardContent className="p-4 flex items-center justify-between">
+  1930→                    <div className="flex items-center gap-2">
+  1931→                      <History className="size-4 text-muted-foreground" />
+  1932→                      <span className="text-sm text-muted-foreground">Total Memory Events</span>
+  1933→                    </div>
+  1934→                    <span className="font-mono text-lg font-bold">{memoryScreenData.memoryEvents ?? 0}</span>
+  1935→                  </CardContent>
+  1936→                </Card>
+  1937→              </>
+  1938→            )}
+  1939→
+  1940→            {!memoryScreenLoading && !memoryScreenData && (
+  1941→              <div className="text-center py-12 text-muted-foreground">
+  1942→                <Brain className="size-12 mx-auto mb-3 opacity-30" />
+  1943→                <p className="text-sm">Click &quot;Load Memory&quot; to explore what Muse knows</p>
+  1944→              </div>
+  1945→            )}
+  1946→          </TabsContent>
+  1947→
+  1948→          {/* ===== LEARNING SCREEN TAB (Day 13) — MOST IMPORTANT ===== */}
+  1949→          <TabsContent value="learningscreen" className="space-y-6">
+  1950→            {/* Load Button */}
+  1951→            <div className="flex items-center gap-3">
+  1952→              <Button
+  1953→                onClick={async () => {
+  1954→                  setLearningScreenLoading(true);
+  1955→                  try {
+  1956→                    const res = await fetch('/api/dashboard/learning');
+  1957→                    const json = await res.json();
+  1958→                    if (json.success) setLearningScreenData(json.data);
+  1959→                  } catch { /* silently fail */ }
+  1960→                  setLearningScreenLoading(false);
+  1961→                }}
+  1962→                disabled={learningScreenLoading}
+  1963→                className="gap-2"
+  1964→              >
+  1965→                <GraduationCap className="size-4" />
+  1966→                {learningScreenLoading ? 'Loading…' : 'Load Learning'}
+  1967→              </Button>
+  1968→              {learningScreenData && (
+  1969→                <Badge variant="secondary" className="text-xs">Live</Badge>
+  1970→              )}
+  1971→            </div>
+  1972→
+  1973→            {learningScreenLoading && (
+  1974→              <div className="flex items-center justify-center py-12 text-muted-foreground">
+  1975→                <div className="animate-pulse flex items-center gap-2">
+  1976→                  <GraduationCap className="size-5 animate-bounce" />
+  1977→                  Loading learning data…
+  1978→                </div>
+  1979→              </div>
+  1980→            )}
+  1981→
+  1982→            {learningScreenData && (
+  1983→              <>
+  1984→                {/* How Muse Is Learning Header */}
+  1985→                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent">
+  1986→                  <CardContent className="p-6">
+  1987→                    <div className="flex items-center gap-3">
+  1988→                      <GraduationCap className="size-8 text-violet-400" />
+  1989→                      <div>
+  1990→                        <h2 className="text-2xl font-bold tracking-tight">How Muse Is Learning</h2>
+  1991→                        <p className="text-sm text-muted-foreground mt-1">
+  1992→                          {learningScreenData.creatorName
+  1993→                            ? `${learningScreenData.creatorName}, every piece of content teaches something new.`
+  1994→                            : 'Every piece of content teaches something new.'}
+  1995→                        </p>
+  1996→                      </div>
+  1997→                    </div>
+  1998→                  </CardContent>
+  1999→                </Card>
+  2000→
+
+[showing lines 1-2000 of 7827; use offset=2001 with limit to continue reading]

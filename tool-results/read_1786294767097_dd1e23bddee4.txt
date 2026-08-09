@@ -1,0 +1,968 @@
+     1→// ============================================================================
+     2→// Overnight Scheduler Service — Day 14
+     3→// DB-backed overnight pipeline: REAL scheduling with full overnight loop
+     4→//
+     5→// REPLACES the in-memory autonomy-scheduler with REAL database operations.
+     6→// Core of Phase 6: AUTONOMY.
+     7→//
+     8→// Overnight Blueprint:
+     9→//   22:00  Creator goes offline (detected via inactivity)
+    10→//   23:00  Muse wakes up (Alarm Clock Skill)
+    11→//          → Reviews recent performance signals
+    12→//          → Checks community sentiment
+    13→//   23:30  Muse delegates to Maker (via Circle)
+    14→//          → Structured instruction with creator voice, winning hooks, topic
+    15→//   00:00  Maker produces draft
+    16→//   00:15  Muse evaluates Maker's output
+    17→//          → Voice match score + Hook compatibility score
+    18→//   00:30  Muse stores candidate draft (NOT published)
+    19→//   06:00  Muse prepares morning brief
+    20→//          → Summary of overnight work
+    21→//          → Drafts ready for review
+    22→//          → New insights from learning engine
+    23→//
+    24→// Approval Gate: NON-NEGOTIABLE — NOTHING publishes without human approval.
+    25→// Every step creates an AuditEvent record in the DB.
+    26→// ============================================================================
+    27→
+    28→import { db } from '@/lib/db';
+    29→import {
+    30→  runDelegationBeat,
+    31→  runDelegationBeatDefault,
+    32→  type DelegationBeatResult,
+    33→} from '@/lib/delegation-beat-service';
+    34→import {
+    35→  runLearningEngineOnCreatorData,
+    36→  type LearningRunResult,
+    37→} from '@/lib/learning-engine-service';
+    38→
+    39→// ---------------------------------------------------------------------------
+    40→// Types
+    41→// ---------------------------------------------------------------------------
+    42→
+    43→export interface OvernightStep {
+    44→  step: number;
+    45→  name: string;
+    46→  status: 'complete' | 'failed';
+    47→  duration: number;  // ms
+    48→  auditEventId: string;
+    49→  data: Record<string, unknown>;
+    50→}
+    51→
+    52→export interface MorningBriefResult {
+    53→  id: string;
+    54→  date: string;
+    55→  summary: string;
+    56→  draftTitle: string | null;
+    57→  draftScore: number | null;  // 0-100
+    58→  recommendationsCount: number;
+    59→  newInsights: string[];
+    60→  generatedAt: string;
+    61→}
+    62→
+    63→export interface OvernightCycleResult {
+    64→  runId: string;           // AutonomousRun.id
+    65→  creatorId: string;
+    66→  success: boolean;
+    67→  steps: OvernightStep[];
+    68→  delegationBeat: DelegationBeatResult | null;
+    69→  approvalId: string | null;
+    70→  morningBrief: MorningBriefResult;
+    71→  startedAt: string;
+    72→  completedAt: string;
+    73→  totalDuration: number;   // ms
+    74→}
+    75→
+    76→export interface OvernightScheduleInfo {
+    77→  schedule: { wakeTime: string; draftTime: string; briefTime: string };
+    78→  lastRun: {
+    79→    id: string;
+    80→    status: string;
+    81→    startedAt: string;
+    82→    completedAt: string | null;
+    83→    taskType: string;
+    84→    trigger: string;
+    85→  } | null;
+    86→  lastRunTime: string | null;
+    87→  totalRuns: number;
+    88→  pendingApprovals: number;
+    89→  isRunning: boolean;
+    90→  recentRuns: {
+    91→    id: string;
+    92→    status: string;
+    93→    startedAt: string;
+    94→    completedAt: string | null;
+    95→    taskType: string;
+    96→  }[];
+    97→}
+    98→
+    99→export interface ApprovalResult {
+   100→  success: boolean;
+   101→  approvalId: string;
+   102→  itemType: string;
+   103→  itemId: string | null;
+   104→  action: string;
+   105→  status: string;
+   106→  auditEventId: string;
+   107→}
+   108→
+   109→export interface ApprovalQueueItem {
+   110→  id: string;
+   111→  itemType: string;
+   112→  itemId: string | null;
+   113→  action: string;
+   114→  status: string;
+   115→  createdAt: string;
+   116→  title?: string;  // resolved from Draft if itemType='draft'
+   117→}
+   118→
+   119→// ---------------------------------------------------------------------------
+   120→// Default Schedule
+   121→// ---------------------------------------------------------------------------
+   122→
+   123→export const OVERNIGHT_SCHEDULE = {
+   124→  wakeTime: '23:00',
+   125→  draftTime: '00:00',
+   126→  briefTime: '06:00',
+   127→} as const;
+   128→
+   129→// ---------------------------------------------------------------------------
+   130→// Helper: Get default creator ID
+   131→// ---------------------------------------------------------------------------
+   132→
+   133→export async function getDefaultCreatorId(): Promise<string> {
+   134→  const creator = await db.creator.findFirst({
+   135→    where: { email: 'sodiqjimoh80@gmail.com' },
+   136→  });
+   137→  if (!creator) throw new Error('Default creator not found. Run seed first.');
+   138→  return creator.id;
+   139→}
+   140→
+   141→// ---------------------------------------------------------------------------
+   142→// Helper: Create audit event
+   143→// ---------------------------------------------------------------------------
+   144→
+   145→async function createAuditEvent(
+   146→  creatorId: string,
+   147→  actor: string,
+   148→  action: string,
+   149→  targetType: string,
+   150→  targetId: string | null,
+   151→  delta: Record<string, unknown> | null
+   152→): Promise<string> {
+   153→  const event = await db.auditEvent.create({
+   154→    data: {
+   155→      creatorId,
+   156→      actor,
+   157→      action,
+   158→      targetType,
+   159→      targetId,
+   160→      delta: delta ? JSON.stringify(delta) : null,
+   161→    },
+   162→  });
+   163→  return event.id;
+   164→}
+   165→
+   166→// ---------------------------------------------------------------------------
+   167→// Main: Run Full Overnight Cycle
+   168→// ---------------------------------------------------------------------------
+   169→
+   170→export async function runOvernightCycle(
+   171→  creatorId: string
+   172→): Promise<OvernightCycleResult> {
+   173→  const startedAt = new Date();
+   174→  const cycleStart = Date.now();
+   175→
+   176→  // ── Create AutonomousRun record ──────────────────────────────────────────
+   177→  const autonomousRun = await db.autonomousRun.create({
+   178→    data: {
+   179→      trigger: 'scheduled',
+   180→      taskType: 'overnight_cycle',
+   181→      status: 'running',
+   182→      startedAt,
+   183→    },
+   184→  });
+   185→
+   186→  const steps: OvernightStep[] = [];
+   187→  let delegationBeat: DelegationBeatResult | null = null;
+   188→  let approvalId: string | null = null;
+   189→  let learningResult: LearningRunResult | null = null;
+   190→  let cycleSuccess = true;
+   191→
+   192→  // ── Step 1: Wake ─────────────────────────────────────────────────────────
+   193→  try {
+   194→    const stepStart = Date.now();
+   195→    const auditEventId = await createAuditEvent(
+   196→      creatorId,
+   197→      'muse',
+   198→      'overnight_wake',
+   199→      'autonomous_run',
+   200→      autonomousRun.id,
+   201→      { message: 'Muse woke up for overnight cycle (Passive Autonomous Soul)', trigger: 'scheduled' }
+   202→    );
+   203→    const duration = Date.now() - stepStart;
+   204→    steps.push({
+   205→      step: 1,
+   206→      name: 'Wake',
+   207→      status: 'complete',
+   208→      duration,
+   209→      auditEventId,
+   210→      data: { message: 'Muse woke up for overnight cycle' },
+   211→    });
+   212→  } catch (error) {
+   213→    cycleSuccess = false;
+   214→    const stepStart = Date.now();
+   215→    const auditEventId = await createAuditEvent(
+   216→      creatorId,
+   217→      'muse',
+   218→      'overnight_wake_failed',
+   219→      'autonomous_run',
+   220→      autonomousRun.id,
+   221→      { error: String(error) }
+   222→    );
+   223→    steps.push({
+   224→      step: 1,
+   225→      name: 'Wake',
+   226→      status: 'failed',
+   227→      duration: Date.now() - stepStart,
+   228→      auditEventId,
+   229→      data: { error: String(error) },
+   230→    });
+   231→  }
+   232→
+   233→  // ── Step 2: Review Signals (Run Learning Engine) ─────────────────────────
+   234→  try {
+   235→    const stepStart = Date.now();
+   236→    learningResult = await runLearningEngineOnCreatorData(creatorId);
+   237→
+   238→    const recommendationsCount = learningResult.loopResult.recommendations.length;
+   239→    const insights = learningResult.loopResult.inferences.slice(0, 5);
+   240→    const confidence = learningResult.loopResult.confidence;
+   241→
+   242→    const auditEventId = await createAuditEvent(
+   243→      creatorId,
+   244→      'muse',
+   245→      'overnight_review_signals',
+   246→      'learning_loop',
+   247→      learningResult.auditEventId,
+   248→      {
+   249→        observations: learningResult.loopResult.observations.length,
+   250→        comparisons: learningResult.loopResult.comparisons.length,
+   251→        inferences: learningResult.loopResult.inferences.length,
+   252→        recommendations: recommendationsCount,
+   253→        confidence,
+   254→        totalDataPoints: learningResult.loopResult.totalDataPoints,
+   255→        isHonest: learningResult.honestyReport.isHonest,
+   256→        insights,
+   257→      }
+   258→    );
+   259→
+   260→    const duration = Date.now() - stepStart;
+   261→    steps.push({
+   262→      step: 2,
+   263→      name: 'Review Signals',
+   264→      status: 'complete',
+   265→      duration,
+   266→      auditEventId,
+   267→      data: {
+   268→        observations: learningResult.loopResult.observations.length,
+   269→        recommendations: recommendationsCount,
+   270→        confidence,
+   271→        dataPoints: learningResult.loopResult.totalDataPoints,
+   272→        isHonest: learningResult.honestyReport.isHonest,
+   273→        insights,
+   274→      },
+   275→    });
+   276→  } catch (error) {
+   277→    // Learning engine failure is non-fatal — continue with the cycle
+   278→    const stepStart = Date.now();
+   279→    const auditEventId = await createAuditEvent(
+   280→      creatorId,
+   281→      'muse',
+   282→      'overnight_review_signals_failed',
+   283→      'learning_loop',
+   284→      null,
+   285→      { error: String(error), note: 'Non-fatal: continuing cycle without learning data' }
+   286→    );
+   287→    steps.push({
+   288→      step: 2,
+   289→      name: 'Review Signals',
+   290→      status: 'failed',
+   291→      duration: Date.now() - stepStart,
+   292→      auditEventId,
+   293→      data: { error: String(error), note: 'Non-fatal, continuing' },
+   294→    });
+   295→  }
+   296→
+   297→  // ── Step 3: Delegate (Full Delegation Beat: Muse→Maker→Evaluate→Store) ──
+   298→  try {
+   299→    const stepStart = Date.now();
+   300→    delegationBeat = await runDelegationBeat(creatorId);
+   301→
+   302→    const auditEventId = await createAuditEvent(
+   303→      creatorId,
+   304→      'muse',
+   305→      'overnight_delegate',
+   306→      'delegation_beat',
+   307→      delegationBeat.beatId,
+   308→      {
+   309→        beatId: delegationBeat.beatId,
+   310→        mode: delegationBeat.mode,
+   311→        success: delegationBeat.success,
+   312→        evaluationPassed: delegationBeat.evaluationPassed,
+   313→        draftStored: delegationBeat.draftStored,
+   314→        totalDuration: delegationBeat.totalDuration,
+   315→        scores: delegationBeat.evaluation
+   316→          ? {
+   317→              voiceMatch: delegationBeat.evaluation.voiceMatch.overall,
+   318→              hookCompat: delegationBeat.evaluation.hookCompat.overall,
+   319→              overallScore: delegationBeat.evaluation.overallScore,
+   320→              passed: delegationBeat.evaluation.passed,
+   321→            }
+   322→          : null,
+   323→      }
+   324→    );
+   325→
+   326→    const duration = Date.now() - stepStart;
+   327→    steps.push({
+   328→      step: 3,
+   329→      name: 'Delegate to Maker',
+   330→      status: delegationBeat.success ? 'complete' : 'failed',
+   331→      duration,
+   332→      auditEventId,
+   333→      data: {
+   334→        beatId: delegationBeat.beatId,
+   335→        mode: delegationBeat.mode,
+   336→        evaluationPassed: delegationBeat.evaluationPassed,
+   337→        draftStored: delegationBeat.draftStored,
+   338→        draftId: delegationBeat.draft?.draftId ?? null,
+   339→        overallScore: delegationBeat.evaluation?.overallScore ?? 0,
+   340→      },
+   341→    });
+   342→  } catch (error) {
+   343→    cycleSuccess = false;
+   344→    const stepStart = Date.now();
+   345→    const auditEventId = await createAuditEvent(
+   346→      creatorId,
+   347→      'muse',
+   348→      'overnight_delegate_failed',
+   349→      'delegation_beat',
+   350→      null,
+   351→      { error: String(error) }
+   352→    );
+   353→    steps.push({
+   354→      step: 3,
+   355→      name: 'Delegate to Maker',
+   356→      status: 'failed',
+   357→      duration: Date.now() - stepStart,
+   358→      auditEventId,
+   359→      data: { error: String(error) },
+   360→    });
+   361→  }
+   362→
+   363→  // ── Step 4: Request Approval (CRITICAL: NEVER auto-publish) ─────────────
+   364→  try {
+   365→    const stepStart = Date.now();
+   366→
+   367→    // Only create approval if delegation produced a draft
+   368→    const draftId = delegationBeat?.draft?.draftId ?? null;
+   369→    const draftTitle = delegationBeat?.makerOutput?.title ?? 'Overnight Draft';
+   370→
+   371→    const approval = await db.approval.create({
+   372→      data: {
+   373→        creatorId,
+   374→        itemType: 'draft',
+   375→        itemId: draftId,
+   376→        action: 'publish',
+   377→        status: 'pending',
+   378→      },
+   379→    });
+   380→    approvalId = approval.id;
+   381→
+   382→    const auditEventId = await createAuditEvent(
+   383→      creatorId,
+   384→      'muse',
+   385→      'request_approval',
+   386→      'approval',
+   387→      approval.id,
+   388→      {
+   389→        approvalId: approval.id,
+   390→        itemType: 'draft',
+   391→        itemId: draftId,
+   392→        action: 'publish',
+   393→        draftTitle,
+   394→        note: 'NEVER auto-publish — awaiting human approval',
+   395→      }
+   396→    );
+   397→
+   398→    const duration = Date.now() - stepStart;
+   399→    steps.push({
+   400→      step: 4,
+   401→      name: 'Request Approval',
+   402→      status: 'complete',
+   403→      duration,
+   404→      auditEventId,
+   405→      data: {
+   406→        approvalId: approval.id,
+   407→        itemType: 'draft',
+   408→        itemId: draftId,
+   409→        draftTitle,
+   410→      },
+   411→    });
+   412→  } catch (error) {
+   413→    const stepStart = Date.now();
+   414→    const auditEventId = await createAuditEvent(
+   415→      creatorId,
+   416→      'muse',
+   417→      'request_approval_failed',
+   418→      'approval',
+   419→      null,
+   420→      { error: String(error) }
+   421→    );
+   422→    steps.push({
+   423→      step: 4,
+   424→      name: 'Request Approval',
+   425→      status: 'failed',
+   426→      duration: Date.now() - stepStart,
+   427→      auditEventId,
+   428→      data: { error: String(error) },
+   429→    });
+   430→  }
+   431→
+   432→  // ── Step 5: Generate Morning Brief ───────────────────────────────────────
+   433→  try {
+   434→    const stepStart = Date.now();
+   435→
+   436→    // Load latest recommendations from DB
+   437→    const recommendations = await db.recommendation.findMany({
+   438→      where: { creatorId, status: 'pending' },
+   439→      orderBy: { priority: 'desc' },
+   440→      take: 5,
+   441→    });
+   442→
+   443→    // Build morning brief
+   444→    const draftTitle = delegationBeat?.makerOutput?.title ?? null;
+   445→    const draftScore = delegationBeat?.evaluation?.overallScore != null
+   446→      ? Math.round(delegationBeat.evaluation.overallScore * 100)
+   447→      : null;
+   448→
+   449→    const newInsights: string[] = [];
+   450→
+   451→    // Add learning engine insights
+   452→    if (learningResult?.loopResult?.inferences) {
+   453→      newInsights.push(...learningResult.loopResult.inferences.slice(0, 3));
+   454→    }
+   455→
+   456→    // Add delegation result insights
+   457→    if (delegationBeat?.success) {
+   458→      newInsights.push(
+   459→        `Delegation beat completed in ${delegationBeat.totalDuration}ms (${delegationBeat.mode} mode)`
+   460→      );
+   461→      if (delegationBeat.evaluationPassed) {
+   462→        newInsights.push('Draft passed evaluation — ready for your review');
+   463→      } else {
+   464→        newInsights.push('Draft did not pass evaluation — may need revision');
+   465→      }
+   466→    }
+   467→
+   468→    // Add recommendation insights
+   469→    for (const rec of recommendations.slice(0, 2)) {
+   470→      newInsights.push(`Recommendation: ${rec.title}`);
+   471→    }
+   472→
+   473→    const summary = buildBriefSummary(
+   474→      draftTitle,
+   475→      draftScore,
+   476→      recommendations.length,
+   477→      newInsights,
+   478→      delegationBeat?.success ?? false
+   479→    );
+   480→
+   481→    const morningBrief: MorningBriefResult = {
+   482→      id: `brief_${autonomousRun.id}`,
+   483→      date: startedAt.toISOString().split('T')[0],
+   484→      summary,
+   485→      draftTitle,
+   486→      draftScore,
+   487→      recommendationsCount: recommendations.length,
+   488→      newInsights,
+   489→      generatedAt: new Date().toISOString(),
+   490→    };
+   491→
+   492→    const auditEventId = await createAuditEvent(
+   493→      creatorId,
+   494→      'muse',
+   495→      'generate_brief',
+   496→      'morning_brief',
+   497→      morningBrief.id,
+   498→      {
+   499→        briefId: morningBrief.id,
+   500→        draftTitle,
+   501→        draftScore,
+   502→        recommendationsCount: recommendations.length,
+   503→        newInsightsCount: newInsights.length,
+   504→      }
+   505→    );
+   506→
+   507→    const duration = Date.now() - stepStart;
+   508→    steps.push({
+   509→      step: 5,
+   510→      name: 'Generate Morning Brief',
+   511→      status: 'complete',
+   512→      duration,
+   513→      auditEventId,
+   514→      data: {
+   515→        briefId: morningBrief.id,
+   516→        draftTitle,
+   517→        draftScore,
+   518→        recommendationsCount: recommendations.length,
+   519→        newInsightsCount: newInsights.length,
+   520→      },
+   521→    });
+   522→
+   523→    // ── Update AutonomousRun with results ──────────────────────────────────
+   524→    const completedAt = new Date();
+   525→    const totalDuration = Date.now() - cycleStart;
+   526→
+   527→    await db.autonomousRun.update({
+   528→      where: { id: autonomousRun.id },
+   529→      data: {
+   530→        status: cycleSuccess ? 'completed' : 'failed',
+   531→        completedAt,
+   532→        result: JSON.stringify({
+   533→          success: cycleSuccess,
+   534→          steps: steps.map((s) => ({
+   535→            step: s.step,
+   536→            name: s.name,
+   537→            status: s.status,
+   538→            duration: s.duration,
+   539→          })),
+   540→          delegationBeatId: delegationBeat?.beatId ?? null,
+   541→          approvalId,
+   542→          morningBrief,
+   543→          totalDuration,
+   544→        }),
+   545→      },
+   546→    });
+   547→
+   548→    return {
+   549→      runId: autonomousRun.id,
+   550→      creatorId,
+   551→      success: cycleSuccess,
+   552→      steps,
+   553→      delegationBeat,
+   554→      approvalId,
+   555→      morningBrief,
+   556→      startedAt: startedAt.toISOString(),
+   557→      completedAt: completedAt.toISOString(),
+   558→      totalDuration,
+   559→    };
+   560→  } catch (error) {
+   561→    // Brief generation failure — still complete the run
+   562→    const stepStart = Date.now();
+   563→    const auditEventId = await createAuditEvent(
+   564→      creatorId,
+   565→      'muse',
+   566→      'generate_brief_failed',
+   567→      'morning_brief',
+   568→      null,
+   569→      { error: String(error) }
+   570→    );
+   571→    steps.push({
+   572→      step: 5,
+   573→      name: 'Generate Morning Brief',
+   574→      status: 'failed',
+   575→      duration: Date.now() - stepStart,
+   576→      auditEventId,
+   577→      data: { error: String(error) },
+   578→    });
+   579→
+   580→    // Still complete the autonomous run
+   581→    const completedAt = new Date();
+   582→    const totalDuration = Date.now() - cycleStart;
+   583→
+   584→    const fallbackBrief: MorningBriefResult = {
+   585→      id: `brief_${autonomousRun.id}`,
+   586→      date: startedAt.toISOString().split('T')[0],
+   587→      summary: 'Overnight cycle completed but brief generation failed.',
+   588→      draftTitle: null,
+   589→      draftScore: null,
+   590→      recommendationsCount: 0,
+   591→      newInsights: [],
+   592→      generatedAt: new Date().toISOString(),
+   593→    };
+   594→
+   595→    await db.autonomousRun.update({
+   596→      where: { id: autonomousRun.id },
+   597→      data: {
+   598→        status: 'failed',
+   599→        completedAt,
+   600→        result: JSON.stringify({
+   601→          success: false,
+   602→          steps: steps.map((s) => ({
+   603→            step: s.step,
+   604→            name: s.name,
+   605→            status: s.status,
+   606→            duration: s.duration,
+   607→          })),
+   608→          error: String(error),
+   609→          totalDuration,
+   610→        }),
+   611→      },
+   612→    });
+   613→
+   614→    return {
+   615→      runId: autonomousRun.id,
+   616→      creatorId,
+   617→      success: false,
+   618→      steps,
+   619→      delegationBeat,
+   620→      approvalId,
+   621→      morningBrief: fallbackBrief,
+   622→      startedAt: startedAt.toISOString(),
+   623→      completedAt: completedAt.toISOString(),
+   624→      totalDuration,
+   625→    };
+   626→  }
+   627→}
+   628→
+   629→// ---------------------------------------------------------------------------
+   630→// Helper: Build brief summary text
+   631→// ---------------------------------------------------------------------------
+   632→
+   633→function buildBriefSummary(
+   634→  draftTitle: string | null,
+   635→  draftScore: number | null,
+   636→  recommendationsCount: number,
+   637→  newInsights: string[],
+   638→  delegationSuccess: boolean
+   639→): string {
+   640→  const parts: string[] = [];
+   641→
+   642→  if (draftTitle) {
+   643→    parts.push(`Draft ready for review: "${draftTitle}"`);
+   644→    if (draftScore != null) {
+   645→      parts.push(`Evaluation score: ${draftScore}/100`);
+   646→    }
+   647→  } else {
+   648→    parts.push('No draft produced overnight');
+   649→  }
+   650→
+   651→  if (recommendationsCount > 0) {
+   652→    parts.push(`${recommendationsCount} pending recommendations`);
+   653→  }
+   654→
+   655→  if (newInsights.length > 0) {
+   656→    parts.push(`${newInsights.length} new insights from learning engine`);
+   657→  }
+   658→
+   659→  if (delegationSuccess) {
+   660→    parts.push('Delegation beat completed successfully');
+   661→  } else {
+   662→    parts.push('Delegation beat encountered issues');
+   663→  }
+   664→
+   665→  return parts.join('. ') + '.';
+   666→}
+   667→
+   668→// ---------------------------------------------------------------------------
+   669→// Get Overnight Schedule Info
+   670→// ---------------------------------------------------------------------------
+   671→
+   672→export async function getOvernightSchedule(
+   673→  creatorId: string
+   674→): Promise<OvernightScheduleInfo> {
+   675→  // Get total runs count
+   676→  const totalRuns = await db.autonomousRun.count({
+   677→    where: { taskType: 'overnight_cycle' },
+   678→  });
+   679→
+   680→  // Check if there's a running overnight cycle
+   681→  const runningRun = await db.autonomousRun.findFirst({
+   682→    where: {
+   683→      taskType: 'overnight_cycle',
+   684→      status: 'running',
+   685→    },
+   686→    orderBy: { startedAt: 'desc' },
+   687→  });
+   688→
+   689→  // Get most recent run
+   690→  const lastRun = await db.autonomousRun.findFirst({
+   691→    where: { taskType: 'overnight_cycle' },
+   692→    orderBy: { startedAt: 'desc' },
+   693→  });
+   694→
+   695→  // Get pending approvals count
+   696→  const pendingApprovals = await db.approval.count({
+   697→    where: {
+   698→      creatorId,
+   699→      status: 'pending',
+   700→    },
+   701→  });
+   702→
+   703→  // Get recent runs (last 10)
+   704→  const recentRuns = await db.autonomousRun.findMany({
+   705→    where: { taskType: 'overnight_cycle' },
+   706→    orderBy: { startedAt: 'desc' },
+   707→    take: 10,
+   708→  });
+   709→
+   710→  return {
+   711→    schedule: OVERNIGHT_SCHEDULE,
+   712→    lastRun: lastRun
+   713→      ? {
+   714→          id: lastRun.id,
+   715→          status: lastRun.status,
+   716→          startedAt: lastRun.startedAt.toISOString(),
+   717→          completedAt: lastRun.completedAt?.toISOString() ?? null,
+   718→          taskType: lastRun.taskType,
+   719→          trigger: lastRun.trigger,
+   720→        }
+   721→      : null,
+   722→    lastRunTime: lastRun?.startedAt.toISOString() ?? null,
+   723→    totalRuns,
+   724→    pendingApprovals,
+   725→    isRunning: runningRun !== null,
+   726→    recentRuns: recentRuns.map((r) => ({
+   727→      id: r.id,
+   728→      status: r.status,
+   729→      startedAt: r.startedAt.toISOString(),
+   730→      completedAt: r.completedAt?.toISOString() ?? null,
+   731→      taskType: r.taskType,
+   732→    })),
+   733→  };
+   734→}
+   735→
+   736→// ---------------------------------------------------------------------------
+   737→// Approve Action
+   738→// ---------------------------------------------------------------------------
+   739→
+   740→export async function approveAction(
+   741→  approvalId: string,
+   742→  creatorId: string
+   743→): Promise<ApprovalResult> {
+   744→  // Get the approval
+   745→  const approval = await db.approval.findUnique({
+   746→    where: { id: approvalId },
+   747→  });
+   748→
+   749→  if (!approval) {
+   750→    throw new Error(`Approval not found: ${approvalId}`);
+   751→  }
+   752→
+   753→  if (approval.creatorId !== creatorId) {
+   754→    throw new Error('Approval does not belong to this creator');
+   755→  }
+   756→
+   757→  if (approval.status !== 'pending') {
+   758→    throw new Error(`Approval is already ${approval.status}`);
+   759→  }
+   760→
+   761→  // Update approval status
+   762→  const now = new Date();
+   763→  await db.approval.update({
+   764→    where: { id: approvalId },
+   765→    data: {
+   766→      status: 'approved',
+   767→      reviewedAt: now,
+   768→    },
+   769→  });
+   770→
+   771→  // Create audit event
+   772→  const auditEventId = await createAuditEvent(
+   773→    creatorId,
+   774→    'creator',
+   775→    'approve',
+   776→    'approval',
+   777→    approvalId,
+   778→    {
+   779→      approvalId,
+   780→      itemType: approval.itemType,
+   781→      itemId: approval.itemId,
+   782→      action: approval.action,
+   783→      approvedAt: now.toISOString(),
+   784→    }
+   785→  );
+   786→
+   787→  // If itemType is 'draft', log the approval on the draft
+   788→  if (approval.itemType === 'draft' && approval.itemId) {
+   789→    await createAuditEvent(
+   790→      creatorId,
+   791→      'creator',
+   792→      'approve_publish',
+   793→      'draft',
+   794→      approval.itemId,
+   795→      {
+   796→        draftId: approval.itemId,
+   797→        approvalId,
+   798→        action: 'publish_approved',
+   799→        note: 'Draft approved for publishing',
+   800→      }
+   801→    );
+   802→  }
+   803→
+   804→  return {
+   805→    success: true,
+   806→    approvalId,
+   807→    itemType: approval.itemType,
+   808→    itemId: approval.itemId,
+   809→    action: approval.action,
+   810→    status: 'approved',
+   811→    auditEventId,
+   812→  };
+   813→}
+   814→
+   815→// ---------------------------------------------------------------------------
+   816→// Reject Action
+   817→// ---------------------------------------------------------------------------
+   818→
+   819→export async function rejectAction(
+   820→  approvalId: string,
+   821→  creatorId: string,
+   822→  reason?: string
+   823→): Promise<ApprovalResult> {
+   824→  // Get the approval
+   825→  const approval = await db.approval.findUnique({
+   826→    where: { id: approvalId },
+   827→  });
+   828→
+   829→  if (!approval) {
+   830→    throw new Error(`Approval not found: ${approvalId}`);
+   831→  }
+   832→
+   833→  if (approval.creatorId !== creatorId) {
+   834→    throw new Error('Approval does not belong to this creator');
+   835→  }
+   836→
+   837→  if (approval.status !== 'pending') {
+   838→    throw new Error(`Approval is already ${approval.status}`);
+   839→  }
+   840→
+   841→  // Update approval status
+   842→  const now = new Date();
+   843→  await db.approval.update({
+   844→    where: { id: approvalId },
+   845→    data: {
+   846→      status: 'rejected',
+   847→      reviewedAt: now,
+   848→    },
+   849→  });
+   850→
+   851→  // Create audit event
+   852→  const auditEventId = await createAuditEvent(
+   853→    creatorId,
+   854→    'creator',
+   855→    'reject',
+   856→    'approval',
+   857→    approvalId,
+   858→    {
+   859→      approvalId,
+   860→      itemType: approval.itemType,
+   861→      itemId: approval.itemId,
+   862→      action: approval.action,
+   863→      rejectedAt: now.toISOString(),
+   864→      reason: reason ?? 'No reason provided',
+   865→    }
+   866→  );
+   867→
+   868→  // If itemType is 'draft', create a CreatorDecision
+   869→  if (approval.itemType === 'draft' && approval.itemId) {
+   870→    // Look up the draft to get its contentItemId (foreign key requires valid ContentItem)
+   871→    const draft = await db.draft.findUnique({ where: { id: approval.itemId } });
+   872→    const contentItemId = draft?.contentItemId ?? null;
+   873→
+   874→    // Only create CreatorDecision if we have a valid contentItemId
+   875→    if (contentItemId) {
+   876→      await db.creatorDecision.create({
+   877→        data: {
+   878→          creatorId,
+   879→          contentItemId,
+   880→          decision: 'rejected',
+   881→          reason: reason ?? 'Creator rejected overnight draft',
+   882→        },
+   883→      });
+   884→    }
+   885→
+   886→    await createAuditEvent(
+   887→      creatorId,
+   888→      'creator',
+   889→      'reject_publish',
+   890→      'draft',
+   891→      approval.itemId,
+   892→      {
+   893→        draftId: approval.itemId,
+   894→        approvalId,
+   895→        action: 'publish_rejected',
+   896→        reason: reason ?? 'No reason provided',
+   897→      }
+   898→    );
+   899→  }
+   900→
+   901→  return {
+   902→    success: true,
+   903→    approvalId,
+   904→    itemType: approval.itemType,
+   905→    itemId: approval.itemId,
+   906→    action: approval.action,
+   907→    status: 'rejected',
+   908→    auditEventId,
+   909→  };
+   910→}
+   911→
+   912→// ---------------------------------------------------------------------------
+   913→// Get Approval Queue
+   914→// ---------------------------------------------------------------------------
+   915→
+   916→export async function getApprovalQueue(
+   917→  creatorId: string
+   918→): Promise<ApprovalQueueItem[]> {
+   919→  const approvals = await db.approval.findMany({
+   920→    where: {
+   921→      creatorId,
+   922→      status: 'pending',
+   923→    },
+   924→    orderBy: { createdAt: 'desc' },
+   925→  });
+   926→
+   927→  // Resolve titles for draft approvals
+   928→  const queue: ApprovalQueueItem[] = [];
+   929→  for (const approval of approvals) {
+   930→    const item: ApprovalQueueItem = {
+   931→      id: approval.id,
+   932→      itemType: approval.itemType,
+   933→      itemId: approval.itemId,
+   934→      action: approval.action,
+   935→      status: approval.status,
+   936→      createdAt: approval.createdAt.toISOString(),
+   937→    };
+   938→
+   939→    // If it's a draft, resolve the title
+   940→    if (approval.itemType === 'draft' && approval.itemId) {
+   941→      const draft = await db.draft.findUnique({
+   942→        where: { id: approval.itemId },
+   943→      });
+   944→      if (draft) {
+   945→        try {
+   946→          const content = JSON.parse(draft.content);
+   947→          item.title = content.title ?? `Draft v${draft.version}`;
+   948→        } catch {
+   949→          item.title = `Draft v${draft.version}`;
+   950→        }
+   951→      }
+   952→    }
+   953→
+   954→    queue.push(item);
+   955→  }
+   956→
+   957→  return queue;
+   958→}
+   959→
+   960→// ---------------------------------------------------------------------------
+   961→// Convenience: Run overnight cycle with default creator
+   962→// ---------------------------------------------------------------------------
+   963→
+   964→export async function runOvernightCycleDefault(): Promise<OvernightCycleResult> {
+   965→  const creatorId = await getDefaultCreatorId();
+   966→  return runOvernightCycle(creatorId);
+   967→}
+   968→

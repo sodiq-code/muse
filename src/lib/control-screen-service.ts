@@ -34,19 +34,24 @@ export interface ControlScreenData {
 
 export interface ApprovalQueueItem {
   id: string;
-  itemType: string;  // 'draft'
+  itemType: string;  // 'draft', 'autonomous_run', 'recommendation'
   itemId: string;
   title: string;
   action: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
   createdAt: string;
+  reviewedAt: string | null;
+  age: string;  // human-readable age (e.g., "2h ago", "1d ago")
 }
 
 export interface AuditLogEntry {
   timestamp: string;
-  actor: string;     // 'muse', 'maker', 'system'
+  actor: string;     // 'muse', 'maker', 'system', 'creator'
   action: string;
   detail: string;
+  targetType: string;
+  targetId: string | null;
+  delta: string | null;  // Raw JSON delta for expandable view
 }
 
 // ---------------------------------------------------------------------------
@@ -124,6 +129,8 @@ async function buildApprovalQueue(
       action: approval.action,
       status: 'pending',
       createdAt: approval.createdAt.toISOString(),
+      reviewedAt: null,
+      age: formatAge(approval.createdAt),
     });
   }
 
@@ -136,8 +143,10 @@ async function buildApprovalQueue(
       itemId: approval.itemId ?? '',
       title: item.title,
       action: approval.action,
-      status: approval.status as 'approved' | 'rejected',
+      status: approval.status as 'approved' | 'rejected' | 'expired',
       createdAt: approval.createdAt.toISOString(),
+      reviewedAt: approval.reviewedAt?.toISOString() ?? null,
+      age: formatAge(approval.reviewedAt ?? approval.createdAt),
     });
   }
 
@@ -220,6 +229,9 @@ async function buildAuditLog(
     actor: event.actor,
     action: formatAuditAction(event),
     detail: formatAuditDetail(event),
+    targetType: event.targetType,
+    targetId: event.targetId,
+    delta: event.delta,
   }));
 
   return { auditLog, totalAuditEvents };
@@ -305,6 +317,23 @@ function mapActorLabel(actor: string): string {
     case 'system': return 'System';
     default: return actor;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Format age as human-readable string
+// ---------------------------------------------------------------------------
+
+function formatAge(date: Date): string {
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${days}d ago`;
 }
 
 // ---------------------------------------------------------------------------
