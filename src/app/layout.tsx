@@ -14,22 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Muse — Day 1 Platform Validation",
-  description: "The AI Creative Team That Learns You. Day 1 validation dashboard for the MUSE project — Creative Minds Jam #1.",
+  title: "MUSE — The AI Creative Team That Learns You",
+  description: "A persistent AI creative teammate that develops a long-term understanding of one creator. Creative Minds Jam #1.",
   keywords: ["Muse", "Minds SDK", "AI Creative Team", "Creative Minds Jam", "Next.js", "TypeScript"],
   authors: [{ name: "MUSE Project" }],
   icons: {
     icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
   },
   openGraph: {
-    title: "Muse — Day 1 Platform Validation",
-    description: "The AI Creative Team That Learns You",
+    title: "MUSE — The AI Creative Team That Learns You",
+    description: "A persistent AI creative teammate that learns your voice, audience, and performance.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Muse — Day 1 Platform Validation",
-    description: "The AI Creative Team That Learns You",
+    title: "MUSE — The AI Creative Team That Learns You",
+    description: "A persistent AI creative teammate that learns your voice, audience, and performance.",
   },
 };
 
