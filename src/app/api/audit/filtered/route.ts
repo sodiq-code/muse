@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     const result = await getFilteredAuditTrail(creatorId, filters);
 
     return NextResponse.json({
-      success: true,
       ...result,
+      success: true,
     });
   } catch (error) {
     return NextResponse.json(

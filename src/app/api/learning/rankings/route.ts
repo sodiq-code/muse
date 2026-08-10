@@ -13,8 +13,8 @@ export async function GET() {
     const result = await getHookRankings(creatorId);
 
     return NextResponse.json({
-      success: true,
       ...result,
+      success: true,
     });
   } catch (error) {
     console.error('Hook rankings error:', error);

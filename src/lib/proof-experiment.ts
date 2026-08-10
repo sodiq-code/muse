@@ -184,7 +184,7 @@ export async function runProofExperiment(creatorId: string): Promise<ProofExperi
     const newPatterns = loopResult.updates
       .filter((p) => !knownPatterns.has(p.pattern))
       .map((p) => p.pattern);
-    newPatterns.forEach((p) => knownPatterns.add(p.pattern));
+    newPatterns.forEach((p) => knownPatterns.add(p));
 
     // Build day result
     const simulatedDate = new Date(startTime);

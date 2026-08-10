@@ -474,7 +474,7 @@ export async function getRecentBeats(creatorId: string, limit: number = 10): Pro
   return beats.map((beat) => {
     let delta: Record<string, unknown> = {};
     try {
-      delta = JSON.parse(beat.delta);
+      delta = JSON.parse(beat.delta ?? '{}');
     } catch {
       // skip
     }

@@ -529,7 +529,7 @@ export async function getPerformanceInsights(creatorId: string): Promise<Perform
       detail: `Based on ${patternData.totalSampleSize} samples, ${summary.hookStats.bestPattern} hooks average ${(patternData.avgEffectiveness * 100).toFixed(1)}% effectiveness`,
       confidence,
       dataPoints: patternData.totalSampleSize,
-      evidenceType: patternData.totalSampleSize >= 5 ? 'statistical' : 'observational',
+      evidenceType: patternData.totalSampleSize >= 5 ? 'statistical' : 'observed',
     });
   }
 

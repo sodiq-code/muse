@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     const status = await getIngestStatus(creatorId);
 
     return NextResponse.json({
-      success: true,
       ...status,
+      success: true,
     });
   } catch (error) {
     console.error('Ingest status error:', error);

@@ -157,7 +157,7 @@ export async function runE2EValidation(
           recommendations: recommendationsGenerated,
           confidence: confidenceLevel,
           totalDataPoints: learningResult.loopResult.totalDataPoints,
-          isHonest: learningResult.honest,
+          isHonest: learningResult.honestyReport.isHonest,
         },
       });
     } catch (error) {
@@ -187,7 +187,7 @@ export async function runE2EValidation(
         durationMs: Date.now() - stepStart,
         evidence: delegationResult.success
           ? `Delegation beat completed (${delegationResult.mode} mode) — Maker produced: "${delegationResult.makerOutput?.title ?? 'untitled'}"`
-          : `Delegation failed: ${delegationResult.error ?? 'unknown'}`,
+          : `Delegation failed: ${(delegationResult as any).error ?? 'unknown'}`,
         details: {
           beatId: delegationResult.beatId,
           mode: delegationResult.mode,
@@ -216,8 +216,8 @@ export async function runE2EValidation(
       const eval_ = delegationResult.evaluation;
 
       evaluationScore = Math.round(eval_.overallScore * 100);
-      const voiceMatch = Math.round(eval_.voiceMatchScore * 100);
-      const hookCompat = Math.round(eval_.hookCompatibilityScore * 100);
+      const voiceMatch = Math.round(eval_.voiceMatch.overall * 100);
+      const hookCompat = Math.round(eval_.hookCompat.overall * 100);
       const passed = delegationResult.evaluationPassed;
 
       steps.push({
@@ -255,11 +255,11 @@ export async function runE2EValidation(
       steps.push({
         step: 5, name: 'Store Draft', status: 'pass',
         durationMs: Date.now() - stepStart,
-        evidence: `Draft stored: "${draftTitle}" (version ${delegationResult.makerOutput.version ?? 1})`,
+        evidence: `Draft stored: "${draftTitle}" (version ${(delegationResult.makerOutput as any).version ?? 1})`,
         details: {
-          draftId: delegationResult.makerOutput.draftId ?? 'stored',
+          draftId: (delegationResult.makerOutput as any).draftId ?? 'stored',
           title: draftTitle,
-          version: delegationResult.makerOutput.version ?? 1,
+          version: (delegationResult.makerOutput as any).version ?? 1,
         },
       });
     } catch (error) {

@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
     const result = await predictHookPerformance(creatorId, hookText.trim());
 
     return NextResponse.json({
-      success: true,
       ...result,
+      success: true,
     });
   } catch (error) {
     console.error('Hook prediction error:', error);

@@ -5,10 +5,10 @@ import { getMindsConfig } from '@/lib/minds-client';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const mindId = searchParams.get('mindId');
+  const { searchParams } = new URL(request.url);
+  const mindId = searchParams.get('mindId');
 
+  try {
     if (!mindId) {
       return NextResponse.json(
         { error: 'mindId query parameter is required' },
@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ mindId, skills, count: skills.length });
   } catch (error) {
     // Fallback to config-based IDs
-    const config = getMindsConfig();
     if (mindId) {
       const skills = await adapterListEquippedSkills(mindId).catch(() => []);
       return NextResponse.json({ mindId, skills, count: skills.length });

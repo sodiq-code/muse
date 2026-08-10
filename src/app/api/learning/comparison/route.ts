@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
     const result = await compareHookVsHistory(creatorId, hookText.trim());
 
     return NextResponse.json({
-      success: true,
       ...result,
+      success: true,
     });
   } catch (error) {
     console.error('Hook comparison error:', error);

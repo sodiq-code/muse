@@ -17,8 +17,8 @@ export async function GET() {
     const result: LearningRunResult = await runLearningEngineOnCreatorData(creatorId);
 
     return NextResponse.json({
-      success: true,
       ...result,
+      success: true,
     });
   } catch (error) {
     console.error('Learning engine run error:', error);
@@ -39,8 +39,8 @@ export async function POST() {
     const result: LearningRunResult = await runLearningEngineOnCreatorData(creatorId);
 
     return NextResponse.json({
-      success: true,
       ...result,
+      success: true,
     });
   } catch (error) {
     console.error('Learning engine run error:', error);

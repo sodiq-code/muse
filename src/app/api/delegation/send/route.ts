@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
     const result: DelegationResult = await runDelegation(creatorId, topic, objective);
 
     return NextResponse.json({
-      success: true,
       ...result,
+      success: true,
     });
   } catch (error) {
     console.error('Delegation error:', error);

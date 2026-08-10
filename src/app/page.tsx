@@ -2405,7 +2405,7 @@ export default function MuseDashboard() {
                       <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">Auto-Publish</span>
-                          <Shield className="size-3 text-amber-400" title="Publishing requires explicit approval" />
+                          <Shield className="size-3 text-amber-400" />
                         </div>
                         <Badge className="bg-red-600 text-white border-red-600 text-xs">OFF</Badge>
                       </div>
