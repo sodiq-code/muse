@@ -1110,6 +1110,57 @@ export default function MuseDashboard() {
   const [statusRefreshing, setStatusRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('today');
 
+  // ===== COMPREHENSIVE DASHBOARD REFRESH — Updates ALL data in real-time =====
+  const refreshAllDashboardData = useCallback(async () => {
+    try {
+      const [
+        statusRes, todayRes, memScreenRes, learnScreenRes, overScreenRes, ctrlScreenRes,
+        autoRes, creatorRes, memRes, auditRes, contentRes, perfRes,
+        decisionsRes, ingestRes, draftsRes, auditStatsRes, rankingsRes, honestyRes, voiceRes,
+      ] = await Promise.all([
+        fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
+        fetch('/api/dashboard/today').then((r) => r.json()).catch(() => null),
+        fetch('/api/dashboard/memory').then((r) => r.json()).catch(() => null),
+        fetch('/api/dashboard/learning').then((r) => r.json()).catch(() => null),
+        fetch('/api/dashboard/overnight').then((r) => r.json()).catch(() => null),
+        fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null),
+        fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
+        fetch('/api/creator').then((r) => r.json()).catch(() => null),
+        fetch('/api/creator/memory').then((r) => r.json()).catch(() => null),
+        fetch('/api/creator/audit').then((r) => r.json()).catch(() => null),
+        fetch('/api/content').then((r) => r.json()).catch(() => null),
+        fetch('/api/content/performance').then((r) => r.json()).catch(() => null),
+        fetch('/api/creator/decisions').then((r) => r.json()).catch(() => null),
+        fetch('/api/content/ingest').then((r) => r.json()).catch(() => null),
+        fetch('/api/drafts').then((r) => r.json()).catch(() => null),
+        fetch('/api/audit/stats').then((r) => r.json()).catch(() => null),
+        fetch('/api/learning/rankings').then((r) => r.json()).catch(() => null),
+        fetch('/api/learning/honesty').then((r) => r.json()).catch(() => null),
+        fetch('/api/creator/voice').then((r) => r.json()).catch(() => null),
+      ]);
+
+      if (statusRes) { setStatus(statusRes); setLastStatusRefresh(new Date()); }
+      if (todayRes?.success) setTodayScreenData(todayRes.data);
+      if (memScreenRes?.success) setMemoryScreenData(memScreenRes.data);
+      if (learnScreenRes?.success) setLearningScreenData(learnScreenRes.data);
+      if (overScreenRes?.success) setOvernightScreenData(overScreenRes.data);
+      if (ctrlScreenRes?.success) setControlScreenData(ctrlScreenRes.data);
+      if (autoRes) setAutonomyData(autoRes);
+      if (creatorRes) setCreatorData(creatorRes);
+      if (memRes) setMemoryData(memRes);
+      if (auditRes) setAuditData(auditRes);
+      if (contentRes) setContentItems(contentRes);
+      if (perfRes) setPerfData(perfRes);
+      if (decisionsRes) setDecisionsData(decisionsRes);
+      if (ingestRes) setIngestStatus(ingestRes);
+      if (draftsRes?.success) setDraftsData(draftsRes);
+      if (auditStatsRes?.success) setAuditStatsData(auditStatsRes.stats);
+      if (rankingsRes) setLearningRankings(rankingsRes);
+      if (honestyRes) setHonestyCheckResult(honestyRes);
+      if (voiceRes) setVoiceProfile(voiceRes);
+    } catch { /* silently fail */ }
+  }, []);
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -1189,16 +1240,15 @@ export default function MuseDashboard() {
       } else {
         toast.error('Overnight cycle failed', { description: json.message ?? 'Unknown error' });
       }
-      // Refresh autonomy status
-      const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
-      if (statusRes) setAutonomyData(statusRes);
+      // Comprehensive refresh — overnight cycle changes drafts, audit, today, control, memory, learning
+      await refreshAllDashboardData();
     } catch (e) {
       setOvernightCycleResult({ success: false, message: String(e) });
       toast.error('Overnight cycle error', { description: String(e) });
     } finally {
       setOvernightCycleRunning(false);
     }
-  }, []);
+  }, [refreshAllDashboardData]);
 
   // Day 14: Approve an action
   const approveActionHandler = useCallback(async (approvalId: string) => {
@@ -1209,20 +1259,15 @@ export default function MuseDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalId }),
       });
-      // Refresh autonomy status + control screen
-      const [statusRes, controlRes] = await Promise.all([
-        fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
-        fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null),
-      ]);
-      if (statusRes) setAutonomyData(statusRes);
-      if (controlRes?.success) setControlScreenData(controlRes.data);
+      // Comprehensive refresh — approval changes draft status, audit, today, control, etc.
+      await refreshAllDashboardData();
       toast.success('Draft approved', { description: 'CreatorDecision recorded' });
     } catch {
       toast.error('Approval failed');
     } finally {
       setApprovalActionLoading(null);
     }
-  }, []);
+  }, [refreshAllDashboardData]);
 
   // Day 14: Reject an action
   const rejectActionHandler = useCallback(async (approvalId: string, reason?: string) => {
@@ -1233,13 +1278,8 @@ export default function MuseDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvalId, reason }),
       });
-      // Refresh autonomy status + control screen
-      const [statusRes, controlRes] = await Promise.all([
-        fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
-        fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null),
-      ]);
-      if (statusRes) setAutonomyData(statusRes);
-      if (controlRes?.success) setControlScreenData(controlRes.data);
+      // Comprehensive refresh — rejection changes approval status, audit, today, control, etc.
+      await refreshAllDashboardData();
       setShowRejectInput(null);
       setRejectReason('');
       toast('Draft rejected', { description: reason ?? 'No reason provided' });
@@ -1248,7 +1288,7 @@ export default function MuseDashboard() {
     } finally {
       setApprovalActionLoading(null);
     }
-  }, []);
+  }, [refreshAllDashboardData]);
 
   // Fetch hook rankings for Learning tab
   const fetchRankings = useCallback(async () => {
@@ -1334,13 +1374,14 @@ export default function MuseDashboard() {
       setOvernightScreenLoading(true);
       setControlScreenLoading(true);
       try {
-        const [todayRes, memRes, learnRes, overRes, ctrlRes, statsRes] = await Promise.all([
+        const [todayRes, memRes, learnRes, overRes, ctrlRes, statsRes, draftsRes] = await Promise.all([
           fetch('/api/dashboard/today').then((r) => r.json()).catch(() => null),
           fetch('/api/dashboard/memory').then((r) => r.json()).catch(() => null),
           fetch('/api/dashboard/learning').then((r) => r.json()).catch(() => null),
           fetch('/api/dashboard/overnight').then((r) => r.json()).catch(() => null),
           fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null),
           fetch('/api/audit/stats').then((r) => r.json()).catch(() => null),
+          fetch('/api/drafts').then((r) => r.json()).catch(() => null),
         ]);
         if (todayRes?.success) setTodayScreenData(todayRes.data);
         if (memRes?.success) setMemoryScreenData(memRes.data);
@@ -1348,6 +1389,7 @@ export default function MuseDashboard() {
         if (overRes?.success) setOvernightScreenData(overRes.data);
         if (ctrlRes?.success) setControlScreenData(ctrlRes.data);
         if (statsRes?.success) setAuditStatsData(statsRes.stats);
+        if (draftsRes?.success) setDraftsData(draftsRes);
       } catch { /* silently fail */ }
       setTodayScreenLoading(false);
       setMemoryScreenLoading(false);
@@ -1357,7 +1399,7 @@ export default function MuseDashboard() {
     })();
   }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData, fetchRankings, fetchHonestyCheck]);
 
-  // ===== SSE EVENT STREAM — Real-time Mind activity =====
+  // ===== SSE EVENT STREAM — Real-time Mind activity + data refresh on events =====
   useEffect(() => {
     let eventSource: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1385,11 +1427,18 @@ export default function MuseDashboard() {
               };
               return [newEvent, ...prev].slice(0, 20);
             });
-            // Show toast for important events
+            // Show toast for important events and trigger data refresh
             if (data.type === 'draft-complete' || data.type === 'recommendation' || data.type === 'approval-request') {
               toast.info(`${data.mind}: ${data.detail?.slice(0, 60)}${data.detail?.length > 60 ? '…' : ''}`, {
                 duration: 4000,
               });
+              // Refresh all dashboard data when meaningful events occur
+              // (drafts count, pending approvals, audit events, memory events all may change)
+              refreshAllDashboardData();
+            }
+            // Also refresh on other data-changing events
+            if (data.type === 'memory-stored' || data.type === 'learning-update' || data.type === 'content-created' || data.type === 'evaluation-complete') {
+              refreshAllDashboardData();
             }
           } catch { /* ignore parse errors */ }
         };
@@ -1411,9 +1460,9 @@ export default function MuseDashboard() {
       eventSource?.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
     };
-  }, []);
+  }, [refreshAllDashboardData]);
 
-  // ===== AUTO-POLLING — Refresh Minds status + dashboard data every 30s =====
+  // ===== AUTO-POLLING — Refresh ALL dashboard data every 30s for real-time updates =====
   useEffect(() => {
     // Show live mode toast on first load
     if (status?.mode === 'live') {
@@ -1425,37 +1474,21 @@ export default function MuseDashboard() {
   }, [status?.mode]);
 
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const [statusRes, todayRes, autoRes] = await Promise.all([
-          fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
-          fetch('/api/dashboard/today').then((r) => r.json()).catch(() => null),
-          fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
-        ]);
-        if (statusRes) {
-          setStatus(statusRes);
-          setLastStatusRefresh(new Date());
-        }
-        if (todayRes?.success) setTodayScreenData(todayRes.data);
-        if (autoRes) setAutonomyData(autoRes);
-      } catch { /* silently fail */ }
-    }, 30_000); // every 30 seconds
+    const interval = setInterval(() => {
+      refreshAllDashboardData();
+    }, 30_000); // every 30 seconds — comprehensive refresh
 
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshAllDashboardData]);
 
-  // ===== REFRESH MINDS STATUS =====
+  // ===== REFRESH MINDS STATUS (uses comprehensive refresh) =====
   const refreshMindsStatus = useCallback(async () => {
     setStatusRefreshing(true);
     try {
-      const res = await fetch('/api/minds/status').then((r) => r.json()).catch(() => null);
-      if (res) {
-        setStatus(res);
-        setLastStatusRefresh(new Date());
-      }
+      await refreshAllDashboardData();
     } catch { /* silently fail */ }
     finally { setStatusRefreshing(false); }
-  }, []);
+  }, [refreshAllDashboardData]);
 
   // ===== REFRESH TAB DATA =====
   const refreshTodayTab = useCallback(async () => {
@@ -2809,11 +2842,11 @@ export default function MuseDashboard() {
                           <p className="text-[10px] text-muted-foreground">Duration</p>
                         </div>
                         <div className="text-center p-2 rounded-lg bg-sky-500/5 border border-sky-500/20">
-                          <p className="font-mono text-lg font-bold text-sky-400">{overnightCycleResult.result.morningBrief?.draftTitle ? 1 : 0}</p>
+                          <p className="font-mono text-lg font-bold text-sky-400">{draftsData?.summary?.totalDrafts ?? (overnightCycleResult.result.morningBrief?.draftTitle ? 1 : 0)}</p>
                           <p className="text-[10px] text-muted-foreground">Drafts</p>
                         </div>
                         <div className="text-center p-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                          <p className="font-mono text-lg font-bold text-amber-400">{overnightCycleResult.result.approvalId ? 1 : 0}</p>
+                          <p className="font-mono text-lg font-bold text-amber-400">{controlScreenData?.pendingCount ?? (overnightCycleResult.result.approvalId ? 1 : 0)}</p>
                           <p className="text-[10px] text-muted-foreground">Approvals</p>
                         </div>
                       </div>
@@ -2978,9 +3011,8 @@ export default function MuseDashboard() {
                               });
                               const json = await res.json();
                               setExpireResult(json);
-                              // Refresh control screen
-                              const controlRes = await fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null);
-                              if (controlRes?.success) setControlScreenData(controlRes.data);
+                              // Comprehensive refresh — expiry changes approval status, audit, control, today
+                              await refreshAllDashboardData();
                             } catch { /* fail */ }
                             setExpireLoading(false);
                           }}
