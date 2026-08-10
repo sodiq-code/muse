@@ -2573,7 +2573,26 @@ export default function MuseDashboard() {
 
           {/* ===== OVERNIGHT SCREEN TAB (Day 13) ===== */}
           <TabsContent value="overnightscreen" className="space-y-6">
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5 bg-gradient-to-r from-sky-500 to-indigo-500 text-white border-0 hover:opacity-90 text-xs font-medium"
+                  onClick={runOvernightCycleAction}
+                  disabled={overnightCycleRunning}
+                >
+                  {overnightCycleRunning ? (
+                    <><RefreshCw className="size-3.5 animate-spin" /> Running…</>
+                  ) : (
+                    <><Zap className="size-3.5" /> Run Overnight Now</>
+                  )}
+                </Button>
+                {overnightCycleResult && !overnightCycleRunning && (
+                  <Badge className={overnightCycleResult.success ? 'bg-emerald-600 text-white border-emerald-600 text-[10px]' : 'bg-red-600 text-white border-red-600 text-[10px]'}>
+                    {overnightCycleResult.success ? '✓ Cycle Complete' : '✗ Failed'}
+                  </Badge>
+                )}
+              </div>
               <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground" onClick={refreshOvernightTab} disabled={overnightScreenLoading}>
                 <RefreshCw className={`size-3 ${overnightScreenLoading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -2766,6 +2785,56 @@ export default function MuseDashboard() {
                   </Card>
                 )}
               </>
+            )}
+
+            {/* Overnight Cycle Result */}
+            {overnightCycleResult && !overnightCycleRunning && (
+              <Card className="rounded-xl border-emerald-500/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Activity className="size-4 text-emerald-400" />
+                    Overnight Cycle Result
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {overnightCycleResult.success && overnightCycleResult.result ? (
+                    <>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="text-center p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                          <p className="font-mono text-lg font-bold text-emerald-400">{overnightCycleResult.result.stepsCompleted ?? 0}</p>
+                          <p className="text-[10px] text-muted-foreground">Steps</p>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-violet-500/5 border border-violet-500/20">
+                          <p className="font-mono text-lg font-bold text-violet-400">{overnightCycleResult.result.totalDuration ? `${Math.round(overnightCycleResult.result.totalDuration / 1000)}s` : '—'}</p>
+                          <p className="text-[10px] text-muted-foreground">Duration</p>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-sky-500/5 border border-sky-500/20">
+                          <p className="font-mono text-lg font-bold text-sky-400">{overnightCycleResult.result.draftsCreated ?? 0}</p>
+                          <p className="text-[10px] text-muted-foreground">Drafts</p>
+                        </div>
+                        <div className="text-center p-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                          <p className="font-mono text-lg font-bold text-amber-400">{overnightCycleResult.result.approvalsCreated ?? 0}</p>
+                          <p className="text-[10px] text-muted-foreground">Approvals</p>
+                        </div>
+                      </div>
+                      {overnightCycleResult.result.phases && (
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-muted-foreground">Phase Timeline</p>
+                          {overnightCycleResult.result.phases.map((phase: any, i: number) => (
+                            <div key={i} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/30">
+                              <div className={`size-2 rounded-full ${phase.success ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                              <span className="font-medium">{phase.name}</span>
+                              <span className="text-muted-foreground ml-auto">{phase.duration ? `${phase.duration}ms` : '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-red-400">{overnightCycleResult.message ?? 'Cycle failed'}</p>
+                  )}
+                </CardContent>
+              </Card>
             )}
 
             {!overnightScreenLoading && !overnightScreenData && null}
