@@ -17,6 +17,16 @@ import {
   addCircleMembers as liveAddCircleMembers,
   getCognitionBalance as liveGetCognitionBalance,
   ensureConversation as liveEnsureConversation,
+  // Maker-specific imports (Account 2 API key)
+  makerGetMind as liveMakerGetMind,
+  makerEnsureConversation as liveMakerEnsureConversation,
+  makerSendMessage as liveMakerSendMessage,
+  makerWaitForReply as liveMakerWaitForReply,
+  makerGetHistory as liveMakerGetHistory,
+  makerGetCognitionBalance as liveMakerGetCognitionBalance,
+  makerGetCircle as liveMakerGetCircle,
+  makerAddCircleMembers as liveMakerAddCircleMembers,
+  makerListEquippedSkills as liveMakerListEquippedSkills,
   getMindsConfig,
 } from './minds-client';
 
@@ -111,6 +121,11 @@ export async function adapterGetMind(mindId: string): Promise<BuilderMind> {
     return { ...SIMULATED_MUSE_MIND, mindId, name: 'Unknown Mind' };
   }
   try {
+    // Determine which client to use based on mindId
+    const config = getMindsConfig();
+    if (mindId === config.makerId && config.isDualAccount) {
+      return await liveMakerGetMind(mindId);
+    }
     return await liveGetMind(mindId);
   } catch (err) {
     console.warn(`[minds-adapter] getMind failed for ${mindId}, using fallback`, err);
@@ -123,7 +138,16 @@ export async function adapterGetMind(mindId: string): Promise<BuilderMind> {
 export async function adapterListMinds(): Promise<BuilderMind[]> {
   if (!isLiveMode()) return [SIMULATED_MUSE_MIND, SIMULATED_MAKER_MIND];
   try {
-    return await liveListMinds();
+    const config = getMindsConfig();
+    // Fetch from both accounts in parallel
+    const [museMinds, makerMinds] = await Promise.all([
+      liveListMinds().catch(() => [] as BuilderMind[]),
+      config.isDualAccount ? liveMakerGetMind().then((m) => [m]).catch(() => [] as BuilderMind[]) : Promise.resolve([] as BuilderMind[]),
+    ]);
+    // Combine and deduplicate
+    const allMinds = [...museMinds, ...makerMinds];
+    if (allMinds.length > 0) return allMinds;
+    return [SIMULATED_MUSE_MIND, SIMULATED_MAKER_MIND];
   } catch (err) {
     console.warn('[minds-adapter] listMinds failed, using fallback', err);
     return [SIMULATED_MUSE_MIND, SIMULATED_MAKER_MIND];
@@ -148,6 +172,11 @@ export async function adapterSendMessage(
   }
 }
 
+/**
+ * Send message to Maker and wait for reply.
+ * Uses the MAKER's own API key (Account 2) for proper authentication.
+ * This is the core of the delegation flow: Muse→Maker.
+ */
 export async function adapterSendMessageAndWait(
   alias: string,
   message: string,
@@ -155,16 +184,27 @@ export async function adapterSendMessageAndWait(
   timeoutMs: number = 120_000
 ): Promise<{ success: boolean; alias: string; reply?: string; error?: string }> {
   if (!isLiveMode()) {
-    // Simulate a delayed response
     return { success: true, alias, reply: '[Simulated Maker response] Content draft generated based on instruction.' };
   }
   try {
-    const targetMindId = mindId ?? getMindsConfig().makerId;
+    const config = getMindsConfig();
+    const targetMindId = mindId ?? config.makerId;
+
+    // Use Maker's own API key (Account 2) for Maker operations
+    // This is critical because Maker is on a separate account
+    if (config.isDualAccount && targetMindId === config.makerId) {
+      console.log('[minds-adapter] Using Maker API key (Account 2) for delegation');
+      await liveMakerEnsureConversation(alias, targetMindId);
+      await liveMakerSendMessage(alias, message);
+      const reply = await liveMakerWaitForReply(alias, timeoutMs, message);
+      const replyStr = typeof reply === 'string' ? reply : JSON.stringify(reply);
+      return { success: true, alias, reply: replyStr };
+    }
+
+    // Fallback: use Muse client (for same-account Minds)
     await liveEnsureConversation(alias, targetMindId);
     await liveSendMessage(alias, message);
     const reply = await liveWaitForReply(alias, timeoutMs, message);
-    // The Minds SDK returns a complex JSON object from waitForReply
-    // Stringify it so the caller can parse/extract the messageText
     const replyStr = typeof reply === 'string' ? reply : JSON.stringify(reply);
     return { success: true, alias, reply: replyStr };
   } catch (err) {
@@ -175,7 +215,8 @@ export async function adapterSendMessageAndWait(
 
 export async function adapterGetHistory(
   alias: string,
-  limit?: number
+  limit?: number,
+  useMakerClient: boolean = false
 ): Promise<MessageRecord[]> {
   if (!isLiveMode()) {
     return [
@@ -189,6 +230,9 @@ export async function adapterGetHistory(
     ];
   }
   try {
+    if (useMakerClient) {
+      return await liveMakerGetHistory(alias, limit);
+    }
     return await liveGetHistory(alias, limit);
   } catch (err) {
     console.warn('[minds-adapter] getHistory failed', err);
@@ -205,6 +249,11 @@ export async function adapterListEquippedSkills(
     return [];
   }
   try {
+    const config = getMindsConfig();
+    // Use Maker client for Maker mind
+    if (mindId === config.makerId && config.isDualAccount) {
+      return await liveMakerListEquippedSkills(mindId);
+    }
     return await liveListEquippedSkills(mindId);
   } catch (err) {
     console.warn(`[minds-adapter] listEquippedSkills failed for ${mindId}`, err);
@@ -238,6 +287,11 @@ export async function adapterGetCircle(
     return [];
   }
   try {
+    const config = getMindsConfig();
+    // Use Maker client for Maker's circle
+    if (mindId === config.makerId && config.isDualAccount) {
+      return await liveMakerGetCircle(mindId);
+    }
     return await liveGetCircle(mindId);
   } catch (err) {
     console.warn(`[minds-adapter] getCircle failed for ${mindId}`, err);
@@ -258,6 +312,11 @@ export async function adapterAddCircleMembers(
     };
   }
   try {
+    const config = getMindsConfig();
+    // Use Maker client for Maker's circle
+    if (mindId === config.makerId && config.isDualAccount) {
+      return await liveMakerAddCircleMembers(mindId, emails);
+    }
     return await liveAddCircleMembers(mindId, emails);
   } catch (err) {
     console.warn('[minds-adapter] addCircleMembers failed', err);
@@ -272,6 +331,11 @@ export async function adapterGetCognitionBalance(
     return { mindId, cognition: mindId === SIMULATED_MAKER_MIND.mindId ? 0 : 133.52 };
   }
   try {
+    const config = getMindsConfig();
+    // Use Maker client for Maker's balance
+    if (mindId === config.makerId && config.isDualAccount) {
+      return await liveMakerGetCognitionBalance(mindId);
+    }
     return await liveGetCognitionBalance(mindId);
   } catch (err) {
     console.warn(`[minds-adapter] getCognitionBalance failed for ${mindId}`, err);

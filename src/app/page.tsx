@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { toast, Toaster } from 'sonner';
 import {
   Card,
   CardContent,
@@ -1105,6 +1106,7 @@ export default function MuseDashboard() {
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const [lastStatusRefresh, setLastStatusRefresh] = useState<Date>(new Date());
+  const [statusRefreshing, setStatusRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('today');
 
   // Fetch creator/memory/audit data
@@ -1181,11 +1183,17 @@ export default function MuseDashboard() {
       });
       const json = await res.json();
       setOvernightCycleResult(json);
+      if (json.success) {
+        toast.success('Overnight cycle completed', { description: json.result ? `Duration: ${json.result.totalDuration}ms` : 'Cycle finished' });
+      } else {
+        toast.error('Overnight cycle failed', { description: json.message ?? 'Unknown error' });
+      }
       // Refresh autonomy status
       const statusRes = await fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null);
       if (statusRes) setAutonomyData(statusRes);
     } catch (e) {
       setOvernightCycleResult({ success: false, message: String(e) });
+      toast.error('Overnight cycle error', { description: String(e) });
     } finally {
       setOvernightCycleRunning(false);
     }
@@ -1207,8 +1215,9 @@ export default function MuseDashboard() {
       ]);
       if (statusRes) setAutonomyData(statusRes);
       if (controlRes?.success) setControlScreenData(controlRes.data);
+      toast.success('Draft approved', { description: 'CreatorDecision recorded' });
     } catch {
-      // silently fail
+      toast.error('Approval failed');
     } finally {
       setApprovalActionLoading(null);
     }
@@ -1232,8 +1241,9 @@ export default function MuseDashboard() {
       if (controlRes?.success) setControlScreenData(controlRes.data);
       setShowRejectInput(null);
       setRejectReason('');
+      toast('Draft rejected', { description: reason ?? 'No reason provided' });
     } catch {
-      // silently fail
+      toast.error('Rejection failed');
     } finally {
       setApprovalActionLoading(null);
     }
@@ -1268,14 +1278,13 @@ export default function MuseDashboard() {
   useEffect(() => {
     async function fetchAll() {
       try {
-        const [statusRes, valRes, draftRes, autoRes, hookRes, creatorRes, memRes, auditRes] = await Promise.all([
+        // CRITICAL: Do NOT include /api/minds/draft in Promise.all!
+        // In live mode, it calls adapterSendMessageAndWait with 90s timeout,
+        // which would block the entire page load.
+        // Instead, fetch draft separately in the background.
+        const [statusRes, valRes, autoRes, hookRes, creatorRes, memRes, auditRes] = await Promise.all([
           fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
           fetch('/api/validation/day1').then((r) => r.json()).catch(() => null),
-          fetch('/api/minds/draft', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic: 'AI agents in production', objective: 'build reliable systems' }),
-          }).then((r) => r.json()).catch(() => null),
           fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
           fetch('/api/learning/hooks', {
             method: 'POST',
@@ -1288,7 +1297,6 @@ export default function MuseDashboard() {
         ]);
         setStatus(statusRes);
         setValidation(valRes);
-        setDraftData(draftRes);
         setAutonomyData(autoRes);
         setHookData(hookRes);
         if (creatorRes) setCreatorData(creatorRes);
@@ -1299,6 +1307,16 @@ export default function MuseDashboard() {
       } finally {
         setLoading(false);
       }
+
+      // Fetch draft separately — this can take 25-90s in live mode
+      // It runs in the background and updates draftData when done
+      fetch('/api/minds/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: 'AI agents in production', objective: 'build reliable systems' }),
+      }).then((r) => r.json()).catch(() => null).then((draftRes) => {
+        if (draftRes) setDraftData(draftRes);
+      });
     }
     fetchAll();
     fetchVoiceProfile();
@@ -1366,6 +1384,12 @@ export default function MuseDashboard() {
               };
               return [newEvent, ...prev].slice(0, 20);
             });
+            // Show toast for important events
+            if (data.type === 'draft-complete' || data.type === 'recommendation' || data.type === 'approval-request') {
+              toast.info(`${data.mind}: ${data.detail?.slice(0, 60)}${data.detail?.length > 60 ? '…' : ''}`, {
+                duration: 4000,
+              });
+            }
           } catch { /* ignore parse errors */ }
         };
         eventSource.onerror = () => {
@@ -1388,21 +1412,90 @@ export default function MuseDashboard() {
     };
   }, []);
 
-  // ===== AUTO-POLLING — Refresh Minds status every 30s =====
+  // ===== AUTO-POLLING — Refresh Minds status + dashboard data every 30s =====
+  useEffect(() => {
+    // Show live mode toast on first load
+    if (status?.mode === 'live') {
+      toast.success('⚡ Connected to Minds Platform (LIVE)', {
+        description: 'Muse01 + muse02 via dual-account architecture',
+        duration: 5000,
+      });
+    }
+  }, [status?.mode]);
+
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const [statusRes] = await Promise.all([
+        const [statusRes, todayRes, autoRes] = await Promise.all([
           fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
+          fetch('/api/dashboard/today').then((r) => r.json()).catch(() => null),
+          fetch('/api/autonomy/status').then((r) => r.json()).catch(() => null),
         ]);
         if (statusRes) {
           setStatus(statusRes);
           setLastStatusRefresh(new Date());
         }
+        if (todayRes?.success) setTodayScreenData(todayRes.data);
+        if (autoRes) setAutonomyData(autoRes);
       } catch { /* silently fail */ }
     }, 30_000); // every 30 seconds
 
     return () => clearInterval(interval);
+  }, []);
+
+  // ===== REFRESH MINDS STATUS =====
+  const refreshMindsStatus = useCallback(async () => {
+    setStatusRefreshing(true);
+    try {
+      const res = await fetch('/api/minds/status').then((r) => r.json()).catch(() => null);
+      if (res) {
+        setStatus(res);
+        setLastStatusRefresh(new Date());
+      }
+    } catch { /* silently fail */ }
+    finally { setStatusRefreshing(false); }
+  }, []);
+
+  // ===== REFRESH TAB DATA =====
+  const refreshTodayTab = useCallback(async () => {
+    setTodayScreenLoading(true);
+    try {
+      const res = await fetch('/api/dashboard/today').then((r) => r.json()).catch(() => null);
+      if (res?.success) setTodayScreenData(res.data);
+    } catch { /* */ }
+    finally { setTodayScreenLoading(false); }
+  }, []);
+  const refreshMemoryTab = useCallback(async () => {
+    setMemoryScreenLoading(true);
+    try {
+      const res = await fetch('/api/dashboard/memory').then((r) => r.json()).catch(() => null);
+      if (res?.success) setMemoryScreenData(res.data);
+    } catch { /* */ }
+    finally { setMemoryScreenLoading(false); }
+  }, []);
+  const refreshLearningTab = useCallback(async () => {
+    setLearningScreenLoading(true);
+    try {
+      const res = await fetch('/api/dashboard/learning').then((r) => r.json()).catch(() => null);
+      if (res?.success) setLearningScreenData(res.data);
+    } catch { /* */ }
+    finally { setLearningScreenLoading(false); }
+  }, []);
+  const refreshOvernightTab = useCallback(async () => {
+    setOvernightScreenLoading(true);
+    try {
+      const res = await fetch('/api/dashboard/overnight').then((r) => r.json()).catch(() => null);
+      if (res?.success) setOvernightScreenData(res.data);
+    } catch { /* */ }
+    finally { setOvernightScreenLoading(false); }
+  }, []);
+  const refreshControlTab = useCallback(async () => {
+    setControlScreenLoading(true);
+    try {
+      const res = await fetch('/api/dashboard/control').then((r) => r.json()).catch(() => null);
+      if (res?.success) setControlScreenData(res.data);
+    } catch { /* */ }
+    finally { setControlScreenLoading(false); }
   }, []);
 
   // ===== CHAT HANDLER — Talk to Muse =====
@@ -1422,11 +1515,16 @@ export default function MuseDashboard() {
       const data = await res.json();
       if (data.success && data.reply) {
         setChatMessages((prev) => [...prev, { role: 'muse', text: data.reply, timestamp: new Date().toISOString() }]);
+        if (data.mode === 'live') {
+          toast.success('Muse responded (live)', { description: `${data.responseTime ?? 0}ms response time` });
+        }
       } else {
         setChatMessages((prev) => [...prev, { role: 'muse', text: data.error ?? 'Muse could not respond. Try again.', timestamp: new Date().toISOString() }]);
+        if (data.mode === 'live') toast.error('Muse chat failed in live mode');
       }
     } catch {
       setChatMessages((prev) => [...prev, { role: 'muse', text: 'Connection error. Please try again.', timestamp: new Date().toISOString() }]);
+      toast.error('Chat connection failed');
     } finally {
       setChatLoading(false);
     }
@@ -1492,6 +1590,9 @@ export default function MuseDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
+      <Toaster position="top-right" richColors closeButton />
+      {/* Hidden live mode detector */}
+      <input type="hidden" value={status?.mode ?? 'unknown'} />
       {/* ===== Header ===== */}
       <header className="border-b border-border bg-card">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between flex-wrap gap-3">
@@ -1521,9 +1622,9 @@ export default function MuseDashboard() {
                 Loading…
               </Badge>
             ) : status?.connected ? (
-              <Badge className="gap-1 bg-emerald-600 text-white border-emerald-600">
-                <CheckCircle2 className="size-3" />
-                Minds {status.mode === 'live' ? 'Live' : 'Simulated'}
+              <Badge className={`gap-1 ${status.mode === 'live' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-600 text-white border-amber-600'}`}>
+                <CheckCircle2 className={`size-3 ${status.mode === 'live' ? 'animate-pulse' : ''}`} />
+                {status.mode === 'live' ? '⚡ LIVE' : 'Simulated'}
               </Badge>
             ) : (
               <Badge variant="destructive" className="gap-1">
@@ -1549,9 +1650,41 @@ export default function MuseDashboard() {
                 Maker: {status.maker.balance.cognition?.toFixed(1) ?? '?'}⚡
               </Badge>
             )}
+            {(status as any)?.dualAccount && (
+              <Badge variant="outline" className="gap-1 text-[10px] bg-violet-50 text-violet-700 border-violet-200">
+                <GitBranch className="size-3" />
+                Dual Account
+              </Badge>
+            )}
+          </div>
+          {/* Last refreshed + manual refresh */}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="size-3" />
+            <span>Last refreshed: {lastStatusRefresh.toLocaleTimeString()}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6"
+              onClick={refreshMindsStatus}
+              disabled={statusRefreshing}
+              title="Refresh minds status"
+            >
+              <RefreshCw className={`size-3 ${statusRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
         </div>
       </header>
+
+      {/* ===== MODE BANNER ===== */}
+      {status?.mode === 'live' ? (
+        <div className="bg-emerald-600 text-white text-center text-xs py-1.5 px-4 animate-pulse-subtle">
+          ⚡ Connected to Minds Platform — Muse01 + muse02 (Dual Account Architecture)
+        </div>
+      ) : status?.mode === 'simulate' ? (
+        <div className="bg-amber-500 text-white text-center text-xs py-1.5 px-4">
+          Simulation Mode — Minds SDK not connected
+        </div>
+      ) : null}
 
       {/* ===== Main ===== */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
@@ -1581,6 +1714,12 @@ export default function MuseDashboard() {
 
           {/* ===== TODAY TAB (Day 12) ===== */}
           <TabsContent value="today" className="space-y-6">
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground" onClick={refreshTodayTab} disabled={todayScreenLoading}>
+                <RefreshCw className={`size-3 ${todayScreenLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
             {todayScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">
@@ -1864,6 +2003,12 @@ export default function MuseDashboard() {
 
           {/* ===== MEMORY SCREEN TAB (Day 12) ===== */}
           <TabsContent value="memoryscreen" className="space-y-6">
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground" onClick={refreshMemoryTab} disabled={memoryScreenLoading}>
+                <RefreshCw className={`size-3 ${memoryScreenLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
             {memoryScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">
@@ -2118,6 +2263,12 @@ export default function MuseDashboard() {
 
           {/* ===== LEARNING SCREEN TAB (Day 13) — MOST IMPORTANT ===== */}
           <TabsContent value="learningscreen" className="space-y-6">
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground" onClick={refreshLearningTab} disabled={learningScreenLoading}>
+                <RefreshCw className={`size-3 ${learningScreenLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
             {learningScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">
@@ -2358,6 +2509,12 @@ export default function MuseDashboard() {
 
           {/* ===== OVERNIGHT SCREEN TAB (Day 13) ===== */}
           <TabsContent value="overnightscreen" className="space-y-6">
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground" onClick={refreshOvernightTab} disabled={overnightScreenLoading}>
+                <RefreshCw className={`size-3 ${overnightScreenLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
             {overnightScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">
@@ -2543,6 +2700,12 @@ export default function MuseDashboard() {
 
           {/* ===== CONTROL SCREEN TAB (Day 13) ===== */}
           <TabsContent value="controlscreen" className="space-y-6">
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-muted-foreground" onClick={refreshControlTab} disabled={controlScreenLoading}>
+                <RefreshCw className={`size-3 ${controlScreenLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
             {controlScreenLoading && (
               <div className="flex items-center justify-center py-12 text-muted-foreground">
                 <div className="animate-pulse flex items-center gap-2">

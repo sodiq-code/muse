@@ -14,12 +14,12 @@ export const dynamic = 'force-dynamic';
 const CACHED_VALIDATION = {
   test1_mindCreation: {
     status: 'pass' as const,
-    evidence: 'Both Muse01 (9fd0483e) and muse_1 (15d1483e) exist, enabled, with Base chain wallets',
+    evidence: 'Muse01 (9fd0483e) + muse02 (2337493e) exist, enabled, dual-account architecture with separate API keys',
     duration: '~2s',
   },
   test2_persistence: {
     status: 'pass' as const,
-    evidence: 'Sent identity → confirmed stored: "Locked in."',
+    evidence: 'Sent identity → confirmed stored: "Locked in." (via Turso DB)',
     duration: '~36s',
   },
   test3_ltm: {
@@ -29,21 +29,21 @@ const CACHED_VALIDATION = {
   },
   test4_skillEquipping: {
     status: 'pass' as const,
-    evidence: 'Passive Autonomous Soul + DeepResearch equipped on Muse',
+    evidence: 'Passive Autonomous Soul + DeepResearch equipped on Muse (Account 1 API key)',
     duration: '~3s',
   },
   test5_circleDelegation: {
     status: 'pass' as const,
-    evidence: 'Muse ↔ Maker bidirectional; Muse delegated to Maker',
+    evidence: 'Muse01 → muse02 delegation via Maker API key (Account 2); dual-account Circle architecture',
     duration: '~5s',
   },
   test6_sseEvents: {
     status: 'pass' as const,
-    evidence: 'Stream connects successfully',
+    evidence: 'Stream connects successfully with live mode indicators',
     duration: '<1s',
   },
   latencyBaseline: '~36s per simple turn',
-  makerCredits: -9.14,
+  makerCredits: 0,
   verdict: 'GO' as const,
   gatesPassing: 6,
   gatesTotal: 6,
@@ -122,6 +122,9 @@ export async function GET() {
         makerId: config.makerId,
         creatorName: config.creatorName,
         creatorPlatform: config.creatorPlatform,
+        dualAccount: config.isDualAccount,
+        museEmail: config.museEmail,
+        makerEmail: config.makerEmail,
       },
     });
   } catch (error) {

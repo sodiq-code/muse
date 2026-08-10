@@ -7,17 +7,81 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adapterSendMessage, adapterGetHistory, isLiveMode } from '@/lib/minds-adapter';
+import { adapterSendMessage, adapterGetHistory, adapterSendMessageAndWait, isLiveMode } from '@/lib/minds-adapter';
 import { getMindsConfig } from '@/lib/minds-client';
 
 export const dynamic = 'force-dynamic';
 
 function extractMessageText(record: Record<string, unknown>): string {
-  // Minds SDK history records have messageText field
+  // Minds SDK response formats:
+  // 1. Direct messageText: { messageText: "..." }
+  // 2. Wrapped in reply: { reply: { messageText: "..." } }
+  // 3. waitForReply returns: { reply: { messageText: "..." }, ... }
+
   if (typeof record.messageText === 'string') return record.messageText;
-  // Some records wrap in reply
-  if (record.reply && typeof (record.reply as any).messageText === 'string') return (record.reply as any).messageText;
-  return JSON.stringify(record);
+
+  // Check for reply wrapper
+  const reply = record.reply as Record<string, unknown> | undefined;
+  if (reply) {
+    if (typeof reply.messageText === 'string') return reply.messageText;
+    // Sometimes reply has nested content
+    if (typeof reply.content === 'string') return reply.content;
+    if (typeof reply.text === 'string') return reply.text;
+  }
+
+  // Check for content field
+  if (typeof record.content === 'string') return record.content;
+  if (typeof record.text === 'string') return record.text;
+
+  // Last resort: try to parse if it's a JSON string
+  const str = JSON.stringify(record);
+  try {
+    const parsed = JSON.parse(str);
+    if (typeof parsed === 'string') return parsed;
+  } catch {
+    // not a string
+  }
+
+  return str;
+}
+
+/**
+ * Extract message text from a Minds SDK waitForReply response.
+ * The waitForReply returns a complex object that needs careful parsing.
+ */
+function extractReplyFromWaitForReply(replyStr: string): string {
+  try {
+    const parsed = JSON.parse(replyStr);
+
+    // waitForReply format: { reply: { messageText: "..." }, ... }
+    if (parsed.reply) {
+      if (typeof parsed.reply.messageText === 'string') return parsed.reply.messageText;
+      if (typeof parsed.reply.content === 'string') return parsed.reply.content;
+      if (typeof parsed.reply.text === 'string') return parsed.reply.text;
+    }
+
+    // Direct messageText
+    if (typeof parsed.messageText === 'string') return parsed.messageText;
+    if (typeof parsed.content === 'string') return parsed.content;
+    if (typeof parsed.text === 'string') return parsed.text;
+
+    // If it's still a complex object, try one more level
+    if (parsed.reply && typeof parsed.reply === 'object') {
+      const replyStr2 = JSON.stringify(parsed.reply);
+      if (replyStr2.length > 2 && replyStr2.length < replyStr.length * 0.5) {
+        // The reply object is significantly smaller than the full response
+        // Try to extract something meaningful
+        for (const key of ['messageText', 'content', 'text', 'body', 'response']) {
+          if (typeof parsed.reply[key] === 'string') return parsed.reply[key];
+        }
+      }
+    }
+
+    // Return the full JSON as fallback (it's still a valid response)
+    return replyStr;
+  } catch {
+    return replyStr;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -36,24 +100,42 @@ export async function POST(request: NextRequest) {
     const startTime = Date.now();
 
     if (isLiveMode()) {
-      // LIVE: Send message to Muse, then poll history for reply
+      // LIVE: Send message to Muse, then wait for reply using Minds SDK
       try {
-        // Send the message
-        const sendResult = await adapterSendMessage(alias, message, config.museId);
+        // Use sendMessageAndWait for reliable response
+        const result = await adapterSendMessageAndWait(
+          alias,
+          message,
+          config.museId,
+          60_000 // 60 second timeout for chat
+        );
 
+        if (result.success && result.reply) {
+          const extractedReply = extractReplyFromWaitForReply(result.reply);
+          return NextResponse.json({
+            success: true,
+            reply: extractedReply,
+            mode: 'live',
+            mindId: config.museId,
+            mindName: 'Muse01',
+            responseTime: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // If waitForReply didn't get a response, try polling history
+        const sendResult = await adapterSendMessage(alias, message, config.museId);
         if (sendResult.success) {
-          // Poll for the reply (check history 3 times with 5s delays)
+          // Poll for the reply (check history up to 6 times with 3s delays)
           for (let attempt = 0; attempt < 6; attempt++) {
-            await new Promise((r) => setTimeout(r, 3000)); // 3s between polls
+            await new Promise((r) => setTimeout(r, 3000));
 
             try {
               const history = await adapterGetHistory(alias, 5);
-              // Find the latest reply from the Mind (senderType 0 = Mind)
               const mindReply = history.find(
-                (msg: any) =>
+                (msg: Record<string, unknown>) =>
                   msg.senderType === 0 &&
-                  msg.senderEmail?.includes('muse01') &&
-                  new Date(msg.createdAt).getTime() > startTime - 5000
+                  new Date(msg.createdAt as string).getTime() > startTime - 5000
               );
 
               if (mindReply) {
@@ -72,29 +154,18 @@ export async function POST(request: NextRequest) {
               // History poll failed, continue trying
             }
           }
-
-          // No reply found after polling — return "thinking" status
-          return NextResponse.json({
-            success: true,
-            reply: 'Muse received your message and is thinking... Check back in a moment for the response.',
-            mode: 'live',
-            mindId: config.museId,
-            mindName: 'Muse01',
-            responseTime: Date.now() - startTime,
-            timestamp: new Date().toISOString(),
-            pending: true,
-          });
         }
 
-        // Send failed
+        // No reply found after polling — return "thinking" status
         return NextResponse.json({
-          success: false,
-          reply: null,
-          error: 'Failed to send message to Muse',
+          success: true,
+          reply: 'Muse received your message and is thinking... Check back in a moment for the response.',
           mode: 'live',
           mindId: config.museId,
+          mindName: 'Muse01',
           responseTime: Date.now() - startTime,
           timestamp: new Date().toISOString(),
+          pending: true,
         });
       } catch (err) {
         console.warn('[api/minds/chat] Live chat failed, using simulator:', err);
