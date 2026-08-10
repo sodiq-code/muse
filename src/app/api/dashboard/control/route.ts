@@ -11,29 +11,35 @@ import { getControlScreenData, getDefaultCreatorId } from '@/lib/control-screen-
 
 function getFallbackControlData() {
   return {
+    creatorName: 'Jules',
     autonomySettings: {
       overnightAnalysis: true,
       draftCreation: true,
       autoPublish: false,
       communityMonitoring: true,
     },
-    pendingApprovals: [
+    approvalQueue: [
       {
         id: 'ca1',
+        itemType: 'draft',
+        itemId: 'fallback-draft-1',
+        title: 'Most AI agents aren\'t really agents',
         action: 'publish',
-        description: 'Most AI agents aren\'t really agents',
-        source: 'mind_muse',
         status: 'pending',
         createdAt: '2026-08-09T06:00:00Z',
+        reviewedAt: null,
+        age: '6h ago',
       },
     ],
+    pendingCount: 1,
     auditLog: [
-      { id: 'al1', actor: 'muse', action: 'review', target: 'audience signals', timestamp: '2026-08-09T22:04:00Z' },
-      { id: 'al2', actor: 'muse', action: 'delegate', target: 'maker', timestamp: '2026-08-09T22:31:00Z' },
-      { id: 'al3', actor: 'maker', action: 'create', target: 'draft', timestamp: '2026-08-09T22:42:00Z' },
-      { id: 'al4', actor: 'muse', action: 'evaluate', target: 'draft', timestamp: '2026-08-09T22:45:00Z' },
-      { id: 'al5', actor: 'muse', action: 'update', target: 'content plan', timestamp: '2026-08-09T23:02:00Z' },
+      { timestamp: '2026-08-09T22:04:00Z', actor: 'muse', action: 'Muse reviewed audience signals', detail: '3 observations, 2 recommendations', targetType: 'content_item', targetId: null, delta: null },
+      { timestamp: '2026-08-09T22:31:00Z', actor: 'muse', action: 'Muse delegated to maker', detail: 'delegated draft generation', targetType: 'draft', targetId: null, delta: null },
+      { timestamp: '2026-08-09T22:42:00Z', actor: 'maker', action: 'Maker created draft', detail: 'Most AI agents aren\'t really agents', targetType: 'draft', targetId: null, delta: null },
+      { timestamp: '2026-08-09T22:45:00Z', actor: 'muse', action: 'Muse evaluated draft', detail: 'Voice 94%, Hook 91%, Quality 88%', targetType: 'draft', targetId: null, delta: null },
+      { timestamp: '2026-08-09T23:02:00Z', actor: 'muse', action: 'Muse updated memory', detail: 'Hook pattern strength increased', targetType: 'memory', targetId: null, delta: null },
     ],
+    totalAuditEvents: 47,
     isSimulation: true,
     source: 'prerecorded',
   };
