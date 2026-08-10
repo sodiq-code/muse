@@ -97,7 +97,7 @@
   --secondary: oklch(0.24 0.025 265);
   --secondary-foreground: oklch(0.92 0.008 250);
   --muted: oklch(0.24 0.02 265);
-  --muted-foreground: oklch(0.7 0.015 250);
+  --muted-foreground: oklch(0.78 0.01 250);
   --accent: oklch(0.78 0.16 75);
   --accent-foreground: oklch(0.2 0.04 70);
   --destructive: oklch(0.65 0.25 25);
@@ -381,7 +381,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: oklch(0.65 0.02 250);
+  color: oklch(0.75 0.02 250);
 }
 
 /* ---------- PREMIUM CARD WITH TOP GRADIENT ---------- */
@@ -806,7 +806,7 @@ table {
 }
 
 [role="tab"]:not([data-state="active"]) {
-  color: oklch(0.7 0.015 250);
+  color: oklch(0.78 0.01 250);
 }
 
 [role="tab"]:not([data-state="active"]):hover {
