@@ -11,25 +11,35 @@ import { getOvernightScreenData, getDefaultCreatorId } from '@/lib/overnight-scr
 
 function getFallbackOvernightData() {
   return {
+    creatorName: 'Jules',
+    schedule: {
+      wakeTime: '22:00',
+      draftTime: '23:30',
+      briefTime: '06:00',
+    },
     theatreStatus: 'complete',
-    timeline: [
-      { time: '22:00', actor: 'muse', action: 'Creator went offline' },
-      { time: '22:04', actor: 'muse', action: 'Analysed audience signals' },
-      { time: '22:17', actor: 'muse', action: 'Found 3 opportunities' },
-      { time: '22:24', actor: 'muse', action: 'Retrieved winning hook patterns' },
-      { time: '22:31', actor: 'muse', action: 'Delegated draft to Maker' },
-      { time: '22:42', actor: 'maker', action: 'Created draft' },
-      { time: '22:45', actor: 'muse', action: 'Evaluated draft: Voice 94%, Hook 91%' },
-      { time: '23:02', actor: 'muse', action: 'Updated content plan' },
-      { time: '06:00', actor: 'muse', action: 'Morning brief prepared' },
+    mindTheatre: [
+      { time: '22:00', actor: 'creator', action: 'Creator went offline', phase: 'sleeping' },
+      { time: '22:04', actor: 'muse', action: 'Reviewing signals...', phase: 'reviewing_signals' },
+      { time: '22:17', actor: 'muse', action: 'Checking performance...', phase: 'reviewing_signals' },
+      { time: '22:24', actor: 'muse', action: 'Delegating to Maker...', phase: 'delegating' },
+      { time: '22:42', actor: 'maker', action: 'Creating draft...', phase: 'drafting' },
+      { time: '22:45', actor: 'muse', action: 'Evaluating output...', phase: 'draft_complete' },
+      { time: '23:02', actor: 'muse', action: 'Storing candidate', phase: 'waiting_approval' },
+      { time: '06:00', actor: 'muse', action: 'Morning brief ready', phase: 'brief_ready' },
     ],
     overnightOutput: {
       draftTitle: 'Most AI agents aren\'t really agents',
-      voiceMatch: 0.94,
-      hookCompat: 0.91,
+      draftId: 'fallback-draft-1',
+      voiceMatch: 94,
+      hookCompat: 91,
+      contentQuality: 88,
+      overallScore: 91,
       evaluationPassed: true,
-      evidence: '8 posts with contrarian pattern, 72% avg retention',
+      hookPattern: 'Contrarian Claim',
+      createdAt: '2026-08-09T06:00:00Z',
     },
+    lastRunTime: '2026-08-09T06:00:00Z',
     isSimulation: true,
     source: 'prerecorded',
   };

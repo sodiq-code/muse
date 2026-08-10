@@ -22,24 +22,24 @@ function getFallbackTodayData() {
       reviewedCount: 3,
       draftedCount: 1,
       updatedCount: 2,
-      source: 'AuditEvent ·9 50 events in last 12h',
+      source: 'AuditEvent · 50 events in last 12h',
     },
     topSignals: [
       {
         label: 'Top Hook',
-        value: 'contrarian9 72% avg retention',
-        source: 'HookPattern9 8 samples',
+        value: 'Contrarian · 72% avg retention',
+        source: 'HookPattern · 8 samples',
         evidence:
           'Based on 8 posts, contrarian pattern averages 72% retention vs 61% baseline',
       },
       {
         label: 'Engage Uplift',
         value: 'Up 11% vs baseline',
-        source: 'HookPattern comparison9 medium confidence',
+        source: 'HookPattern comparison · medium confidence',
         evidence: 'Contrarian hooks outperform question hooks by 11pp',
       },
     ],
-    newData: { label: '3 new posts analyzed', value: '3', source: 'ContentItem9 28 total' },
+    newData: { label: '3 new posts analyzed', value: '3', source: 'ContentItem · 28 total' },
     tryNext: {
       label: 'Try contrarian hook',
       description:
@@ -54,7 +54,7 @@ function getFallbackTodayData() {
         draftId: 'fallback-1',
         title: 'Most AI agents aren\'t really agents',
         hookType: 'contrarian_claim',
-        source: 'Muse9 Maker9 v1',
+        source: 'Muse · Maker · v1',
         evidenceCount: 8,
         avgScore: 91,
         createdAt: '2026-08-09T06:00:00Z',
