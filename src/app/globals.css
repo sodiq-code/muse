@@ -83,39 +83,39 @@
 
 /* =========================================================================
    PREMIUM DARK MODE - The default experience
-   Deep navy backgrounds, glass morphism, vibrant accents
+   Rich deep slate with subtle cool undertones, gradient mesh, vibrant accents
    ========================================================================= */
 .dark {
-  --background: oklch(0.11 0.028 260);
-  --foreground: oklch(0.95 0.01 250);
-  --card: oklch(0.17 0.025 260);
-  --card-foreground: oklch(0.95 0.01 250);
-  --popover: oklch(0.17 0.025 260);
-  --popover-foreground: oklch(0.95 0.01 250);
+  --background: oklch(0.145 0.02 265);
+  --foreground: oklch(0.97 0.005 250);
+  --card: oklch(0.19 0.022 265);
+  --card-foreground: oklch(0.97 0.005 250);
+  --popover: oklch(0.19 0.022 265);
+  --popover-foreground: oklch(0.97 0.005 250);
   --primary: oklch(0.7 0.15 195);
-  --primary-foreground: oklch(0.11 0.028 260);
-  --secondary: oklch(0.22 0.03 260);
-  --secondary-foreground: oklch(0.9 0.01 250);
-  --muted: oklch(0.22 0.025 260);
-  --muted-foreground: oklch(0.65 0.02 250);
+  --primary-foreground: oklch(0.145 0.02 265);
+  --secondary: oklch(0.24 0.025 265);
+  --secondary-foreground: oklch(0.92 0.008 250);
+  --muted: oklch(0.24 0.02 265);
+  --muted-foreground: oklch(0.7 0.015 250);
   --accent: oklch(0.78 0.16 75);
-  --accent-foreground: oklch(0.18 0.04 70);
+  --accent-foreground: oklch(0.2 0.04 70);
   --destructive: oklch(0.65 0.25 25);
-  --border: oklch(0.3 0.03 260);
-  --input: oklch(0.25 0.03 260);
+  --border: oklch(0.32 0.025 265);
+  --input: oklch(0.27 0.025 265);
   --ring: oklch(0.7 0.15 195);
   --chart-1: oklch(0.7 0.15 195);
   --chart-2: oklch(0.78 0.16 75);
   --chart-3: oklch(0.65 0.22 310);
   --chart-4: oklch(0.68 0.2 25);
   --chart-5: oklch(0.72 0.17 150);
-  --sidebar: oklch(0.15 0.03 260);
-  --sidebar-foreground: oklch(0.9 0.01 250);
+  --sidebar: oklch(0.16 0.025 265);
+  --sidebar-foreground: oklch(0.92 0.008 250);
   --sidebar-primary: oklch(0.7 0.15 195);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.22 0.03 260);
-  --sidebar-accent-foreground: oklch(0.9 0.01 250);
-  --sidebar-border: oklch(0.28 0.03 260);
+  --sidebar-accent: oklch(0.24 0.025 265);
+  --sidebar-accent-foreground: oklch(0.92 0.008 250);
+  --sidebar-border: oklch(0.3 0.025 265);
   --sidebar-ring: oklch(0.7 0.15 195);
 }
 
@@ -142,15 +142,15 @@
 
 /* ---------- CUSTOM PROPERTIES FOR PREMIUM EFFECTS ---------- */
 :root {
-  --glass-bg: oklch(0.17 0.025 260 / 65%);
-  --glass-border: oklch(0.5 0.05 260 / 22%);
+  --glass-bg: oklch(0.2 0.022 265 / 70%);
+  --glass-border: oklch(0.5 0.05 265 / 25%);
   --glass-blur: 20px;
-  --glow-primary: oklch(0.7 0.15 195 / 15%);
-  --glow-accent: oklch(0.78 0.16 75 / 20%);
+  --glow-primary: oklch(0.7 0.15 195 / 18%);
+  --glow-accent: oklch(0.78 0.16 75 / 22%);
   --gradient-primary: linear-gradient(135deg, oklch(0.7 0.15 195), oklch(0.65 0.2 165));
   --gradient-accent: linear-gradient(135deg, oklch(0.78 0.16 75), oklch(0.72 0.18 55));
   --gradient-warm: linear-gradient(135deg, oklch(0.78 0.16 75), oklch(0.68 0.2 25));
-  --gradient-surface: linear-gradient(145deg, oklch(0.18 0.03 260), oklch(0.15 0.03 260));
+  --gradient-surface: linear-gradient(145deg, oklch(0.2 0.022 265), oklch(0.17 0.025 265));
   --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -166,20 +166,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, oklch(0.35 0.04 260), oklch(0.45 0.06 260));
+  background: linear-gradient(180deg, oklch(0.35 0.04 265), oklch(0.45 0.06 265));
   border-radius: 3px;
   border: 1px solid transparent;
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, oklch(0.45 0.06 260), oklch(0.55 0.08 260));
+  background: linear-gradient(180deg, oklch(0.45 0.06 265), oklch(0.55 0.08 265));
   background-clip: padding-box;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: oklch(0.35 0.04 260) transparent;
+  scrollbar-color: oklch(0.35 0.04 265) transparent;
 }
 
 /* ---------- KEYFRAMES ---------- */
@@ -322,9 +322,9 @@
 .muse-skeleton {
   background: linear-gradient(
     90deg,
-    oklch(0.22 0.025 260) 25%,
-    oklch(0.28 0.03 260) 50%,
-    oklch(0.22 0.025 260) 75%
+    oklch(0.22 0.025 265) 25%,
+    oklch(0.28 0.03 265) 50%,
+    oklch(0.22 0.025 265) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
@@ -358,12 +358,12 @@
 }
 
 .glass-card:hover {
-  background: oklch(0.2 0.03 260 / 65%);
-  border-color: oklch(0.5 0.05 260 / 28%);
+  background: oklch(0.22 0.025 265 / 70%);
+  border-color: oklch(0.5 0.05 265 / 30%);
   transform: translateY(-2px);
   box-shadow:
     0 8px 32px -8px oklch(0 0 0 / 40%),
-    0 0 0 1px oklch(0.5 0.05 260 / 8%);
+    0 0 0 1px oklch(0.5 0.05 265 / 10%);
 }
 
 /* ---------- ELITE STAT VALUE ---------- */
@@ -404,7 +404,7 @@
 /* Premium card with gradient border */
 .gradient-border-card {
   position: relative;
-  background: oklch(0.18 0.03 260);
+  background: oklch(0.19 0.022 265);
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
@@ -463,8 +463,8 @@
   transform: translateY(-2px);
   box-shadow:
     0 8px 24px -8px oklch(0 0 0 / 50%),
-    0 0 0 1px oklch(0.5 0.05 260 / 12%);
-  border-color: oklch(0.45 0.06 260);
+    0 0 0 1px oklch(0.5 0.05 265 / 12%);
+  border-color: oklch(0.45 0.06 265);
 }
 
 /* ---------- STAGGERED ANIMATIONS ---------- */
@@ -535,7 +535,7 @@
 [role="progressbar"] {
   overflow: hidden;
   border-radius: 9999px;
-  background: oklch(0.22 0.025 260);
+  background: oklch(0.22 0.025 265);
 }
 
 [role="progressbar"] > div {
@@ -605,8 +605,8 @@ table {
 
 /* ---------- PREMIUM TOOLTIP ---------- */
 [data-radix-tooltip-content] {
-  background: oklch(0.22 0.03 260);
-  border: 1px solid oklch(0.35 0.04 260);
+  background: oklch(0.22 0.025 265);
+  border: 1px solid oklch(0.35 0.035 265);
   backdrop-filter: blur(12px);
   box-shadow: 0 8px 32px -8px oklch(0 0 0 / 60%);
 }
@@ -653,7 +653,7 @@ table {
   background: linear-gradient(
     90deg,
     oklch(0 0 0 / 0%),
-    oklch(0.4 0.05 260 / 30%),
+    oklch(0.4 0.05 265 / 30%),
     oklch(0 0 0 / 0%)
   );
   border: none;
@@ -684,7 +684,7 @@ table {
 /* ---------- SCROLLBAR CONTAINER ---------- */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: oklch(0.35 0.04 260) transparent;
+  scrollbar-color: oklch(0.35 0.04 265) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -697,20 +697,20 @@ table {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, oklch(0.35 0.04 260), oklch(0.45 0.06 260));
+  background: linear-gradient(180deg, oklch(0.35 0.04 265), oklch(0.45 0.06 265));
   border-radius: 2px;
   background-clip: padding-box;
   border: 1px solid transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0.06 260);
+  background: oklch(0.5 0.06 265);
   background-clip: padding-box;
 }
 
 /* ---------- PREMIUM OVERLAY / BACKDROP ---------- */
 .premium-backdrop {
-  background: oklch(0.13 0.028 260 / 60%);
+  background: oklch(0.145 0.02 265 / 60%);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -724,7 +724,7 @@ table {
 /* ---------- PREMIUM AVATAR RING ---------- */
 .avatar-ring {
   box-shadow:
-    0 0 0 2px oklch(0.18 0.03 260),
+    0 0 0 2px oklch(0.19 0.022 265),
     0 0 0 3px oklch(0.7 0.15 195 / 30%);
 }
 
@@ -744,16 +744,17 @@ table {
 /* Make all shadcn/ui Cards look premium by default */
 [data-slot="card"] {
   border-radius: 1rem;
-  border: 1px solid oklch(0.3 0.03 260 / 70%);
-  background: oklch(0.17 0.025 260 / 92%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid oklch(0.32 0.025 265 / 70%);
+  background: oklch(0.19 0.022 265 / 94%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   transition: all 0.25s var(--transition-smooth);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 10%), inset 0 1px 0 oklch(0.35 0.02 265 / 8%);
 }
 
 [data-slot="card"]:hover {
-  border-color: oklch(0.38 0.04 260 / 85%);
-  box-shadow: 0 8px 24px -6px oklch(0 0 0 / 35%), 0 0 0 1px oklch(0.4 0.04 260 / 15%);
+  border-color: oklch(0.4 0.035 265 / 85%);
+  box-shadow: 0 8px 24px -6px oklch(0 0 0 / 35%), 0 0 0 1px oklch(0.4 0.04 265 / 15%), inset 0 1px 0 oklch(0.4 0.03 265 / 10%);
 }
 
 /* Premium badge defaults */
@@ -769,9 +770,9 @@ table {
 
 /* ---------- PREMIUM TOAST OVERRIDES ---------- */
 [data-sonner-toaster] {
-  --normal-bg: oklch(0.18 0.03 260);
-  --normal-border: oklch(0.35 0.04 260 / 60%);
-  --normal-text: oklch(0.93 0.01 250);
+  --normal-bg: oklch(0.2 0.022 265);
+  --normal-border: oklch(0.38 0.035 265 / 60%);
+  --normal-text: oklch(0.95 0.005 250);
 }
 
 /* ---------- ANIMATE PULSE SUBTLE ---------- */
@@ -805,12 +806,64 @@ table {
 }
 
 [role="tab"]:not([data-state="active"]) {
-  color: oklch(0.65 0.02 250);
+  color: oklch(0.7 0.015 250);
 }
 
 [role="tab"]:not([data-state="active"]):hover {
-  color: oklch(0.9 0.01 250);
-  background: oklch(0.22 0.03 260 / 60%);
+  color: oklch(0.92 0.008 250);
+  background: oklch(0.24 0.025 265 / 60%);
+}
+
+/* ---------- PREMIUM GRADIENT MESH BACKGROUND ---------- */
+/* Beautiful layered gradient mesh for depth and premium feel */
+.premium-mesh-bg {
+  position: relative;
+  background:
+    oklch(0.145 0.02 265);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% 40%, oklch(0.25 0.06 280 / 25%), transparent),
+    radial-gradient(ellipse 60% 80% at 80% 20%, oklch(0.22 0.05 200 / 20%), transparent),
+    radial-gradient(ellipse 70% 60% at 50% 80%, oklch(0.2 0.04 160 / 15%), transparent),
+    radial-gradient(ellipse 50% 40% at 90% 70%, oklch(0.23 0.05 300 / 12%), transparent);
+  min-height: 100vh;
+}
+
+/* Subtle animated mesh shimmer */
+@keyframes mesh-drift {
+  0%, 100% {
+    background-position:
+      0% 0%,
+      100% 0%,
+      50% 100%,
+      100% 100%;
+  }
+  50% {
+    background-position:
+      10% 5%,
+      90% 10%,
+      45% 90%,
+      95% 65%;
+  }
+}
+
+.premium-mesh-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(ellipse 50% 35% at 15% 30%, oklch(0.3 0.08 280 / 12%), transparent),
+    radial-gradient(ellipse 40% 50% at 85% 60%, oklch(0.25 0.06 195 / 10%), transparent),
+    radial-gradient(ellipse 60% 40% at 40% 90%, oklch(0.22 0.04 150 / 8%), transparent);
+  animation: mesh-drift 20s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+  background-size: 200% 200%, 200% 200%, 200% 200%;
+}
+
+/* Ensure all content sits above the mesh */
+.premium-mesh-bg > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* ---------- NO INDIGO/BLUE ENFORCEMENT ---------- */
