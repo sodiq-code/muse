@@ -15,29 +15,28 @@ export async function GET() {
     const config = getMindsConfig();
     const mode = isLiveMode() ? 'live' : 'simulate';
 
-    // Fetch Muse mind data (primary — owned by this API key)
+    // Fetch Muse mind data (Account 1 — primary)
     const museMind = await adapterGetMind(config.museId).catch((e) => ({ error: String(e), mindId: config.museId } as const));
 
-    // Fetch Maker mind data (may fail with "You do not own this mind" if cross-account)
+    // Fetch Maker mind data (Account 2 — uses Maker API key automatically)
     const makerMind = await adapterGetMind(config.makerId).catch((e) => {
       const errStr = String(e);
       const isOwnershipError = errStr.includes('do not own') || errStr.includes('403') || errStr.includes('BAD_INPUT');
       return {
-        error: isOwnershipError ? 'Cross-account Mind — use Circle for delegation' : errStr,
+        error: isOwnershipError ? 'Cross-account Mind — using Maker API key' : errStr,
         mindId: config.makerId,
         isCrossAccount: isOwnershipError,
       } as const;
     });
 
-    // Fetch cognition balances (maker may fail for cross-account)
+    // Fetch cognition balances
     const museBalance = await adapterGetCognitionBalance(config.museId).catch(() => ({ mindId: config.museId, cognition: 0 }));
     const makerBalance = await adapterGetCognitionBalance(config.makerId).catch(() => ({
       mindId: config.makerId,
       cognition: 0,
-      note: 'Cross-account — balance not accessible via this API key',
     }));
 
-    // Fetch skills (maker may fail for cross-account)
+    // Fetch skills
     const museSkills = await adapterListEquippedSkills(config.museId).catch(() => []);
     const makerSkills = await adapterListEquippedSkills(config.makerId).catch(() => []);
 
@@ -48,6 +47,7 @@ export async function GET() {
     return NextResponse.json({
       mode,
       connected: true,
+      dualAccount: config.isDualAccount,
       muse: {
         mind: 'error' in museMind ? null : museMind,
         balance: museBalance,
@@ -61,7 +61,7 @@ export async function GET() {
         skills: makerSkills,
         circleMembers: makerCircle,
         error: 'error' in makerMind ? makerMind.error : null,
-        isCrossAccount: 'isCrossAccount' in makerMind ? (makerMind as any).isCrossAccount : false,
+        isCrossAccount: 'isCrossAccount' in makerMind ? (makerMind as Record<string, unknown>).isCrossAccount : false,
       },
     });
   } catch (error) {

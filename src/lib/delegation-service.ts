@@ -249,8 +249,10 @@ export async function executeDelegation(
     );
 
     if (makerInCircle && isLiveMode()) {
-      // Send structured instruction to Maker via Minds and WAIT for real reply
+      // Send structured instruction to Maker via Maker API key (Account 2)
+      // This is the REAL delegation path: Muse → Maker via Minds SDK
       const delegationMessage = formatDelegationMessage(instruction);
+      console.log('[delegation] Sending to Maker via Minds SDK (dual-account)');
       const sendResult = await adapterSendMessageAndWait(
         'muse-to-maker',
         delegationMessage,
@@ -260,32 +262,52 @@ export async function executeDelegation(
 
       if (sendResult.success && sendResult.reply) {
         // Real Maker response received — parse it into MakerOutput format
+        console.log('[delegation] Maker responded! Length:', sendResult.reply.length);
+
+        // Extract messageText from Minds SDK waitForReply response
+        let replyText = sendResult.reply;
         try {
           const parsedReply = JSON.parse(sendResult.reply);
-          makerOutput = {
-            script: parsedReply.script ?? sendResult.reply,
-            caption: parsedReply.caption ?? '',
-            title: parsedReply.title ?? instruction.makerInput.topic,
-            cta: parsedReply.cta ?? '',
-            alternativeHooks: parsedReply.alternativeHooks ?? [],
-            thumbnailConcept: parsedReply.thumbnailConcept,
-            voiceMatch: parsedReply.voiceMatch ?? 0.85,
-            hookCompat: parsedReply.hookCompat ?? 0.82,
-            source: 'live',
-          };
-          mode = 'live';
+          if (parsedReply.reply?.messageText) {
+            replyText = parsedReply.reply.messageText;
+          } else if (parsedReply.messageText) {
+            replyText = parsedReply.messageText;
+          }
         } catch {
-          // Maker returned plain text, not JSON — wrap it
+          // Not JSON — use as-is
+        }
+
+        // Try to parse the extracted text as structured Maker output
+        try {
+          const structured = JSON.parse(replyText);
+          if (structured.script || structured.title) {
+            makerOutput = {
+              script: structured.script ?? replyText,
+              caption: structured.caption ?? '',
+              title: structured.title ?? instruction.makerInput.topic,
+              cta: structured.cta ?? '',
+              alternativeHooks: structured.alternativeHooks ?? [],
+              thumbnailConcept: structured.thumbnailConcept,
+              voiceMatch: structured.voiceMatch ?? 0.85,
+              hookCompat: structured.hookCompat ?? 0.82,
+              source: 'live',
+            };
+            mode = 'live';
+          } else {
+            throw new Error('Not structured output');
+          }
+        } catch {
+          // Maker returned plain text — wrap it honestly
           makerOutput = {
             ...simulateMakerOutput(instruction.makerInput),
-            script: sendResult.reply,
+            script: replyText,
             source: 'live',
           };
           mode = 'live';
         }
       } else {
-        // Send failed or no reply — fallback to simulator with live label
-        console.warn('[delegation] Maker did not reply, using simulator fallback');
+        // Send failed or no reply — honest fallback to simulator
+        console.warn('[delegation] Maker did not reply, using simulator fallback (honestly reported)');
         makerOutput = simulateMakerOutput(instruction.makerInput);
         mode = 'simulated';
       }

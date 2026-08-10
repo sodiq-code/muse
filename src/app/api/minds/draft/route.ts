@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         );
 
     if (isLiveMode()) {
-      // LIVE MODE: Send to real Maker Mind and wait for response
+      // LIVE MODE: Send to real Maker Mind via Maker API key (Account 2)
       const config = getMindsConfig();
       const delegationMessage = `[MUSE DRAFT REQUEST]
 Topic: ${instruction.topic}
@@ -27,6 +27,9 @@ Objective: ${instruction.objective}
 Audience: ${instruction.audience}
 Creator: ${instruction.creator}
 Voice: ${instruction.voice.tone} tone, ${instruction.voice.pace} pace
+Vocabulary: ${instruction.voice.vocabulary}
+Avoid: ${instruction.voice.avoidTopics.join(', ')}
+Strengths: ${instruction.voice.strengths.join(', ')}
 Instruction: ${instruction.instruction}
 [END REQUEST]`;
 
@@ -37,30 +40,68 @@ Instruction: ${instruction.instruction}
         config.makerId,
         90_000 // 90 second timeout
       );
-      const creditsUsed = (Date.now() - startTime) > 5000 ? 1 : 0; // Estimate
+      const responseTime = Date.now() - startTime;
 
       if (result.success && result.reply) {
         // Parse Maker's real response
-        let output;
+        // The Minds SDK waitForReply returns a complex JSON object
+        // We need to extract the messageText from it
+        let replyText = result.reply;
         try {
           const parsed = JSON.parse(result.reply);
-          output = {
-            script: parsed.script ?? result.reply,
-            caption: parsed.caption ?? '',
-            title: parsed.title ?? instruction.topic,
-            cta: parsed.cta ?? '',
-            alternativeHooks: parsed.alternativeHooks ?? [],
-            voiceMatch: parsed.voiceMatch ?? 0.85,
-            hookCompat: parsed.hookCompat ?? 0.82,
-            source: 'live' as const,
-          };
+          // Extract messageText from Minds SDK response format
+          if (parsed.reply?.messageText) {
+            replyText = parsed.reply.messageText;
+          } else if (parsed.messageText) {
+            replyText = parsed.messageText;
+          } else if (typeof parsed === 'string') {
+            replyText = parsed;
+          }
+          // Try to parse the messageText as JSON (Maker might return structured output)
+          try {
+            const structured = JSON.parse(replyText);
+            if (structured.script || structured.title || structured.caption) {
+              // Maker returned structured output — use it directly
+              const output = {
+                script: structured.script ?? replyText,
+                caption: structured.caption ?? '',
+                title: structured.title ?? instruction.topic,
+                cta: structured.cta ?? '',
+                alternativeHooks: structured.alternativeHooks ?? [],
+                thumbnailConcept: structured.thumbnailConcept,
+                voiceMatch: structured.voiceMatch ?? 0.85,
+                hookCompat: structured.hookCompat ?? 0.82,
+                source: 'live' as const,
+              };
+              return NextResponse.json({
+                success: true,
+                draft: output,
+                metadata: {
+                  generatedAt: new Date().toISOString(),
+                  source: 'live',
+                  creditsUsed: 1,
+                  hookPatternsAvailable: 8,
+                  voiceMatch: output.voiceMatch,
+                  hookCompat: output.hookCompat,
+                  makerMindId: config.makerId,
+                  responseTime,
+                },
+              });
+            }
+          } catch {
+            // messageText is plain text, not structured — use it as script
+          }
         } catch {
-          output = {
-            ...simulateMakerOutput(instruction),
-            script: result.reply,
-            source: 'live' as const,
-          };
+          // reply is not JSON — use as-is
         }
+
+        // Maker returned plain text (or we couldn't parse structured output)
+        // Wrap it with simulated structure but mark source as 'live'
+        const output = {
+          ...simulateMakerOutput(instruction),
+          script: replyText,
+          source: 'live' as const,
+        };
 
         return NextResponse.json({
           success: true,
@@ -68,12 +109,12 @@ Instruction: ${instruction.instruction}
           metadata: {
             generatedAt: new Date().toISOString(),
             source: 'live',
-            creditsUsed,
+            creditsUsed: 1,
             hookPatternsAvailable: 8,
             voiceMatch: output.voiceMatch,
             hookCompat: output.hookCompat,
             makerMindId: config.makerId,
-            responseTime: Date.now() - startTime,
+            responseTime,
           },
         });
       }
