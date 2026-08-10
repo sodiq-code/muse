@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaLibSQL } from '@prisma/adapter-libsql'
-import { createClient } from '@libsql/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -14,14 +13,13 @@ const useTurso = isVercel && !!(tursoUrl && tursoToken)
 let db: PrismaClient
 
 if (useTurso) {
-  // Turso (libSQL) for Vercel serverless — initialized synchronously with static imports
+  // Turso (libSQL) for Vercel serverless
+  // PrismaLibSQL adapter accepts config directly (creates client internally)
   try {
-    const libsql = createClient({
+    const adapter = new PrismaLibSQL({
       url: tursoUrl!,
       authToken: tursoToken!,
     })
-
-    const adapter = new PrismaLibSQL(libsql)
     db = new PrismaClient({ adapter } as any)
     console.log('[db] Connected to Turso:', tursoUrl!.replace(/\/\/.*\.turso\.io/, '//***.turso.io'))
   } catch (e) {
