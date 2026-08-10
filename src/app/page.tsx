@@ -1938,14 +1938,14 @@ export default function MuseDashboard() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Button size="sm" variant="default" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700">
-                                <Check className="size-3" /> Approve
+                              <Button size="sm" variant="default" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => approveActionHandler(draft.draftId || draft.id)} disabled={approvalActionLoading === (draft.draftId || draft.id)}>
+                                {approvalActionLoading === (draft.draftId || draft.id) ? <div className="size-3 animate-spin border-2 border-current border-t-transparent rounded-full" /> : <Check className="size-3" />} Approve
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => { setChatInput(`Review draft: "${draft.title}" — what would you change?`); toast.info('Modify mode — edit in chat or reject with reason'); }}>
                                 <Pencil className="size-3" /> Modify
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10">
-                                <X className="size-3" /> Reject
+                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => rejectActionHandler(draft.draftId || draft.id)} disabled={approvalActionLoading === (draft.draftId || draft.id)}>
+                                {approvalActionLoading === (draft.draftId || draft.id) ? <div className="size-3 animate-spin border-2 border-current border-t-transparent rounded-full" /> : <X className="size-3" />} Reject
                               </Button>
                             </div>
                             {draft.evidenceCount !== undefined && (
