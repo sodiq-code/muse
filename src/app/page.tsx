@@ -930,7 +930,7 @@ function statusBadgeStyle(status: string): string {
     case 'published': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
     case 'drafting': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
     case 'idea': return 'bg-violet-500/10 text-violet-400 border-violet-500/20';
-    case 'archived': return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+    case 'archived': return 'bg-slate-500/10 text-slate-300 border-slate-500/20';
     default: return '';
   }
 }
@@ -1623,7 +1623,7 @@ export default function MuseDashboard() {
   const worstPatternEntry = perfData?.hookPatterns?.find((p) => p.pattern === perfData.worstPattern);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
+    <div className="min-h-screen flex flex-col premium-mesh-bg text-foreground">
       <Toaster position="top-right" richColors closeButton />
       {/* Hidden live mode detector */}
       <input type="hidden" value={status?.mode ?? 'unknown'} />
@@ -1648,7 +1648,7 @@ export default function MuseDashboard() {
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight gradient-text">
                 MUSE
               </h1>
-              <p className="text-sm text-slate-400 font-medium">
+              <p className="text-sm text-slate-300 font-medium">
                 The AI Creative Team That Learns You
               </p>
             </div>
@@ -1702,7 +1702,7 @@ export default function MuseDashboard() {
             )}
           </div>
           {/* Last refreshed + manual refresh */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+          <div className="flex items-center gap-1.5 text-xs text-slate-300">
             <Clock className="size-3" />
             <span>{lastStatusRefresh.toLocaleTimeString()}</span>
             <Button
@@ -1744,23 +1744,23 @@ export default function MuseDashboard() {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
         <Tabs defaultValue="today" className="w-full">
           <TabsList className="w-full overflow-x-auto flex-nowrap justify-start gap-2 pb-1 scrollbar-thin bg-transparent p-1 rounded-2xl">
-            <TabsTrigger value="today" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-400 hover:text-white">
+            <TabsTrigger value="today" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-300 hover:text-white">
               <Sun className="size-4" />
               <span>Today</span>
             </TabsTrigger>
-            <TabsTrigger value="memoryscreen" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-400 hover:text-white">
+            <TabsTrigger value="memoryscreen" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-300 hover:text-white">
               <Brain className="size-4" />
               <span>Memory</span>
             </TabsTrigger>
-            <TabsTrigger value="learningscreen" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-400 hover:text-white">
+            <TabsTrigger value="learningscreen" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-300 hover:text-white">
               <GraduationCap className="size-4" />
               <span>Learning</span>
             </TabsTrigger>
-            <TabsTrigger value="overnightscreen" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-400 hover:text-white">
+            <TabsTrigger value="overnightscreen" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-300 hover:text-white">
               <Moon className="size-4" />
               <span>Overnight</span>
             </TabsTrigger>
-            <TabsTrigger value="controlscreen" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-400 hover:text-white">
+            <TabsTrigger value="controlscreen" className="gap-1.5 shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/25 text-slate-300 hover:text-white">
               <Settings className="size-4" />
               <span>Control</span>
             </TabsTrigger>
@@ -1769,13 +1769,13 @@ export default function MuseDashboard() {
           {/* ===== TODAY TAB (Day 12) ===== */}
           <TabsContent value="today" className="space-y-6">
             <div className="flex justify-end">
-              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-400" onClick={refreshTodayTab} disabled={todayScreenLoading}>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-300" onClick={refreshTodayTab} disabled={todayScreenLoading}>
                 <RefreshCw className={`size-3 ${todayScreenLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
             {todayScreenLoading && (
-              <div className="flex items-center justify-center py-12 text-slate-400">
+              <div className="flex items-center justify-center py-12 text-slate-300">
                 <div className="animate-pulse flex items-center gap-2">
                   <Sun className="size-5 animate-spin" />
                   Loading today&apos;s brief…
@@ -1809,7 +1809,7 @@ export default function MuseDashboard() {
                           <h2 className="text-2xl font-bold tracking-tight gradient-text-warm">
                             {todayScreenData.greeting?.text || 'Good day!'}
                           </h2>
-                          <p className="text-sm text-slate-400 mt-1">
+                          <p className="text-sm text-slate-300 mt-1">
                             {todayScreenData.creatorName ? `Your daily briefing, ${todayScreenData.creatorName}.` : 'Your daily briefing.'}
                             {status?.mode === 'live' && <span className="ml-2 inline-flex items-center gap-1 text-emerald-400"><span className="size-1 rounded-full bg-emerald-400 animate-pulse" />live</span>}
                           </p>
@@ -1825,7 +1825,7 @@ export default function MuseDashboard() {
                   <Card className="rounded-2xl border-violet-500/20 muse-card-hover overflow-hidden relative">
                     <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-500 via-indigo-500 to-sky-500" />
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <Moon className="size-4 text-violet-400" />
                         Overnight Brief
                       </CardTitle>
@@ -1834,29 +1834,29 @@ export default function MuseDashboard() {
                       <div className="grid grid-cols-3 gap-3">
                         <div className="text-center p-5 rounded-xl bg-emerald-500/8 border border-emerald-500/15">
                           <p className="font-mono text-3xl font-extrabold text-emerald-400">{todayScreenData.overnightBrief.reviewedCount ?? 0}</p>
-                          <p className="text-sm text-slate-400 font-semibold mt-1">Reviewed</p>
+                          <p className="text-sm text-slate-300 font-semibold mt-1">Reviewed</p>
                         </div>
                         <div className="text-center p-5 rounded-xl bg-violet-500/8 border border-violet-500/15">
                           <p className="font-mono text-3xl font-extrabold text-violet-400">{todayScreenData.overnightBrief.draftedCount ?? 0}</p>
-                          <p className="text-sm text-slate-400 font-semibold mt-1">Drafted</p>
+                          <p className="text-sm text-slate-300 font-semibold mt-1">Drafted</p>
                         </div>
                         <div className="text-center p-5 rounded-xl bg-sky-500/8 border border-sky-500/15">
                           <p className="font-mono text-3xl font-extrabold text-sky-400">{todayScreenData.overnightBrief.updatedCount ?? 0}</p>
-                          <p className="text-sm text-slate-400 font-semibold mt-1">Updated</p>
+                          <p className="text-sm text-slate-300 font-semibold mt-1">Updated</p>
                         </div>
                       </div>
                       {todayScreenData.overnightBrief.items?.length > 0 && (
                         <ul className="space-y-1">
                           {todayScreenData.overnightBrief.items.map((item: string, i: number) => (
                             <li key={i} className="text-sm flex items-start gap-2">
-                              <span className="text-slate-400 mt-0.5">•</span>
+                              <span className="text-slate-300 mt-0.5">•</span>
                               {item}
                             </li>
                           ))}
                         </ul>
                       )}
                       {todayScreenData.overnightBrief.source && (
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-300">
                           <span className="font-semibold">SOURCE:</span> {todayScreenData.overnightBrief.source}
                         </p>
                       )}
@@ -1872,7 +1872,7 @@ export default function MuseDashboard() {
                     <Card className="rounded-2xl border-amber-500/20 muse-card-hover overflow-hidden relative">
                       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-500 to-orange-500" />
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                           <Zap className="size-4 text-amber-400" />
                           Top Signals
                         </CardTitle>
@@ -1883,10 +1883,10 @@ export default function MuseDashboard() {
                             <p className="font-semibold text-sm">{sig.label}</p>
                             <p className="font-mono text-base font-semibold text-amber-400">{sig.value}</p>
                             {sig.evidence && (
-                              <p className="text-xs italic text-slate-400 mt-1">{sig.evidence}</p>
+                              <p className="text-xs italic text-slate-300 mt-1">{sig.evidence}</p>
                             )}
                             {sig.source && (
-                              <p className="text-xs text-slate-400 mt-0.5">
+                              <p className="text-xs text-slate-300 mt-0.5">
                                 <span className="font-semibold text-amber-400/70">SRC:</span> {sig.source}
                               </p>
                             )}
@@ -1901,7 +1901,7 @@ export default function MuseDashboard() {
                     <Card className="rounded-2xl border-emerald-500/20 muse-card-hover overflow-hidden relative">
                       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                           <Database className="size-4 text-emerald-400" />
                           New Data
                         </CardTitle>
@@ -1910,7 +1910,7 @@ export default function MuseDashboard() {
                         <p className="font-semibold text-sm">{todayScreenData.newData.label}</p>
                         <p className="font-mono text-3xl font-extrabold text-emerald-400">{todayScreenData.newData.value}</p>
                         {todayScreenData.newData.source && (
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-slate-300">
                             <span className="font-semibold text-emerald-400/70">SRC:</span> {todayScreenData.newData.source}
                           </p>
                         )}
@@ -1923,20 +1923,20 @@ export default function MuseDashboard() {
                     <Card className="rounded-2xl border-sky-500/20 muse-card-hover overflow-hidden relative">
                       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-sky-500 to-blue-500" />
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                           <Lightbulb className="size-4 text-sky-400" />
                           Try Next
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <p className="font-semibold text-sm">{todayScreenData.tryNext.label}</p>
-                        <p className="text-sm text-slate-400">{todayScreenData.tryNext.description}</p>
+                        <p className="text-sm text-slate-300">{todayScreenData.tryNext.description}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline" className="text-xs border-sky-500/30 text-sky-400">{todayScreenData.tryNext.hookPattern}</Badge>
                           <Badge variant="secondary" className="text-xs">{todayScreenData.tryNext.confidence} confidence</Badge>
                         </div>
                         {todayScreenData.tryNext.evidence && (
-                          <p className="text-xs italic text-slate-400">{todayScreenData.tryNext.evidence}</p>
+                          <p className="text-xs italic text-slate-300">{todayScreenData.tryNext.evidence}</p>
                         )}
                       </CardContent>
                     </Card>
@@ -1947,7 +1947,7 @@ export default function MuseDashboard() {
                 {todayScreenData.pendingApprovals && todayScreenData.pendingApprovals.length > 0 && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <CheckCircle2 className="size-4 text-emerald-400" />
                         Pending Approvals
                         <Badge variant="secondary" className="ml-1">{todayScreenData.pendingApprovals.length}</Badge>
@@ -1962,12 +1962,12 @@ export default function MuseDashboard() {
                                 <p className="font-semibold text-sm truncate">{draft.title}</p>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                                   {draft.hookType && <Badge variant="outline" className="text-xs">{draft.hookType}</Badge>}
-                                  {draft.source && <span className="text-xs text-slate-400">{draft.source}</span>}
+                                  {draft.source && <span className="text-xs text-slate-300">{draft.source}</span>}
                                 </div>
                               </div>
                               <div className="text-right shrink-0">
                                 <p className="font-mono text-sm font-bold">{draft.avgScore ?? '—'}</p>
-                                <p className="text-xs text-slate-400">avg score</p>
+                                <p className="text-xs text-slate-300">avg score</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 flex-wrap">
@@ -1982,7 +1982,7 @@ export default function MuseDashboard() {
                               </Button>
                             </div>
                             {draft.evidenceCount !== undefined && (
-                              <p className="text-xs text-slate-400">{draft.evidenceCount} evidence items</p>
+                              <p className="text-xs text-slate-300">{draft.evidenceCount} evidence items</p>
                             )}
                           </div>
                         ))}
@@ -2007,14 +2007,14 @@ export default function MuseDashboard() {
               <CardContent>
                 <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
                   {liveEvents.length === 0 ? (
-                    <p className="text-slate-400 italic">Waiting for Minds activity…</p>
+                    <p className="text-slate-300 italic">Waiting for Minds activity…</p>
                   ) : (
                     liveEvents.slice(0, 5).map((evt) => (
                       <div key={evt.id} className="flex items-start gap-2 py-0.5">
                         <span className={`shrink-0 mt-0.5 size-1.5 rounded-full ${evt.source === 'live' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                        <span className="text-slate-400 font-medium shrink-0">{evt.mind}</span>
+                        <span className="text-slate-300 font-medium shrink-0">{evt.mind}</span>
                         <span className="text-foreground truncate">{evt.detail}</span>
-                        <span className="text-slate-400 ml-auto shrink-0">{new Date(evt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="text-slate-300 ml-auto shrink-0">{new Date(evt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     ))
                   )}
@@ -2031,12 +2031,12 @@ export default function MuseDashboard() {
                   Talk to Muse
                   {status?.mode === 'live' && <Badge variant="outline" className="text-xs px-2 py-0 bg-violet-500/10 text-violet-400 border-violet-500/30">LIVE MIND</Badge>}
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">Ask about hooks, memory, recommendations, or anything</CardDescription>
+                <CardDescription className="text-xs text-slate-300">Ask about hooks, memory, recommendations, or anything</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="max-h-64 overflow-y-auto space-y-2 mb-3 scrollbar-thin">
                   {chatMessages.length === 0 && (
-                    <div className="text-xs text-slate-400 italic text-center py-6">
+                    <div className="text-xs text-slate-300 italic text-center py-6">
                       Try: &ldquo;What hook should I use?&rdquo; or &ldquo;Show me my memory&rdquo;
                     </div>
                   )}
@@ -2054,7 +2054,7 @@ export default function MuseDashboard() {
                   ))}
                   {chatLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-muted/50 rounded-xl px-3.5 py-2.5 text-xs text-slate-400 border border-border/50">
+                      <div className="bg-muted/50 rounded-xl px-3.5 py-2.5 text-xs text-slate-300 border border-border/50">
                         <span className="inline-flex items-center gap-1.5">
                           <span className="size-1.5 rounded-full bg-violet-400 animate-pulse" />
                           Muse is thinking…
@@ -2083,13 +2083,13 @@ export default function MuseDashboard() {
           {/* ===== MEMORY SCREEN TAB (Day 12) ===== */}
           <TabsContent value="memoryscreen" className="space-y-6">
             <div className="flex justify-end">
-              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-400" onClick={refreshMemoryTab} disabled={memoryScreenLoading}>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-300" onClick={refreshMemoryTab} disabled={memoryScreenLoading}>
                 <RefreshCw className={`size-3 ${memoryScreenLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
             {memoryScreenLoading && (
-              <div className="flex items-center justify-center py-12 text-slate-400">
+              <div className="flex items-center justify-center py-12 text-slate-300">
                 <div className="animate-pulse flex items-center gap-2">
                   <Brain className="size-5 animate-bounce" />
                   Loading memory…
@@ -2116,7 +2116,7 @@ export default function MuseDashboard() {
                         <h2 className="text-2xl font-bold tracking-tight gradient-text">
                           What Muse Knows About {memoryScreenData.creatorName || 'You'}
                         </h2>
-                        <p className="text-sm text-slate-400 mt-1">
+                        <p className="text-sm text-slate-300 mt-1">
                           {memoryScreenData.memoryEvents ?? 0} memory events recorded
                           {status?.mode === 'live' && <span className="ml-2 inline-flex items-center gap-1 text-emerald-400"><span className="size-1 rounded-full bg-emerald-400 animate-pulse" />live</span>}
                         </p>
@@ -2129,12 +2129,12 @@ export default function MuseDashboard() {
                 {memoryScreenData.identity && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <Fingerprint className="size-4 text-violet-400" />
                         Identity
                       </CardTitle>
                       {memoryScreenData.identity.source && (
-                        <CardDescription className="text-xs text-slate-400">
+                        <CardDescription className="text-xs text-slate-300">
                           SRC: {memoryScreenData.identity.source}
                         </CardDescription>
                       )}
@@ -2142,16 +2142,16 @@ export default function MuseDashboard() {
                     <CardContent className="space-y-3">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="p-3 rounded-lg bg-muted/50">
-                          <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Niche</p>
+                          <p className="text-xs text-slate-300 uppercase tracking-wider mb-1">Niche</p>
                           <p className="text-sm font-semibold">{memoryScreenData.identity.niche}</p>
                         </div>
                         <div className="p-3 rounded-lg bg-muted/50">
-                          <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Audience</p>
+                          <p className="text-xs text-slate-300 uppercase tracking-wider mb-1">Audience</p>
                           <p className="text-sm font-semibold">{memoryScreenData.identity.audience}</p>
                         </div>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Tone</p>
+                        <p className="text-xs text-slate-300 uppercase tracking-wider mb-2">Tone</p>
                         <div className="flex flex-wrap gap-1.5">
                           {memoryScreenData.identity.tone?.map((t: string) => (
                             <Badge key={t} variant="outline" className="text-xs border-violet-500/30 text-violet-300">{t}</Badge>
@@ -2159,7 +2159,7 @@ export default function MuseDashboard() {
                         </div>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Avoid</p>
+                        <p className="text-xs text-slate-300 uppercase tracking-wider mb-2">Avoid</p>
                         <div className="flex flex-wrap gap-1.5">
                           {memoryScreenData.identity.avoid?.map((a: string) => (
                             <Badge key={a} variant="outline" className="text-xs border-destructive/30 text-destructive">{a}</Badge>
@@ -2174,12 +2174,12 @@ export default function MuseDashboard() {
                 {memoryScreenData.voiceRadar && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <Radio className="size-4 text-sky-400" />
                         Voice Radar
                       </CardTitle>
                       {memoryScreenData.voiceRadar.source && (
-                        <CardDescription className="text-xs text-slate-400">
+                        <CardDescription className="text-xs text-slate-300">
                           SRC: {memoryScreenData.voiceRadar.source}
                         </CardDescription>
                       )}
@@ -2199,7 +2199,7 @@ export default function MuseDashboard() {
                           <div key={key} className="space-y-1">
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium">{label}</span>
-                              <span className="font-mono text-sm text-slate-400">{val}%</span>
+                              <span className="font-mono text-sm text-slate-300">{val}%</span>
                             </div>
                             <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                               <div
@@ -2211,7 +2211,7 @@ export default function MuseDashboard() {
                         );
                       })}
                       {memoryScreenData.voiceRadar.evidence && (
-                        <p className="text-sm italic text-slate-400 pt-2">{memoryScreenData.voiceRadar.evidence}</p>
+                        <p className="text-sm italic text-slate-300 pt-2">{memoryScreenData.voiceRadar.evidence}</p>
                       )}
                     </CardContent>
                   </Card>
@@ -2221,7 +2221,7 @@ export default function MuseDashboard() {
                 {memoryScreenData.winningHooks && memoryScreenData.winningHooks.length > 0 && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <Trophy className="size-4 text-amber-400" />
                         Winning Hooks
                       </CardTitle>
@@ -2232,7 +2232,7 @@ export default function MuseDashboard() {
                           <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                             <div className="flex items-center gap-2">
                               <Badge variant="outline" className="text-xs">{hook.pattern}</Badge>
-                              <span className="text-xs text-slate-400">
+                              <span className="text-xs text-slate-300">
                                 n={hook.sampleSize ?? 0}
                               </span>
                             </div>
@@ -2251,12 +2251,12 @@ export default function MuseDashboard() {
                 {memoryScreenData.performance && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <TrendingUp className="size-4 text-emerald-400" />
                         Performance
                       </CardTitle>
                       {memoryScreenData.performance.source && (
-                        <CardDescription className="text-xs text-slate-400">
+                        <CardDescription className="text-xs text-slate-300">
                           SRC: {memoryScreenData.performance.source}
                         </CardDescription>
                       )}
@@ -2264,7 +2264,7 @@ export default function MuseDashboard() {
                     <CardContent className="space-y-3">
                       {memoryScreenData.performance.topSignals?.length > 0 && (
                         <div>
-                          <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Top Signals</p>
+                          <p className="text-xs text-slate-300 uppercase tracking-wider mb-2">Top Signals</p>
                           <ul className="space-y-1">
                             {memoryScreenData.performance.topSignals.map((sig: string, i: number) => (
                               <li key={i} className="text-sm flex items-start gap-2">
@@ -2277,7 +2277,7 @@ export default function MuseDashboard() {
                       )}
                       {memoryScreenData.performance.recentInsights?.length > 0 && (
                         <div>
-                          <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Recent Insights</p>
+                          <p className="text-xs text-slate-300 uppercase tracking-wider mb-2">Recent Insights</p>
                           <ul className="space-y-1">
                             {memoryScreenData.performance.recentInsights.map((ins: string, i: number) => (
                               <li key={i} className="text-sm flex items-start gap-2">
@@ -2296,13 +2296,13 @@ export default function MuseDashboard() {
                 {memoryScreenData.decisions && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <Scale className="size-4 text-violet-400" />
                         Decisions
                         <Badge variant="secondary" className="ml-1">{memoryScreenData.decisions.totalDecisions ?? 0}</Badge>
                       </CardTitle>
                       {memoryScreenData.decisions.source && (
-                        <CardDescription className="text-xs text-slate-400">
+                        <CardDescription className="text-xs text-slate-300">
                           SRC: {memoryScreenData.decisions.source}
                         </CardDescription>
                       )}
@@ -2321,13 +2321,13 @@ export default function MuseDashboard() {
                               )}
                               <div className="min-w-0">
                                 <p className="text-sm font-medium">{dec.description}</p>
-                                <p className="text-xs text-slate-400">{dec.date}</p>
+                                <p className="text-xs text-slate-300">{dec.date}</p>
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-sm text-slate-400">No recent decisions</p>
+                        <p className="text-sm text-slate-300">No recent decisions</p>
                       )}
                     </CardContent>
                   </Card>
@@ -2337,8 +2337,8 @@ export default function MuseDashboard() {
                 <Card className="rounded-xl">
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <History className="size-4 text-slate-400" />
-                      <span className="text-sm text-slate-400">Total Memory Events</span>
+                      <History className="size-4 text-slate-300" />
+                      <span className="text-sm text-slate-300">Total Memory Events</span>
                     </div>
                     <span className="font-mono text-2xl font-extrabold">{memoryScreenData.memoryEvents ?? 0}</span>
                   </CardContent>
@@ -2352,13 +2352,13 @@ export default function MuseDashboard() {
           {/* ===== LEARNING SCREEN TAB (Day 13) — MOST IMPORTANT ===== */}
           <TabsContent value="learningscreen" className="space-y-6">
             <div className="flex justify-end">
-              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-400" onClick={refreshLearningTab} disabled={learningScreenLoading}>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-300" onClick={refreshLearningTab} disabled={learningScreenLoading}>
                 <RefreshCw className={`size-3 ${learningScreenLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
             {learningScreenLoading && (
-              <div className="flex items-center justify-center py-12 text-slate-400">
+              <div className="flex items-center justify-center py-12 text-slate-300">
                 <div className="animate-pulse flex items-center gap-2">
                   <GraduationCap className="size-5 animate-bounce" />
                   Loading learning data…
@@ -2383,7 +2383,7 @@ export default function MuseDashboard() {
                       </motion.div>
                       <div>
                         <h2 className="text-2xl font-bold tracking-tight gradient-text">How Muse Is Learning</h2>
-                        <p className="text-sm text-slate-400 mt-1">
+                        <p className="text-sm text-slate-300 mt-1">
                           {learningScreenData.creatorName
                             ? `${learningScreenData.creatorName}, every piece of content teaches something new.`
                             : 'Every piece of content teaches something new.'}
@@ -2397,7 +2397,7 @@ export default function MuseDashboard() {
                 {/* Learning Timeline */}
                 <Card className="rounded-xl">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                    <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                       <History className="size-4 text-violet-400" />
                       Learning Timeline
                     </CardTitle>
@@ -2413,7 +2413,7 @@ export default function MuseDashboard() {
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs">{entry.contentType}</Badge>
                                 {entry.publishedAt && (
-                                  <span className="text-xs text-slate-400 font-mono">
+                                  <span className="text-xs text-slate-300 font-mono">
                                     {new Date(entry.publishedAt).toLocaleDateString()}
                                   </span>
                                 )}
@@ -2427,28 +2427,28 @@ export default function MuseDashboard() {
                                 <div className="flex items-start gap-2">
                                   <div className="flex flex-col items-center mt-1">
                                     <div className="w-px h-3 bg-border" />
-                                    <span className="text-slate-400 text-xs">↓</span>
+                                    <span className="text-slate-300 text-xs">↓</span>
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     {step.type === 'published' && (
                                       <div className="flex items-center gap-2">
                                         <span>📢</span>
                                         <span className="text-sm text-emerald-400 font-medium">{step.label}</span>
-                                        <span className="text-xs text-slate-400">{step.detail}</span>
+                                        <span className="text-xs text-slate-300">{step.detail}</span>
                                       </div>
                                     )}
                                     {step.type === 'performance' && (
                                       <div className="flex items-center gap-2">
                                         <BarChart3 className="size-4" />
                                         <span className="text-sm font-medium">{step.label}</span>
-                                        <span className="text-xs text-slate-400 font-mono">{step.detail}</span>
+                                        <span className="text-xs text-slate-300 font-mono">{step.detail}</span>
                                       </div>
                                     )}
                                     {step.type === 'hook_analysis' && (
                                       <div className="flex items-center gap-2">
                                         <Anchor className="size-4" />
                                         <span className="text-sm font-medium">{step.label}</span>
-                                        <span className="text-xs text-slate-400">{step.detail}</span>
+                                        <span className="text-xs text-slate-300">{step.detail}</span>
                                       </div>
                                     )}
                                     {step.type === 'comparison' && (
@@ -2489,7 +2489,7 @@ export default function MuseDashboard() {
                                     {!['published','performance','hook_analysis','comparison','memory_updated','strategy_changed','loop_working'].includes(step.type) && (
                                       <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium">{step.label}</span>
-                                        <span className="text-xs text-slate-400">{step.detail}</span>
+                                        <span className="text-xs text-slate-300">{step.detail}</span>
                                       </div>
                                     )}
                                   </div>
@@ -2509,7 +2509,7 @@ export default function MuseDashboard() {
                   {learningScreenData.currentInsight && (
                     <Card className="rounded-xl">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                           <Lightbulb className="size-4 text-amber-400" />
                           Current Insight
                         </CardTitle>
@@ -2523,7 +2523,7 @@ export default function MuseDashboard() {
                           <Badge variant="secondary" className="text-xs">
                             {learningScreenData.currentInsight.confidence} confidence
                           </Badge>
-                          <span className="text-xs text-slate-400 font-mono">
+                          <span className="text-xs text-slate-300 font-mono">
                             {learningScreenData.currentInsight.dataPoints} data points
                           </span>
                         </div>
@@ -2535,7 +2535,7 @@ export default function MuseDashboard() {
                   {learningScreenData.honestyScore && (
                     <Card className="rounded-xl">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                           <Shield className="size-4 text-emerald-400" />
                           Honesty Score
                         </CardTitle>
@@ -2567,7 +2567,7 @@ export default function MuseDashboard() {
                 {learningScreenData.loopStatus && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <RotateCcw className="size-4 text-violet-400" />
                         Loop Status
                       </CardTitle>
@@ -2576,23 +2576,23 @@ export default function MuseDashboard() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <p className="font-mono text-2xl font-extrabold text-violet-400">{learningScreenData.loopStatus.totalRuns}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Total Runs</p>
+                          <p className="text-sm text-slate-300 font-semibold">Total Runs</p>
                         </div>
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <p className="font-mono text-2xl font-extrabold text-amber-400">{learningScreenData.loopStatus.totalRecommendations}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Recommendations</p>
+                          <p className="text-sm text-slate-300 font-semibold">Recommendations</p>
                         </div>
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <p className="font-mono text-2xl font-extrabold text-sky-400">{learningScreenData.loopStatus.avgConfidence}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Avg Confidence</p>
+                          <p className="text-sm text-slate-300 font-semibold">Avg Confidence</p>
                         </div>
                         <div className="text-center p-3 rounded-lg bg-muted/50">
-                          <p className="font-mono text-sm font-bold text-slate-400">
+                          <p className="font-mono text-sm font-bold text-slate-300">
                             {learningScreenData.loopStatus.lastRun
                               ? new Date(learningScreenData.loopStatus.lastRun).toLocaleString()
                               : '—'}
                           </p>
-                          <p className="text-sm text-slate-400 font-semibold">Last Run</p>
+                          <p className="text-sm text-slate-300 font-semibold">Last Run</p>
                         </div>
                       </div>
                     </CardContent>
@@ -2626,13 +2626,13 @@ export default function MuseDashboard() {
                   </Badge>
                 )}
               </div>
-              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-400" onClick={refreshOvernightTab} disabled={overnightScreenLoading}>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-300" onClick={refreshOvernightTab} disabled={overnightScreenLoading}>
                 <RefreshCw className={`size-3 ${overnightScreenLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
             {overnightScreenLoading && (
-              <div className="flex items-center justify-center py-12 text-slate-400">
+              <div className="flex items-center justify-center py-12 text-slate-300">
                 <div className="animate-pulse flex items-center gap-2">
                   <Moon className="size-5 animate-pulse" />
                   Loading overnight data…
@@ -2657,7 +2657,7 @@ export default function MuseDashboard() {
                       </motion.div>
                       <div>
                         <h2 className="text-2xl font-bold tracking-tight gradient-text">While You Were Offline</h2>
-                        <p className="text-sm text-slate-400 mt-1">
+                        <p className="text-sm text-slate-300 mt-1">
                           {overnightScreenData.creatorName
                             ? `${overnightScreenData.creatorName}, Muse was working while you slept.`
                             : 'Muse was working while you slept.'}
@@ -2672,7 +2672,7 @@ export default function MuseDashboard() {
                 {overnightScreenData.schedule && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <Clock className="size-4 text-sky-400" />
                         Schedule
                       </CardTitle>
@@ -2681,17 +2681,17 @@ export default function MuseDashboard() {
                       <div className="flex items-center justify-center gap-3 text-sm">
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <p className="font-mono font-bold text-indigo-400">{overnightScreenData.schedule.wakeTime}</p>
-                          <p className="text-sm text-slate-400">Offline</p>
+                          <p className="text-sm text-slate-300">Offline</p>
                         </div>
-                        <ArrowRight className="size-4 text-slate-400" />
+                        <ArrowRight className="size-4 text-slate-300" />
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <p className="font-mono font-bold text-violet-400">{overnightScreenData.schedule.draftTime}</p>
-                          <p className="text-sm text-slate-400">Draft</p>
+                          <p className="text-sm text-slate-300">Draft</p>
                         </div>
-                        <ArrowRight className="size-4 text-slate-400" />
+                        <ArrowRight className="size-4 text-slate-300" />
                         <div className="text-center p-3 rounded-lg bg-muted/50">
                           <p className="font-mono font-bold text-emerald-400">{overnightScreenData.schedule.briefTime}</p>
-                          <p className="text-sm text-slate-400">Brief</p>
+                          <p className="text-sm text-slate-300">Brief</p>
                         </div>
                       </div>
                     </CardContent>
@@ -2702,7 +2702,7 @@ export default function MuseDashboard() {
                 <Card className="rounded-xl">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <Brain className="size-4 text-violet-400" />
                         Mind Theatre
                       </CardTitle>
@@ -2728,7 +2728,7 @@ export default function MuseDashboard() {
                       <div className="space-y-2">
                         {overnightScreenData.mindTheatre?.map((entry: any, i: number) => (
                           <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/30">
-                            <span className="font-mono text-xs text-slate-400 w-12 shrink-0">
+                            <span className="font-mono text-xs text-slate-300 w-12 shrink-0">
                               {entry.time}
                             </span>
                             <span className="text-sm shrink-0">
@@ -2746,7 +2746,7 @@ export default function MuseDashboard() {
                       </div>
                     </ScrollArea>
                     {overnightScreenData.lastRunTime && (
-                      <p className="text-xs text-slate-400 mt-3">
+                      <p className="text-xs text-slate-300 mt-3">
                         Last run: {new Date(overnightScreenData.lastRunTime).toLocaleString()}
                       </p>
                     )}
@@ -2757,7 +2757,7 @@ export default function MuseDashboard() {
                 {overnightScreenData.overnightOutput && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <Sparkles className="size-4 text-emerald-400" />
                         Overnight Output
                       </CardTitle>
@@ -2788,21 +2788,21 @@ export default function MuseDashboard() {
                       <div className="space-y-3">
                         <div>
                           <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-slate-400">Voice Match</span>
+                            <span className="text-slate-300">Voice Match</span>
                             <span className="font-mono font-bold">{overnightScreenData.overnightOutput.voiceMatch}%</span>
                           </div>
                           <Progress value={overnightScreenData.overnightOutput.voiceMatch} className="h-2" />
                         </div>
                         <div>
                           <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-slate-400">Hook Compat</span>
+                            <span className="text-slate-300">Hook Compat</span>
                             <span className="font-mono font-bold">{overnightScreenData.overnightOutput.hookCompat}%</span>
                           </div>
                           <Progress value={overnightScreenData.overnightOutput.hookCompat} className="h-2" />
                         </div>
                         <div>
                           <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-slate-400">Content Quality</span>
+                            <span className="text-slate-300">Content Quality</span>
                             <span className="font-mono font-bold">{overnightScreenData.overnightOutput.contentQuality}%</span>
                           </div>
                           <Progress value={overnightScreenData.overnightOutput.contentQuality} className="h-2" />
@@ -2810,7 +2810,7 @@ export default function MuseDashboard() {
                       </div>
 
                       {overnightScreenData.overnightOutput.createdAt && (
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-slate-300">
                           Created: {new Date(overnightScreenData.overnightOutput.createdAt).toLocaleString()}
                         </p>
                       )}
@@ -2824,7 +2824,7 @@ export default function MuseDashboard() {
             {overnightCycleResult && !overnightCycleRunning && (
               <Card className="rounded-xl border-emerald-500/20">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                     <Activity className="size-4 text-emerald-400" />
                     Overnight Cycle Result
                   </CardTitle>
@@ -2835,29 +2835,29 @@ export default function MuseDashboard() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="text-center p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
                           <p className="font-mono text-lg font-bold text-emerald-400">{overnightCycleResult.result.steps.length}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Steps</p>
+                          <p className="text-sm text-slate-300 font-semibold">Steps</p>
                         </div>
                         <div className="text-center p-2 rounded-lg bg-violet-500/5 border border-violet-500/20">
                           <p className="font-mono text-lg font-bold text-violet-400">{Math.round(overnightCycleResult.result.totalDuration / 1000)}s</p>
-                          <p className="text-sm text-slate-400 font-semibold">Duration</p>
+                          <p className="text-sm text-slate-300 font-semibold">Duration</p>
                         </div>
                         <div className="text-center p-2 rounded-lg bg-sky-500/5 border border-sky-500/20">
                           <p className="font-mono text-lg font-bold text-sky-400">{draftsData?.summary?.totalDrafts ?? (overnightCycleResult.result.morningBrief?.draftTitle ? 1 : 0)}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Drafts</p>
+                          <p className="text-sm text-slate-300 font-semibold">Drafts</p>
                         </div>
                         <div className="text-center p-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
                           <p className="font-mono text-lg font-bold text-amber-400">{controlScreenData?.pendingCount ?? (overnightCycleResult.result.approvalId ? 1 : 0)}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Approvals</p>
+                          <p className="text-sm text-slate-300 font-semibold">Approvals</p>
                         </div>
                       </div>
                       {overnightCycleResult.result.steps.length > 0 && (
                         <div className="space-y-1.5">
-                          <p className="text-sm font-medium text-slate-400">Phase Timeline</p>
+                          <p className="text-sm font-medium text-slate-300">Phase Timeline</p>
                           {overnightCycleResult.result.steps.map((step, i) => (
                             <div key={i} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/30">
                               <div className={`size-2 rounded-full ${step.status === 'completed' ? 'bg-emerald-500' : step.status === 'failed' ? 'bg-red-500' : 'bg-amber-500'}`} />
                               <span className="font-medium">{step.name}</span>
-                              <span className="text-slate-400 ml-auto">{step.duration}ms</span>
+                              <span className="text-slate-300 ml-auto">{step.duration}ms</span>
                             </div>
                           ))}
                         </div>
@@ -2867,7 +2867,7 @@ export default function MuseDashboard() {
                           <p className="text-xs font-semibold text-emerald-400 mb-1">Morning Brief</p>
                           <p className="text-sm">{overnightCycleResult.result.morningBrief.summary}</p>
                           {overnightCycleResult.result.morningBrief.draftTitle && (
-                            <p className="text-xs text-slate-400 mt-1">Draft: {overnightCycleResult.result.morningBrief.draftTitle}</p>
+                            <p className="text-xs text-slate-300 mt-1">Draft: {overnightCycleResult.result.morningBrief.draftTitle}</p>
                           )}
                         </div>
                       )}
@@ -2885,13 +2885,13 @@ export default function MuseDashboard() {
           {/* ===== CONTROL SCREEN TAB (Day 13) ===== */}
           <TabsContent value="controlscreen" className="space-y-6">
             <div className="flex justify-end">
-              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-400" onClick={refreshControlTab} disabled={controlScreenLoading}>
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-slate-300" onClick={refreshControlTab} disabled={controlScreenLoading}>
                 <RefreshCw className={`size-3 ${controlScreenLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
             </div>
             {controlScreenLoading && (
-              <div className="flex items-center justify-center py-12 text-slate-400">
+              <div className="flex items-center justify-center py-12 text-slate-300">
                 <div className="animate-pulse flex items-center gap-2">
                   <Settings className="size-5 animate-spin" />
                   Loading control settings…
@@ -2916,7 +2916,7 @@ export default function MuseDashboard() {
                       </motion.div>
                       <div>
                         <h2 className="text-2xl font-bold tracking-tight gradient-text-warm">You&apos;re In Control</h2>
-                        <p className="text-sm text-slate-400 mt-1">
+                        <p className="text-sm text-slate-300 mt-1">
                           {controlScreenData.creatorName
                             ? `${controlScreenData.creatorName}, you decide what Muse can and cannot do.`
                             : 'You decide what Muse can and cannot do.'}
@@ -2931,7 +2931,7 @@ export default function MuseDashboard() {
                 {controlScreenData.autonomySettings && (
                   <Card className="rounded-xl">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <Shield className="size-4 text-sky-400" />
                         Autonomy Settings
                       </CardTitle>
@@ -2987,7 +2987,7 @@ export default function MuseDashboard() {
                 <Card className="rounded-xl">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <CheckCircle2 className="size-4 text-emerald-400" />
                         Approval Queue
                         <Badge variant="secondary" className="text-xs ml-1">
@@ -3080,7 +3080,7 @@ export default function MuseDashboard() {
                                   )}
                                   {/* Age */}
                                   {item.age && (
-                                    <span className="text-xs text-slate-400">{item.age}</span>
+                                    <span className="text-xs text-slate-300">{item.age}</span>
                                   )}
                                 </div>
                               </div>
@@ -3140,7 +3140,7 @@ export default function MuseDashboard() {
                             )}
                             {/* Loading spinner */}
                             {approvalActionLoading === item.id && (
-                              <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                              <div className="flex items-center gap-2 text-xs text-slate-300 mt-1">
                                 <div className="animate-spin size-3 border-2 border-current border-t-transparent rounded-full" />
                                 Processing…
                               </div>
@@ -3149,7 +3149,7 @@ export default function MuseDashboard() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-6 text-slate-400">
+                      <div className="text-center py-6 text-slate-300">
                         <CheckCircle2 className="size-8 mx-auto mb-2 text-emerald-400 opacity-50" />
                         <p className="text-sm">No items pending your review</p>
                       </div>
@@ -3157,7 +3157,7 @@ export default function MuseDashboard() {
                     {/* Approval History Panel */}
                     {approvalHistoryData && approvalHistoryData.history && (
                       <div className="mt-4 pt-4 border-t border-muted">
-                        <p className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-1">
+                        <p className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-1">
                           <History className="size-3" /> Approval History ({approvalHistoryData.count})
                         </p>
                         <ScrollArea className="max-h-48 overflow-y-auto scrollbar-thin">
@@ -3171,7 +3171,7 @@ export default function MuseDashboard() {
                                   'bg-amber-500 text-white'
                                 }`}>{h.status}</Badge>
                                 <span className="truncate flex-1">{h.title || h.itemType}</span>
-                                <span className="text-slate-400 shrink-0">{h.age || ''}</span>
+                                <span className="text-slate-300 shrink-0">{h.age || ''}</span>
                               </div>
                             ))}
                           </div>
@@ -3185,7 +3185,7 @@ export default function MuseDashboard() {
                 <Card className="rounded-xl">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                      <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                         <History className="size-4 text-violet-400" />
                         Audit Log
                       </CardTitle>
@@ -3220,7 +3220,7 @@ export default function MuseDashboard() {
                         </Button>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">Every action logged. Always.</p>
+                    <p className="text-xs text-slate-300 mt-1">Every action logged. Always.</p>
                   </CardHeader>
                   <CardContent>
                     {/* Audit Stats Summary */}
@@ -3228,19 +3228,19 @@ export default function MuseDashboard() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                         <div className="p-2 rounded-lg bg-muted/30 text-center">
                           <p className="text-xl font-extrabold">{auditStatsData.totalEvents}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Total</p>
+                          <p className="text-sm text-slate-300 font-semibold">Total</p>
                         </div>
                         <div className="p-2 rounded-lg bg-muted/30 text-center">
                           <p className="text-xl font-extrabold">{auditStatsData.last24h}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Last 24h</p>
+                          <p className="text-sm text-slate-300 font-semibold">Last 24h</p>
                         </div>
                         <div className="p-2 rounded-lg bg-muted/30 text-center">
                           <p className="text-xl font-extrabold">{auditStatsData.last7d}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Last 7d</p>
+                          <p className="text-sm text-slate-300 font-semibold">Last 7d</p>
                         </div>
                         <div className="p-2 rounded-lg bg-muted/30 text-center">
                           <p className="text-xl font-extrabold">{Object.keys(auditStatsData.byActor || {}).length}</p>
-                          <p className="text-sm text-slate-400 font-semibold">Actors</p>
+                          <p className="text-sm text-slate-300 font-semibold">Actors</p>
                         </div>
                       </div>
                     )}
@@ -3269,7 +3269,7 @@ export default function MuseDashboard() {
                             className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
                               auditTimeRange === range
                                 ? 'bg-background text-foreground shadow-sm'
-                                : 'text-slate-400 hover:text-foreground'
+                                : 'text-slate-300 hover:text-foreground'
                             }`}
                           >
                             {range === 'all' ? 'All' : range}
@@ -3323,7 +3323,7 @@ export default function MuseDashboard() {
                                   }
                                 }}
                               >
-                                <span className="font-mono text-xs text-slate-400 w-14 shrink-0 mt-0.5">
+                                <span className="font-mono text-xs text-slate-300 w-14 shrink-0 mt-0.5">
                                   {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                                 </span>
                                 <span className="text-sm shrink-0 mt-0.5">
@@ -3336,18 +3336,18 @@ export default function MuseDashboard() {
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium truncate">{entry.action}</p>
                                   {entry.detail && (
-                                    <p className="text-xs text-slate-400 truncate">{entry.detail}</p>
+                                    <p className="text-xs text-slate-300 truncate">{entry.detail}</p>
                                   )}
                                   {/* Target info */}
                                   {entry.targetType && (
-                                    <p className="text-xs text-slate-400 mt-0.5">
+                                    <p className="text-xs text-slate-300 mt-0.5">
                                       → {entry.targetType}{entry.targetId ? ` #${entry.targetId.slice(0,8)}…` : ''}
                                     </p>
                                   )}
                                 </div>
                                 {/* Expand indicator */}
                                 {entry.delta && (
-                                  <span className="text-xs text-slate-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <span className="text-xs text-slate-300 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                     {isExpanded ? '▼' : '▶'} JSON
                                   </span>
                                 )}
@@ -3355,7 +3355,7 @@ export default function MuseDashboard() {
                               {/* Expandable delta view */}
                               {isExpanded && entry.delta && (
                                 <div className="ml-[68px] mr-2 mb-1 p-2 rounded-md bg-muted/50 border border-muted">
-                                  <pre className="text-xs font-mono text-slate-400 whitespace-pre-wrap break-all overflow-x-auto max-h-40 overflow-y-auto">
+                                  <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap break-all overflow-x-auto max-h-40 overflow-y-auto">
                                     {(() => {
                                       try {
                                         return JSON.stringify(JSON.parse(entry.delta), null, 2);
@@ -3375,7 +3375,7 @@ export default function MuseDashboard() {
                     {/* Actor distribution bar */}
                     {auditStatsData?.byActor && (
                       <div className="mt-3 pt-3 border-t border-muted">
-                        <p className="text-xs text-slate-400 mb-2">Actor Distribution</p>
+                        <p className="text-xs text-slate-300 mb-2">Actor Distribution</p>
                         <div className="flex items-center gap-2 flex-wrap">
                           {Object.entries(auditStatsData.byActor as Record<string, number>)
                             .sort((a, b) => b[1] - a[1])
@@ -3404,7 +3404,7 @@ export default function MuseDashboard() {
 
       {/* ===== PREMIUM Footer ===== */}
       <footer className="border-t border-border/50 glass-card mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between text-xs text-slate-300 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <span className="size-4 rounded-md bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center">
               <Brain className="size-2.5 text-white" />
@@ -3441,7 +3441,7 @@ export default function MuseDashboard() {
 function ScoreBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-slate-400 w-14 shrink-0">{label}</span>
+      <span className="text-xs text-slate-300 w-14 shrink-0">{label}</span>
       <div className="flex-1 h-2 rounded-full bg-muted/50 overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-500"
@@ -3455,7 +3455,7 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
           }}
         />
       </div>
-      <span className="text-xs text-slate-400 w-8 text-right font-mono">{(value * 100).toFixed(0)}%</span>
+      <span className="text-xs text-slate-300 w-8 text-right font-mono">{(value * 100).toFixed(0)}%</span>
     </div>
   );
 }
@@ -3552,11 +3552,11 @@ function MindCard({
             <InfoRow label="Chain" value={mind.chain ?? '—'} />
           </>
         ) : (
-          <p className="text-sm text-slate-400">Mind data unavailable</p>
+          <p className="text-sm text-slate-300">Mind data unavailable</p>
         )}
         <Separator className="my-2" />
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-400">Cognition Credits</span>
+          <span className="text-slate-300">Cognition Credits</span>
           <span className={`font-mono font-semibold ${creditsLow ? 'text-red-500' : 'text-foreground'}`}>
             {balance?.cognition.toFixed(2) ?? '—'}
             {creditsLow && (
@@ -3565,16 +3565,16 @@ function MindCard({
           </span>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-400">Skills</span>
+          <span className="text-slate-300">Skills</span>
           <Badge variant="secondary">{skills.length}</Badge>
         </div>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-400">Circle Members</span>
+          <span className="text-slate-300">Circle Members</span>
           <Badge variant="secondary">{circle.length}</Badge>
         </div>
         {skills.length > 0 && (
           <div className="pt-1">
-            <p className="text-xs text-slate-400 mb-1">Equipped Skills:</p>
+            <p className="text-xs text-slate-300 mb-1">Equipped Skills:</p>
             <div className="flex flex-wrap gap-1">
               {skills.map((s) => (
                 <Badge key={s.skillId} variant="outline" className="text-xs">
@@ -3592,7 +3592,7 @@ function MindCard({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between text-sm">
-      <span className="text-slate-400">{label}</span>
+      <span className="text-slate-300">{label}</span>
       <span className="font-mono text-xs">{value}</span>
     </div>
   );
@@ -3643,7 +3643,7 @@ function SystemCard({
       <CardContent>
         <div className="space-y-1.5">
           {details.map((detail, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs text-slate-400">
+            <div key={i} className="flex items-start gap-2 text-xs text-slate-300">
               <span className="mt-0.5">•</span>
               <span>{detail}</span>
             </div>
@@ -3696,7 +3696,7 @@ function ArchNode({
 function ArchArrow() {
   return (
     <div className="flex flex-col items-center">
-      <ArrowRight className="size-4 text-slate-400 rotate-90" />
+      <ArrowRight className="size-4 text-slate-300 rotate-90" />
     </div>
   );
 }
