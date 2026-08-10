@@ -7,14 +7,13 @@ const globalForPrisma = globalThis as unknown as {
 
 const tursoUrl = process.env.TURSO_DATABASE_URL
 const tursoToken = process.env.TURSO_AUTH_TOKEN
-const isVercel = !!process.env.VERCEL
-const useTurso = isVercel && !!(tursoUrl && tursoToken)
+// Use Turso whenever the URL and token are available (Vercel or local)
+const useTurso = !!(tursoUrl && tursoToken)
 
 let db: PrismaClient
 
 if (useTurso) {
-  // Turso (libSQL) for Vercel serverless
-  // PrismaLibSQL adapter accepts config directly (creates client internally)
+  // Turso (libSQL) — initialized synchronously via PrismaLibSQL config API
   try {
     const adapter = new PrismaLibSQL({
       url: tursoUrl!,
@@ -31,6 +30,7 @@ if (useTurso) {
   }
 } else {
   // Standard SQLite for local development
+  console.log('[db] Using local SQLite (no Turso config found)')
   db = globalForPrisma.prisma ?? new PrismaClient({
     log: process.env.NODE_ENV === 'production' ? [] : ['query'],
   })
