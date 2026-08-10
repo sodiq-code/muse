@@ -2801,32 +2801,41 @@ export default function MuseDashboard() {
                     <>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="text-center p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                          <p className="font-mono text-lg font-bold text-emerald-400">{overnightCycleResult.result.stepsCompleted ?? 0}</p>
+                          <p className="font-mono text-lg font-bold text-emerald-400">{overnightCycleResult.result.steps.length}</p>
                           <p className="text-[10px] text-muted-foreground">Steps</p>
                         </div>
                         <div className="text-center p-2 rounded-lg bg-violet-500/5 border border-violet-500/20">
-                          <p className="font-mono text-lg font-bold text-violet-400">{overnightCycleResult.result.totalDuration ? `${Math.round(overnightCycleResult.result.totalDuration / 1000)}s` : '—'}</p>
+                          <p className="font-mono text-lg font-bold text-violet-400">{Math.round(overnightCycleResult.result.totalDuration / 1000)}s</p>
                           <p className="text-[10px] text-muted-foreground">Duration</p>
                         </div>
                         <div className="text-center p-2 rounded-lg bg-sky-500/5 border border-sky-500/20">
-                          <p className="font-mono text-lg font-bold text-sky-400">{overnightCycleResult.result.draftsCreated ?? 0}</p>
+                          <p className="font-mono text-lg font-bold text-sky-400">{overnightCycleResult.result.morningBrief?.draftTitle ? 1 : 0}</p>
                           <p className="text-[10px] text-muted-foreground">Drafts</p>
                         </div>
                         <div className="text-center p-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                          <p className="font-mono text-lg font-bold text-amber-400">{overnightCycleResult.result.approvalsCreated ?? 0}</p>
+                          <p className="font-mono text-lg font-bold text-amber-400">{overnightCycleResult.result.approvalId ? 1 : 0}</p>
                           <p className="text-[10px] text-muted-foreground">Approvals</p>
                         </div>
                       </div>
-                      {overnightCycleResult.result.phases && (
+                      {overnightCycleResult.result.steps.length > 0 && (
                         <div className="space-y-1.5">
                           <p className="text-xs font-medium text-muted-foreground">Phase Timeline</p>
-                          {overnightCycleResult.result.phases.map((phase: any, i: number) => (
+                          {overnightCycleResult.result.steps.map((step, i) => (
                             <div key={i} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/30">
-                              <div className={`size-2 rounded-full ${phase.success ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                              <span className="font-medium">{phase.name}</span>
-                              <span className="text-muted-foreground ml-auto">{phase.duration ? `${phase.duration}ms` : '—'}</span>
+                              <div className={`size-2 rounded-full ${step.status === 'completed' ? 'bg-emerald-500' : step.status === 'failed' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                              <span className="font-medium">{step.name}</span>
+                              <span className="text-muted-foreground ml-auto">{step.duration}ms</span>
                             </div>
                           ))}
+                        </div>
+                      )}
+                      {overnightCycleResult.result.morningBrief && (
+                        <div className="p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                          <p className="text-xs font-semibold text-emerald-400 mb-1">Morning Brief</p>
+                          <p className="text-sm">{overnightCycleResult.result.morningBrief.summary}</p>
+                          {overnightCycleResult.result.morningBrief.draftTitle && (
+                            <p className="text-xs text-muted-foreground mt-1">Draft: {overnightCycleResult.result.morningBrief.draftTitle}</p>
+                          )}
                         </div>
                       )}
                     </>
