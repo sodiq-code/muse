@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     });
 
     // If hook text provided, auto-create and classify
-    let hookResult = null;
+    let hookResult: any = null;
     if (hookText) {
       const { createHook } = await import('@/lib/performance-service');
       hookResult = await createHook({

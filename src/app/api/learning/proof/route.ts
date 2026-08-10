@@ -15,8 +15,8 @@ export async function GET() {
     const result = await runProofExperiment(creatorId);
 
     return NextResponse.json({
-      success: true,
       ...result,
+      success: true,
     });
   } catch (error) {
     console.error('Proof experiment error:', error);
@@ -58,8 +58,8 @@ export async function POST() {
     });
 
     return NextResponse.json({
-      success: true,
       ...result,
+      success: true,
     });
   } catch (error) {
     console.error('Proof experiment error:', error);
