@@ -43,107 +43,289 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* =========================================================================
+   PREMIUM COLOR SYSTEM - Light Mode (secondary; dark is default experience)
+   ========================================================================= */
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --background: oklch(0.985 0.002 247);
+  --foreground: oklch(0.145 0.015 260);
+  --card: oklch(0.99 0.003 250);
+  --card-foreground: oklch(0.145 0.015 260);
+  --popover: oklch(0.99 0.003 250);
+  --popover-foreground: oklch(0.145 0.015 260);
+  --primary: oklch(0.55 0.18 200);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.95 0.01 250);
+  --secondary-foreground: oklch(0.25 0.015 260);
+  --muted: oklch(0.95 0.008 250);
+  --muted-foreground: oklch(0.55 0.01 250);
+  --accent: oklch(0.82 0.16 85);
+  --accent-foreground: oklch(0.25 0.04 60);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --border: oklch(0.91 0.01 250);
+  --input: oklch(0.91 0.01 250);
+  --ring: oklch(0.55 0.18 200);
+  --chart-1: oklch(0.55 0.18 200);
+  --chart-2: oklch(0.82 0.16 85);
+  --chart-3: oklch(0.62 0.22 310);
+  --chart-4: oklch(0.65 0.2 25);
+  --chart-5: oklch(0.7 0.15 150);
+  --sidebar: oklch(0.97 0.005 250);
+  --sidebar-foreground: oklch(0.145 0.015 260);
+  --sidebar-primary: oklch(0.55 0.18 200);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-accent: oklch(0.93 0.01 250);
+  --sidebar-accent-foreground: oklch(0.25 0.015 260);
+  --sidebar-border: oklch(0.91 0.01 250);
+  --sidebar-ring: oklch(0.55 0.18 200);
 }
 
+/* =========================================================================
+   PREMIUM DARK MODE - The default experience
+   Deep navy backgrounds, glass morphism, vibrant accents
+   ========================================================================= */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --background: oklch(0.13 0.028 260);
+  --foreground: oklch(0.93 0.01 250);
+  --card: oklch(0.18 0.03 260);
+  --card-foreground: oklch(0.93 0.01 250);
+  --popover: oklch(0.18 0.03 260);
+  --popover-foreground: oklch(0.93 0.01 250);
+  --primary: oklch(0.7 0.15 195);
+  --primary-foreground: oklch(0.13 0.028 260);
+  --secondary: oklch(0.22 0.03 260);
+  --secondary-foreground: oklch(0.88 0.01 250);
+  --muted: oklch(0.22 0.025 260);
+  --muted-foreground: oklch(0.6 0.02 250);
+  --accent: oklch(0.78 0.16 75);
+  --accent-foreground: oklch(0.18 0.04 70);
+  --destructive: oklch(0.65 0.25 25);
+  --border: oklch(0.28 0.03 260);
+  --input: oklch(0.25 0.03 260);
+  --ring: oklch(0.7 0.15 195);
+  --chart-1: oklch(0.7 0.15 195);
+  --chart-2: oklch(0.78 0.16 75);
+  --chart-3: oklch(0.65 0.22 310);
+  --chart-4: oklch(0.68 0.2 25);
+  --chart-5: oklch(0.72 0.17 150);
+  --sidebar: oklch(0.15 0.03 260);
+  --sidebar-foreground: oklch(0.88 0.01 250);
+  --sidebar-primary: oklch(0.7 0.15 195);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-accent: oklch(0.22 0.03 260);
+  --sidebar-accent-foreground: oklch(0.88 0.01 250);
+  --sidebar-border: oklch(0.25 0.03 260);
+  --sidebar-ring: oklch(0.7 0.15 195);
 }
 
+/* =========================================================================
+   BASE LAYER - Core resets and global styles
+   ========================================================================= */
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
 /* =========================================================================
-   MUSE Day 18 — Polish: Animations, Skeleton Loaders, Scrollbar
-   NO new features — only visual improvements
+   PREMIUM CUSTOM STYLES
+   Glass morphism | Animations | Scrollbar | Cards | Badges | Progress
    ========================================================================= */
+
+/* ---------- CUSTOM PROPERTIES FOR PREMIUM EFFECTS ---------- */
+:root {
+  --glass-bg: oklch(0.18 0.03 260 / 60%);
+  --glass-border: oklch(0.5 0.05 260 / 18%);
+  --glass-blur: 16px;
+  --glow-primary: oklch(0.7 0.15 195 / 15%);
+  --glow-accent: oklch(0.78 0.16 75 / 20%);
+  --gradient-primary: linear-gradient(135deg, oklch(0.7 0.15 195), oklch(0.65 0.2 165));
+  --gradient-accent: linear-gradient(135deg, oklch(0.78 0.16 75), oklch(0.72 0.18 55));
+  --gradient-warm: linear-gradient(135deg, oklch(0.78 0.16 75), oklch(0.68 0.2 25));
+  --gradient-surface: linear-gradient(145deg, oklch(0.18 0.03 260), oklch(0.15 0.03 260));
+  --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- PREMIUM SCROLLBAR ---------- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, oklch(0.35 0.04 260), oklch(0.45 0.06 260));
+  border-radius: 3px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, oklch(0.45 0.06 260), oklch(0.55 0.08 260));
+  background-clip: padding-box;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.35 0.04 260) transparent;
+}
+
+/* ---------- KEYFRAMES ---------- */
 
 /* Tab content fade-in */
 @keyframes tab-fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-[data-state="active"][role="tabpanel"] {
-  animation: tab-fade-in 0.25s ease-out;
-}
-
-/* Skeleton shimmer for loading states */
+/* Shimmer for loading skeletons */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
+/* Staggered fade-in for lists */
+@keyframes stagger-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulse for live data indicators */
+@keyframes pulse-premium {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.15);
+  }
+}
+
+/* Subtle glow pulse */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px var(--glow-primary);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--glow-primary), 0 0 40px oklch(0.7 0.15 195 / 5%);
+  }
+}
+
+/* Gradient rotation for animated borders */
+@keyframes gradient-rotate {
+  0% {
+    --gradient-angle: 0deg;
+  }
+  100% {
+    --gradient-angle: 360deg;
+  }
+}
+
+/* Slide in from left */
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide in from right */
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scale in */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Float subtle for icons/avatars */
+@keyframes float-subtle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Page enter with blur */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* ---------- TAB ANIMATIONS ---------- */
+[data-state="active"][role="tabpanel"] {
+  animation: tab-fade-in 0.3s var(--transition-smooth);
+}
+
+/* ---------- PREMIUM SKELETON LOADERS ---------- */
 .muse-skeleton {
-  background: linear-gradient(90deg, var(--muted) 25%, var(--border) 50%, var(--muted) 75%);
+  background: linear-gradient(
+    90deg,
+    oklch(0.22 0.025 260) 25%,
+    oklch(0.28 0.03 260) 50%,
+    oklch(0.22 0.025 260) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: var(--radius-sm);
@@ -165,48 +347,419 @@
   border-radius: var(--radius-lg);
 }
 
-/* Subtle card hover lift */
+/* ---------- GLASS MORPHISM CARDS ---------- */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  transition: all 0.25s var(--transition-smooth);
+}
+
+.glass-card:hover {
+  background: oklch(0.2 0.03 260 / 65%);
+  border-color: oklch(0.5 0.05 260 / 28%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px -8px oklch(0 0 0 / 40%),
+    0 0 0 1px oklch(0.5 0.05 260 / 8%);
+}
+
+/* Premium card with gradient border */
+.gradient-border-card {
+  position: relative;
+  background: oklch(0.18 0.03 260);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.gradient-border-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  padding: 1px;
+  background: var(--gradient-primary);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Card with subtle glow on hover */
+.glow-card {
+  position: relative;
+  transition: all 0.3s var(--transition-smooth);
+}
+
+.glow-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: var(--gradient-primary);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s var(--transition-smooth);
+  filter: blur(12px);
+}
+
+.glow-card:hover::after {
+  opacity: 0.15;
+}
+
+.glow-card:hover {
+  transform: translateY(-2px);
+  border-color: oklch(0.5 0.1 195 / 30%);
+}
+
+/* ---------- PREMIUM CARD HOVER ---------- */
 .muse-card-hover {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.2s var(--transition-smooth),
+    box-shadow 0.2s var(--transition-smooth),
+    border-color 0.2s var(--transition-smooth);
 }
+
 .muse-card-hover:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 24px -8px oklch(0 0 0 / 50%),
+    0 0 0 1px oklch(0.5 0.05 260 / 12%);
+  border-color: oklch(0.45 0.06 260);
 }
 
-/* Staggered fade-in for lists */
-@keyframes stagger-fade {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ---------- STAGGERED ANIMATIONS ---------- */
+.muse-stagger-1 {
+  animation: stagger-fade 0.3s var(--transition-smooth) 0.03s both;
+}
+.muse-stagger-2 {
+  animation: stagger-fade 0.3s var(--transition-smooth) 0.06s both;
+}
+.muse-stagger-3 {
+  animation: stagger-fade 0.3s var(--transition-smooth) 0.09s both;
+}
+.muse-stagger-4 {
+  animation: stagger-fade 0.3s var(--transition-smooth) 0.12s both;
+}
+.muse-stagger-5 {
+  animation: stagger-fade 0.3s var(--transition-smooth) 0.15s both;
+}
+.muse-stagger-6 {
+  animation: stagger-fade 0.3s var(--transition-smooth) 0.18s both;
+}
+.muse-stagger-7 {
+  animation: stagger-fade 0.3s var(--transition-smooth) 0.21s both;
+}
+.muse-stagger-8 {
+  animation: stagger-fade 0.3s var(--transition-smooth) 0.24s both;
 }
 
-.muse-stagger-1 { animation: stagger-fade 0.2s ease-out 0.05s both; }
-.muse-stagger-2 { animation: stagger-fade 0.2s ease-out 0.1s both; }
-.muse-stagger-3 { animation: stagger-fade 0.2s ease-out 0.15s both; }
-.muse-stagger-4 { animation: stagger-fade 0.2s ease-out 0.2s both; }
-.muse-stagger-5 { animation: stagger-fade 0.2s ease-out 0.25s both; }
+/* ---------- LIVE DATA INDICATOR ---------- */
+.live-indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
 
-/* Smooth progress bars */
+.live-indicator::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: oklch(0.72 0.17 150);
+  animation: pulse-premium 2s ease-in-out infinite;
+  box-shadow: 0 0 8px oklch(0.72 0.17 150 / 40%);
+}
+
+/* Premium badge with gradient */
+.badge-gradient {
+  background: var(--gradient-primary);
+  color: oklch(0.985 0 0);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.025em;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  box-shadow: 0 0 12px oklch(0.7 0.15 195 / 20%);
+}
+
+/* Badge with glow border */
+.badge-glow {
+  position: relative;
+  border: 1px solid oklch(0.7 0.15 195 / 40%);
+  box-shadow: 0 0 8px oklch(0.7 0.15 195 / 12%);
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* ---------- PREMIUM PROGRESS BAR ---------- */
+[role="progressbar"] {
+  overflow: hidden;
+  border-radius: 9999px;
+  background: oklch(0.22 0.025 260);
+}
+
 [role="progressbar"] > div {
-  transition: width 0.5s ease-in-out;
+  transition: width 0.6s var(--transition-smooth);
+  background: var(--gradient-primary);
+  border-radius: 9999px;
+  position: relative;
 }
 
-/* Better scrollbar styling */
+[role="progressbar"] > div::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    oklch(1 0 0 / 0%) 0%,
+    oklch(1 0 0 / 20%) 50%,
+    oklch(1 0 0 / 0%) 100%
+  );
+  animation: shimmer 2s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+/* ---------- PREMIUM BUTTON OVERRIDES ---------- */
+.btn-primary-gradient {
+  background: var(--gradient-primary);
+  border: none;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: all 0.2s var(--transition-smooth);
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / 20%),
+    0 0 12px oklch(0.7 0.15 195 / 10%);
+}
+
+.btn-primary-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 12px -2px oklch(0 0 0 / 30%),
+    0 0 20px oklch(0.7 0.15 195 / 18%);
+}
+
+.btn-primary-gradient:active {
+  transform: translateY(0);
+}
+
+/* ---------- PREMIUM INPUT STYLES ---------- */
+input,
+textarea,
+select {
+  transition: all 0.2s var(--transition-smooth);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow:
+    0 0 0 2px oklch(0.7 0.15 195 / 20%),
+    0 0 16px oklch(0.7 0.15 195 / 8%);
+}
+
+/* ---------- PREMIUM TABLE STYLES ---------- */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* ---------- PREMIUM TOOLTIP ---------- */
+[data-radix-tooltip-content] {
+  background: oklch(0.22 0.03 260);
+  border: 1px solid oklch(0.35 0.04 260);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px -8px oklch(0 0 0 / 60%);
+}
+
+/* ---------- SLIDE ANIMATIONS ---------- */
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s var(--transition-smooth) both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s var(--transition-smooth) both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s var(--transition-smooth) both;
+}
+
+.animate-float {
+  animation: float-subtle 4s ease-in-out infinite;
+}
+
+.animate-page-enter {
+  animation: page-enter 0.4s var(--transition-smooth);
+}
+
+/* ---------- GRADIENT TEXT UTILITY ---------- */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-warm {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---------- PREMIUM DIVIDER ---------- */
+.divider-gradient {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    oklch(0 0 0 / 0%),
+    oklch(0.4 0.05 260 / 30%),
+    oklch(0 0 0 / 0%)
+  );
+  border: none;
+}
+
+/* ---------- PREMIUM STAT CARD ---------- */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity 0.3s var(--transition-smooth);
+}
+
+.stat-card:hover::before {
+  opacity: 1;
+}
+
+/* ---------- SCROLLBAR CONTAINER ---------- */
 .scrollbar-thin {
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: oklch(0.35 0.04 260) transparent;
 }
+
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px;
   height: 4px;
 }
+
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: linear-gradient(180deg, oklch(0.35 0.04 260), oklch(0.45 0.06 260));
   border-radius: 2px;
+  background-clip: padding-box;
+  border: 1px solid transparent;
 }
+
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+  background: oklch(0.5 0.06 260);
+  background-clip: padding-box;
 }
+
+/* ---------- PREMIUM OVERLAY / BACKDROP ---------- */
+.premium-backdrop {
+  background: oklch(0.13 0.028 260 / 60%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ---------- SELECTION STYLE ---------- */
+::selection {
+  background: oklch(0.7 0.15 195 / 30%);
+  color: oklch(0.95 0.01 250);
+}
+
+/* ---------- PREMIUM AVATAR RING ---------- */
+.avatar-ring {
+  box-shadow:
+    0 0 0 2px oklch(0.18 0.03 260),
+    0 0 0 3px oklch(0.7 0.15 195 / 30%);
+}
+
+/* ---------- FOCUS VISIBLE PREMIUM ---------- */
+:focus-visible {
+  outline: 2px solid oklch(0.7 0.15 195 / 50%);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- PREMIUM CHART CONTAINER ---------- */
+.chart-container {
+  filter: drop-shadow(0 2px 8px oklch(0 0 0 / 20%));
+}
+
+/* ---------- PREMIUM CARD DEFAULTS ---------- */
+/* Make all shadcn/ui Cards look premium by default */
+[data-slot="card"] {
+  border-radius: 1rem;
+  border: 1px solid oklch(0.28 0.03 260 / 60%);
+  background: oklch(0.16 0.025 260 / 90%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s var(--transition-smooth);
+}
+
+[data-slot="card"]:hover {
+  border-color: oklch(0.35 0.04 260 / 80%);
+  box-shadow: 0 4px 16px -4px oklch(0 0 0 / 30%);
+}
+
+/* Premium badge defaults */
+[data-slot="badge"] {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* Premium button defaults */
+[data-slot="button"] {
+  transition: all 0.15s var(--transition-smooth);
+}
+
+/* ---------- PREMIUM TOAST OVERRIDES ---------- */
+[data-sonner-toaster] {
+  --normal-bg: oklch(0.18 0.03 260);
+  --normal-border: oklch(0.35 0.04 260 / 60%);
+  --normal-text: oklch(0.93 0.01 250);
+}
+
+/* ---------- ANIMATE PULSE SUBTLE ---------- */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* ---------- PREMIUM TABS ---------- */
+[role="tablist"] {
+  gap: 0.25rem;
+}
+
+[role="tab"] {
+  font-weight: 500;
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+  transition: all 0.15s var(--transition-smooth);
+}
+
+/* ---------- NO INDIGO/BLUE ENFORCEMENT ---------- */
+/* Project rule: no indigo or blue primary colors */

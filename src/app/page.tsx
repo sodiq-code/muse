@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast, Toaster } from 'sonner';
 import {
   Card,
@@ -1593,27 +1594,37 @@ export default function MuseDashboard() {
       <Toaster position="top-right" richColors closeButton />
       {/* Hidden live mode detector */}
       <input type="hidden" value={status?.mode ?? 'unknown'} />
-      {/* ===== Header ===== */}
-      <header className="border-b border-border bg-card">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+      {/* ===== PREMIUM Header ===== */}
+      <header className="sticky top-0 z-50 border-b border-border/50 glass-card">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-gradient-to-br from-violet-500 to-emerald-500 flex items-center justify-center">
-              <Brain className="size-5 text-white" />
-            </div>
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+              className="relative"
+            >
+              <div className="size-11 rounded-2xl bg-gradient-to-br from-sky-500 via-emerald-500 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                <Brain className="size-5 text-white" />
+              </div>
+              {status?.mode === 'live' && (
+                <div className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-emerald-400 animate-pulse border-2 border-background" />
+              )}
+            </motion.div>
             <div>
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight">
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight gradient-text">
                 MUSE
               </h1>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground font-medium">
                 The AI Creative Team That Learns You
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {sseConnected && (
-              <Badge variant="outline" className="gap-1 bg-emerald-50 text-emerald-700 border-emerald-200">
+              <Badge variant="outline" className="gap-1.5 bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-medium">
                 <Zap className="size-3" />
-                SSE Live
+                <span className="hidden sm:inline">SSE</span> Live
               </Badge>
             )}
             {loading ? (
@@ -1622,9 +1633,9 @@ export default function MuseDashboard() {
                 Loading…
               </Badge>
             ) : status?.connected ? (
-              <Badge className={`gap-1 ${status.mode === 'live' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-amber-600 text-white border-amber-600'}`}>
-                <CheckCircle2 className={`size-3 ${status.mode === 'live' ? 'animate-pulse' : ''}`} />
-                {status.mode === 'live' ? '⚡ LIVE' : 'Simulated'}
+              <Badge className={`gap-1.5 font-medium ${status.mode === 'live' ? 'bg-emerald-500/90 text-white border-emerald-500 shadow-sm shadow-emerald-500/30' : 'bg-amber-500/90 text-white border-amber-500'}`}>
+                <span className={`size-1.5 rounded-full ${status.mode === 'live' ? 'bg-white animate-pulse' : 'bg-white/50'}`} />
+                {status.mode === 'live' ? 'LIVE' : 'Simulated'}
               </Badge>
             ) : (
               <Badge variant="destructive" className="gap-1">
@@ -1633,38 +1644,38 @@ export default function MuseDashboard() {
               </Badge>
             )}
             {validation?.config && (
-              <Badge variant="outline" className="gap-1">
+              <Badge variant="outline" className="gap-1 text-muted-foreground">
                 <Users className="size-3" />
                 {validation.config.creatorName}
               </Badge>
             )}
             {status?.muse?.balance && (
-              <Badge variant="outline" className="gap-1 text-[10px]">
-                <Zap className="size-3 text-amber-500" />
-                Muse: {status.muse.balance.cognition?.toFixed(1) ?? '?'}⚡
+              <Badge variant="outline" className="gap-1.5 font-mono text-[10px]">
+                <Zap className="size-3 text-amber-400" />
+                <span className="text-amber-400">M</span> {status.muse.balance.cognition?.toFixed(1) ?? '?'}
               </Badge>
             )}
             {status?.maker?.balance && (
-              <Badge variant="outline" className="gap-1 text-[10px]">
-                <Zap className="size-3 text-amber-500" />
-                Maker: {status.maker.balance.cognition?.toFixed(1) ?? '?'}⚡
+              <Badge variant="outline" className="gap-1.5 font-mono text-[10px]">
+                <Zap className="size-3 text-sky-400" />
+                <span className="text-sky-400">K</span> {status.maker.balance.cognition?.toFixed(1) ?? '?'}
               </Badge>
             )}
             {(status as any)?.dualAccount && (
-              <Badge variant="outline" className="gap-1 text-[10px] bg-violet-50 text-violet-700 border-violet-200">
+              <Badge variant="outline" className="gap-1.5 text-[10px] bg-violet-500/10 text-violet-400 border-violet-500/30">
                 <GitBranch className="size-3" />
-                Dual Account
+                Dual
               </Badge>
             )}
           </div>
           {/* Last refreshed + manual refresh */}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Clock className="size-3" />
-            <span>Last refreshed: {lastStatusRefresh.toLocaleTimeString()}</span>
+            <span>{lastStatusRefresh.toLocaleTimeString()}</span>
             <Button
               variant="ghost"
               size="icon"
-              className="size-6"
+              className="size-6 hover:bg-primary/10"
               onClick={refreshMindsStatus}
               disabled={statusRefreshing}
               title="Refresh minds status"
@@ -1675,40 +1686,50 @@ export default function MuseDashboard() {
         </div>
       </header>
 
-      {/* ===== MODE BANNER ===== */}
-      {status?.mode === 'live' ? (
-        <div className="bg-emerald-600 text-white text-center text-xs py-1.5 px-4 animate-pulse-subtle">
-          ⚡ Connected to Minds Platform — Muse01 + muse02 (Dual Account Architecture)
-        </div>
-      ) : status?.mode === 'simulate' ? (
-        <div className="bg-amber-500 text-white text-center text-xs py-1.5 px-4">
-          Simulation Mode — Minds SDK not connected
-        </div>
-      ) : null}
+      {/* ===== PREMIUM MODE BANNER ===== */}
+      <AnimatePresence>
+        {status?.mode === 'live' ? (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 text-white text-center text-xs py-1.5 px-4 font-medium overflow-hidden"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-white animate-pulse" />
+              Connected to Minds Platform — Muse01 + muse02 (Dual Account Architecture)
+            </span>
+          </motion.div>
+        ) : status?.mode === 'simulate' ? (
+          <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white text-center text-xs py-1.5 px-4 font-medium">
+            Simulation Mode — Minds SDK not connected
+          </div>
+        ) : null}
+      </AnimatePresence>
 
       {/* ===== Main ===== */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
         <Tabs defaultValue="today" className="w-full">
-          <TabsList className="w-full overflow-x-auto flex-nowrap justify-start gap-0.5 pb-1 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
-            <TabsTrigger value="today" className="gap-1 shrink-0">
+          <TabsList className="w-full overflow-x-auto flex-nowrap justify-start gap-1 pb-1 scrollbar-thin bg-muted/50 p-1 rounded-xl">
+            <TabsTrigger value="today" className="gap-1.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground rounded-lg px-4">
               <Sun className="size-3.5" />
-              <span className="hidden sm:inline">Today</span><span className="sm:hidden">Today</span>
+              <span>Today</span>
             </TabsTrigger>
-            <TabsTrigger value="memoryscreen" className="gap-1 shrink-0">
+            <TabsTrigger value="memoryscreen" className="gap-1.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground rounded-lg px-4">
               <Brain className="size-3.5" />
-              <span className="hidden sm:inline">Memory</span><span className="sm:hidden">Mem</span>
+              <span>Memory</span>
             </TabsTrigger>
-            <TabsTrigger value="learningscreen" className="gap-1 shrink-0">
+            <TabsTrigger value="learningscreen" className="gap-1.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground rounded-lg px-4">
               <GraduationCap className="size-3.5" />
-              <span className="hidden sm:inline">Learning</span><span className="sm:hidden">Learn</span>
+              <span>Learning</span>
             </TabsTrigger>
-            <TabsTrigger value="overnightscreen" className="gap-1 shrink-0">
+            <TabsTrigger value="overnightscreen" className="gap-1.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground rounded-lg px-4">
               <Moon className="size-3.5" />
-              <span className="hidden sm:inline">Overnight</span><span className="sm:hidden">O/N</span>
+              <span>Overnight</span>
             </TabsTrigger>
-            <TabsTrigger value="controlscreen" className="gap-1 shrink-0">
+            <TabsTrigger value="controlscreen" className="gap-1.5 shrink-0 data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground rounded-lg px-4">
               <Settings className="size-3.5" />
-              <span className="hidden sm:inline">Control</span><span className="sm:hidden">Ctrl</span>
+              <span>Control</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1731,51 +1752,64 @@ export default function MuseDashboard() {
 
             {todayScreenData && (
               <>
-                {/* Morning Greeting */}
-                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent muse-card-hover">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-3 muse-stagger-1">
-                      {todayScreenData.greeting?.timeOfDay === 'morning' ? (
-                        <Sunrise className="size-8 text-amber-400" />
-                      ) : todayScreenData.greeting?.timeOfDay === 'evening' || todayScreenData.greeting?.timeOfDay === 'night' ? (
-                        <Moon className="size-8 text-indigo-400" />
-                      ) : (
-                        <CloudSun className="size-8 text-sky-400" />
-                      )}
-                      <div>
-                        <h2 className="text-2xl font-bold tracking-tight">
-                          {todayScreenData.greeting?.text || 'Good day!'}
-                        </h2>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {todayScreenData.creatorName ? `Your daily briefing, ${todayScreenData.creatorName}.` : 'Your daily briefing.'}
-                        </p>
+                {/* Premium Morning Greeting */}
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+                  <Card className="rounded-2xl border-sky-500/20 bg-gradient-to-br from-sky-500/10 via-emerald-500/5 to-transparent muse-card-hover overflow-hidden relative">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-emerald-500 to-teal-500" />
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4 muse-stagger-1">
+                        <motion.div
+                          initial={{ scale: 0.5, rotate: -10 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ type: 'spring', stiffness: 150, damping: 12, delay: 0.2 }}
+                          className="size-14 rounded-2xl bg-gradient-to-br from-amber-400/20 to-orange-400/10 flex items-center justify-center"
+                        >
+                          {todayScreenData.greeting?.timeOfDay === 'morning' ? (
+                            <Sunrise className="size-7 text-amber-400" />
+                          ) : todayScreenData.greeting?.timeOfDay === 'evening' || todayScreenData.greeting?.timeOfDay === 'night' ? (
+                            <Moon className="size-7 text-indigo-400" />
+                          ) : (
+                            <CloudSun className="size-7 text-sky-400" />
+                          )}
+                        </motion.div>
+                        <div>
+                          <h2 className="text-2xl font-bold tracking-tight gradient-text-warm">
+                            {todayScreenData.greeting?.text || 'Good day!'}
+                          </h2>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {todayScreenData.creatorName ? `Your daily briefing, ${todayScreenData.creatorName}.` : 'Your daily briefing.'}
+                            {status?.mode === 'live' && <span className="ml-2 inline-flex items-center gap-1 text-emerald-400"><span className="size-1 rounded-full bg-emerald-400 animate-pulse" />live</span>}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </motion.div>
 
-                {/* Overnight Brief */}
+                {/* Premium Overnight Brief */}
                 {todayScreenData.overnightBrief && (
-                  <Card className="rounded-xl">
+                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
+                  <Card className="rounded-2xl border-violet-500/20 muse-card-hover overflow-hidden relative">
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-500 via-indigo-500 to-sky-500" />
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                        <Moon className="size-4 text-indigo-400" />
+                        <Moon className="size-4 text-violet-400" />
                         Overnight Brief
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="grid grid-cols-3 gap-3">
-                        <div className="text-center p-3 rounded-lg bg-muted/50">
-                          <p className="font-mono text-lg font-bold text-emerald-400">{todayScreenData.overnightBrief.reviewedCount ?? 0}</p>
-                          <p className="text-xs text-muted-foreground">Reviewed</p>
+                        <div className="text-center p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                          <p className="font-mono text-2xl font-bold text-emerald-400">{todayScreenData.overnightBrief.reviewedCount ?? 0}</p>
+                          <p className="text-[11px] text-muted-foreground font-medium">Reviewed</p>
                         </div>
-                        <div className="text-center p-3 rounded-lg bg-muted/50">
-                          <p className="font-mono text-lg font-bold text-violet-400">{todayScreenData.overnightBrief.draftedCount ?? 0}</p>
-                          <p className="text-xs text-muted-foreground">Drafted</p>
+                        <div className="text-center p-4 rounded-xl bg-violet-500/5 border border-violet-500/10">
+                          <p className="font-mono text-2xl font-bold text-violet-400">{todayScreenData.overnightBrief.draftedCount ?? 0}</p>
+                          <p className="text-[11px] text-muted-foreground font-medium">Drafted</p>
                         </div>
-                        <div className="text-center p-3 rounded-lg bg-muted/50">
-                          <p className="font-mono text-lg font-bold text-sky-400">{todayScreenData.overnightBrief.updatedCount ?? 0}</p>
-                          <p className="text-xs text-muted-foreground">Updated</p>
+                        <div className="text-center p-4 rounded-xl bg-sky-500/5 border border-sky-500/10">
+                          <p className="font-mono text-2xl font-bold text-sky-400">{todayScreenData.overnightBrief.updatedCount ?? 0}</p>
+                          <p className="text-[11px] text-muted-foreground font-medium">Updated</p>
                         </div>
                       </div>
                       {todayScreenData.overnightBrief.items?.length > 0 && (
@@ -1795,13 +1829,15 @@ export default function MuseDashboard() {
                       )}
                     </CardContent>
                   </Card>
+                  </motion.div>
                 )}
 
-                {/* 3 Quick-Stat Cards */}
+                {/* Premium 3 Quick-Stat Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Top Signals */}
                   {todayScreenData.topSignals && todayScreenData.topSignals.length > 0 && (
-                    <Card className="rounded-xl">
+                    <Card className="rounded-2xl border-amber-500/20 muse-card-hover overflow-hidden relative">
+                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-500 to-orange-500" />
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                           <Zap className="size-4 text-amber-400" />
@@ -1810,15 +1846,15 @@ export default function MuseDashboard() {
                       </CardHeader>
                       <CardContent className="space-y-2">
                         {todayScreenData.topSignals.map((sig: any, i: number) => (
-                          <div key={i} className="p-2 rounded-lg bg-muted/50">
+                          <div key={i} className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
                             <p className="font-semibold text-sm">{sig.label}</p>
-                            <p className="font-mono text-xs text-violet-400">{sig.value}</p>
+                            <p className="font-mono text-xs text-amber-400">{sig.value}</p>
                             {sig.evidence && (
                               <p className="text-xs italic text-muted-foreground mt-1">{sig.evidence}</p>
                             )}
                             {sig.source && (
                               <p className="text-xs text-muted-foreground mt-0.5">
-                                <span className="font-semibold">SRC:</span> {sig.source}
+                                <span className="font-semibold text-amber-400/70">SRC:</span> {sig.source}
                               </p>
                             )}
                           </div>
@@ -1829,10 +1865,11 @@ export default function MuseDashboard() {
 
                   {/* New Data */}
                   {todayScreenData.newData && (
-                    <Card className="rounded-xl">
+                    <Card className="rounded-2xl border-emerald-500/20 muse-card-hover overflow-hidden relative">
+                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 to-teal-500" />
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                          <Database className="size-4 text-sky-400" />
+                          <Database className="size-4 text-emerald-400" />
                           New Data
                         </CardTitle>
                       </CardHeader>
@@ -1841,7 +1878,7 @@ export default function MuseDashboard() {
                         <p className="font-mono text-2xl font-bold text-emerald-400">{todayScreenData.newData.value}</p>
                         {todayScreenData.newData.source && (
                           <p className="text-xs text-muted-foreground">
-                            <span className="font-semibold">SRC:</span> {todayScreenData.newData.source}
+                            <span className="font-semibold text-emerald-400/70">SRC:</span> {todayScreenData.newData.source}
                           </p>
                         )}
                       </CardContent>
@@ -1850,10 +1887,11 @@ export default function MuseDashboard() {
 
                   {/* Try Next */}
                   {todayScreenData.tryNext && (
-                    <Card className="rounded-xl">
+                    <Card className="rounded-2xl border-sky-500/20 muse-card-hover overflow-hidden relative">
+                      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-sky-500 to-blue-500" />
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                          <Lightbulb className="size-4 text-amber-400" />
+                          <Lightbulb className="size-4 text-sky-400" />
                           Try Next
                         </CardTitle>
                       </CardHeader>
@@ -1861,7 +1899,7 @@ export default function MuseDashboard() {
                         <p className="font-semibold text-sm">{todayScreenData.tryNext.label}</p>
                         <p className="text-sm text-muted-foreground">{todayScreenData.tryNext.description}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">{todayScreenData.tryNext.hookPattern}</Badge>
+                          <Badge variant="outline" className="text-xs border-sky-500/30 text-sky-400">{todayScreenData.tryNext.hookPattern}</Badge>
                           <Badge variant="secondary" className="text-xs">{todayScreenData.tryNext.confidence} confidence</Badge>
                         </div>
                         {todayScreenData.tryNext.evidence && (
@@ -1951,35 +1989,43 @@ export default function MuseDashboard() {
               </CardContent>
             </Card>
 
-            {/* ===== TALK TO MUSE — Live Chat ===== */}
-            <Card className="border-violet-200">
+            {/* ===== PREMIUM TALK TO MUSE — Live Chat ===== */}
+            <Card className="border-violet-500/20 overflow-hidden relative">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500" />
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <MessageCircle className="size-4 text-violet-600" />
+                  <MessageCircle className="size-4 text-violet-400" />
                   Talk to Muse
-                  {status?.mode === 'live' && <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-violet-100 text-violet-700 border-violet-300">LIVE MIND</Badge>}
+                  {status?.mode === 'live' && <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-violet-500/10 text-violet-400 border-violet-500/30">LIVE MIND</Badge>}
                 </CardTitle>
                 <CardDescription className="text-xs">Ask about hooks, memory, recommendations, or anything</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="max-h-48 overflow-y-auto space-y-2 mb-3">
+                <div className="max-h-64 overflow-y-auto space-y-2 mb-3 scrollbar-thin">
                   {chatMessages.length === 0 && (
-                    <div className="text-xs text-muted-foreground italic text-center py-4">
+                    <div className="text-xs text-muted-foreground italic text-center py-6">
                       Try: &ldquo;What hook should I use?&rdquo; or &ldquo;Show me my memory&rdquo;
                     </div>
                   )}
                   {chatMessages.map((msg, idx) => (
                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] rounded-lg px-3 py-2 text-xs ${msg.role === 'user' ? 'bg-violet-100 text-violet-900' : 'bg-muted text-foreground'}`}>
-                        {msg.role === 'muse' && <span className="font-semibold text-violet-600 text-[10px] block mb-0.5">MUSE</span>}
+                      <div className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-xs leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-gradient-to-br from-violet-500/20 to-fuchsia-500/10 text-foreground border border-violet-500/20'
+                          : 'bg-muted/50 text-foreground border border-border/50'
+                      }`}>
+                        {msg.role === 'muse' && <span className="font-semibold text-violet-400 text-[10px] block mb-0.5 tracking-wider">MUSE</span>}
                         <span className="whitespace-pre-wrap">{msg.text}</span>
                       </div>
                     </div>
                   ))}
                   {chatLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-muted rounded-lg px-3 py-2 text-xs text-muted-foreground animate-pulse">
-                        Muse is thinking…
+                      <div className="bg-muted/50 rounded-xl px-3.5 py-2.5 text-xs text-muted-foreground border border-border/50">
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="size-1.5 rounded-full bg-violet-400 animate-pulse" />
+                          Muse is thinking…
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1990,10 +2036,10 @@ export default function MuseDashboard() {
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
                     placeholder="Ask Muse anything…"
-                    className="text-xs h-9"
+                    className="text-xs h-9 bg-muted/30 border-border/50 focus:border-violet-500/40"
                     disabled={chatLoading}
                   />
-                  <Button onClick={handleChatSend} disabled={chatLoading || !chatInput.trim()} size="sm" className="h-9 px-3">
+                  <Button onClick={handleChatSend} disabled={chatLoading || !chatInput.trim()} size="sm" className="h-9 px-3 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white border-0 hover:opacity-90">
                     <Send className="size-3.5" />
                   </Button>
                 </div>
@@ -2021,16 +2067,25 @@ export default function MuseDashboard() {
             {memoryScreenData && (
               <>
                 {/* Header: What Muse Knows About You */}
-                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent muse-card-hover">
+                <Card className="rounded-2xl border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-fuchsia-500/5 to-transparent muse-card-hover overflow-hidden relative">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500" />
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-3 muse-stagger-1">
-                      <Brain className="size-8 text-violet-400" />
+                    <div className="flex items-center gap-4 muse-stagger-1">
+                      <motion.div
+                        initial={{ scale: 0.5, rotate: 10 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 150, damping: 12, delay: 0.1 }}
+                        className="size-14 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/10 flex items-center justify-center"
+                      >
+                        <Brain className="size-7 text-violet-400" />
+                      </motion.div>
                       <div>
-                        <h2 className="text-2xl font-bold tracking-tight">
+                        <h2 className="text-2xl font-bold tracking-tight gradient-text">
                           What Muse Knows About {memoryScreenData.creatorName || 'You'}
                         </h2>
                         <p className="text-sm text-muted-foreground mt-1">
                           {memoryScreenData.memoryEvents ?? 0} memory events recorded
+                          {status?.mode === 'live' && <span className="ml-2 inline-flex items-center gap-1 text-emerald-400"><span className="size-1 rounded-full bg-emerald-400 animate-pulse" />live</span>}
                         </p>
                       </div>
                     </div>
@@ -2281,16 +2336,25 @@ export default function MuseDashboard() {
             {learningScreenData && (
               <>
                 {/* How Muse Is Learning Header */}
-                <Card className="rounded-xl border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-transparent muse-card-hover">
+                <Card className="rounded-2xl border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent muse-card-hover overflow-hidden relative">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500" />
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-3 muse-stagger-1">
-                      <GraduationCap className="size-8 text-violet-400" />
+                    <div className="flex items-center gap-4 muse-stagger-1">
+                      <motion.div
+                        initial={{ scale: 0.5, rotate: -10 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 150, damping: 12, delay: 0.1 }}
+                        className="size-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 flex items-center justify-center"
+                      >
+                        <GraduationCap className="size-7 text-emerald-400" />
+                      </motion.div>
                       <div>
-                        <h2 className="text-2xl font-bold tracking-tight">How Muse Is Learning</h2>
+                        <h2 className="text-2xl font-bold tracking-tight gradient-text">How Muse Is Learning</h2>
                         <p className="text-sm text-muted-foreground mt-1">
                           {learningScreenData.creatorName
                             ? `${learningScreenData.creatorName}, every piece of content teaches something new.`
                             : 'Every piece of content teaches something new.'}
+                          {status?.mode === 'live' && <span className="ml-2 inline-flex items-center gap-1 text-emerald-400"><span className="size-1 rounded-full bg-emerald-400 animate-pulse" />live</span>}
                         </p>
                       </div>
                     </div>
@@ -2527,16 +2591,25 @@ export default function MuseDashboard() {
             {overnightScreenData && (
               <>
                 {/* While You Were Offline Header */}
-                <Card className="rounded-xl border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 to-transparent">
+                <Card className="rounded-2xl border-sky-500/20 bg-gradient-to-br from-sky-500/10 via-indigo-500/5 to-transparent muse-card-hover overflow-hidden relative">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-500" />
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-3">
-                      <Moon className="size-8 text-indigo-400" />
+                    <div className="flex items-center gap-4 muse-stagger-1">
+                      <motion.div
+                        initial={{ scale: 0.5, rotate: 10 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 150, damping: 12, delay: 0.1 }}
+                        className="size-14 rounded-2xl bg-gradient-to-br from-sky-500/20 to-indigo-500/10 flex items-center justify-center"
+                      >
+                        <Moon className="size-7 text-sky-400" />
+                      </motion.div>
                       <div>
-                        <h2 className="text-2xl font-bold tracking-tight">While You Were Offline</h2>
+                        <h2 className="text-2xl font-bold tracking-tight gradient-text">While You Were Offline</h2>
                         <p className="text-sm text-muted-foreground mt-1">
                           {overnightScreenData.creatorName
                             ? `${overnightScreenData.creatorName}, Muse was working while you slept.`
                             : 'Muse was working while you slept.'}
+                          {status?.mode === 'live' && <span className="ml-2 inline-flex items-center gap-1 text-emerald-400"><span className="size-1 rounded-full bg-emerald-400 animate-pulse" />live</span>}
                         </p>
                       </div>
                     </div>
@@ -2718,16 +2791,25 @@ export default function MuseDashboard() {
             {controlScreenData && (
               <>
                 {/* You're In Control Header */}
-                <Card className="rounded-xl border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent muse-card-hover">
+                <Card className="rounded-2xl border-amber-500/20 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent muse-card-hover overflow-hidden relative">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-3 muse-stagger-1">
-                      <Settings className="size-8 text-emerald-400" />
+                    <div className="flex items-center gap-4 muse-stagger-1">
+                      <motion.div
+                        initial={{ scale: 0.5, rotate: 10 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 150, damping: 12, delay: 0.1 }}
+                        className="size-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 flex items-center justify-center"
+                      >
+                        <Settings className="size-7 text-amber-400" />
+                      </motion.div>
                       <div>
-                        <h2 className="text-2xl font-bold tracking-tight">You&apos;re In Control</h2>
+                        <h2 className="text-2xl font-bold tracking-tight gradient-text-warm">You&apos;re In Control</h2>
                         <p className="text-sm text-muted-foreground mt-1">
                           {controlScreenData.creatorName
                             ? `${controlScreenData.creatorName}, you decide what Muse can and cannot do.`
                             : 'You decide what Muse can and cannot do.'}
+                          {status?.mode === 'live' && <span className="ml-2 inline-flex items-center gap-1 text-emerald-400"><span className="size-1 rounded-full bg-emerald-400 animate-pulse" />live</span>}
                         </p>
                       </div>
                     </div>
@@ -3213,14 +3295,32 @@ export default function MuseDashboard() {
         </Tabs>
       </main>
 
-      {/* ===== Footer ===== */}
-      <footer className="border-t border-border bg-card mt-auto">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
-          <span>MUSE — Persistent AI Creative Team • Minds Platform • Track 1: Audience Growth &amp; Engagement</span>
-          <span className="flex items-center gap-1">
-            <Server className="size-3" />
-            {status?.mode === 'live' ? 'Live API' : 'Simulated'}
-          </span>
+      {/* ===== PREMIUM Footer ===== */}
+      <footer className="border-t border-border/50 glass-card mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between text-xs text-muted-foreground flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <span className="size-4 rounded-md bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center">
+              <Brain className="size-2.5 text-white" />
+            </span>
+            <span className="font-medium">MUSE</span>
+            <span className="text-border">•</span>
+            <span>Persistent AI Creative Team</span>
+            <span className="text-border">•</span>
+            <span>Minds Platform • Track 1</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {status?.mode === 'live' ? (
+              <span className="inline-flex items-center gap-1.5 text-emerald-400 font-medium">
+                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live API
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-amber-400">
+                <Server className="size-3" />
+                Simulated
+              </span>
+            )}
+          </div>
         </div>
       </footer>
     </div>
@@ -3235,13 +3335,20 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-2">
       <span className="text-[10px] text-muted-foreground w-14 shrink-0">{label}</span>
-      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+      <div className="flex-1 h-2 rounded-full bg-muted/50 overflow-hidden">
         <div
-          className="h-full rounded-full bg-current transition-all"
-          style={{ width: `${Math.min(100, value * 100)}%`, color: value >= 0.7 ? '#10b981' : value >= 0.5 ? '#f59e0b' : '#ef4444' }}
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${Math.min(100, value * 100)}%`,
+            background: value >= 0.7
+              ? 'linear-gradient(90deg, #10b981, #14b8a6)'
+              : value >= 0.5
+                ? 'linear-gradient(90deg, #f59e0b, #fb923c)'
+                : 'linear-gradient(90deg, #ef4444, #f97316)',
+          }}
         />
       </div>
-      <span className="text-[10px] text-muted-foreground w-8 text-right">{(value * 100).toFixed(0)}%</span>
+      <span className="text-[10px] text-muted-foreground w-8 text-right font-mono">{(value * 100).toFixed(0)}%</span>
     </div>
   );
 }
@@ -3282,15 +3389,15 @@ function MindCard({
           <div className="flex items-center gap-2">
             {icon}
             <div>
-              <div className="h-5 w-32 bg-muted rounded animate-pulse" />
-              <div className="h-3 w-48 bg-muted rounded animate-pulse mt-1" />
+              <div className="h-5 w-32 muse-skeleton muse-skeleton-text" />
+              <div className="h-3 w-48 muse-skeleton muse-skeleton-text mt-1" />
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="h-4 w-full bg-muted rounded animate-pulse" />
-          <div className="h-4 w-3/4 bg-muted rounded animate-pulse" />
-          <div className="h-4 w-1/2 bg-muted rounded animate-pulse" />
+          <div className="h-4 w-full muse-skeleton muse-skeleton-text" />
+          <div className="h-4 w-3/4 muse-skeleton muse-skeleton-text" />
+          <div className="h-4 w-1/2 muse-skeleton muse-skeleton-text" />
         </CardContent>
       </Card>
     );
