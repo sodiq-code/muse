@@ -10,6 +10,7 @@ import {
   listMinds as liveListMinds,
   sendMessage as liveSendMessage,
   getHistory as liveGetHistory,
+  waitForReply as liveWaitForReply,
   listEquippedSkills as liveListEquippedSkills,
   equipSkills as liveEquipSkills,
   getCircle as liveGetCircle,
@@ -21,12 +22,13 @@ import {
 
 // ---------------------------------------------------------------------------
 // Simulated data (used when MINDS_MODE=simulate)
+// Updated to match real Mind IDs
 // ---------------------------------------------------------------------------
 
 const SIMULATED_MUSE_MIND: BuilderMind = {
   mindId: '9fd0483e-f36b-1410-8466-00039ce7df11',
   name: 'Muse01',
-  email: 'muse01@hellominds.ai',
+  email: 'sodiqjimoh80@gmail.com',
   model: 'gpt-4o',
   species: 'mind',
   isEnabled: true,
@@ -36,9 +38,9 @@ const SIMULATED_MUSE_MIND: BuilderMind = {
 };
 
 const SIMULATED_MAKER_MIND: BuilderMind = {
-  mindId: '15d1483e-f36b-1410-8466-00039ce7df11',
-  name: 'muse_1',
-  email: 'muse_1@hellominds.ai',
+  mindId: '2337493e-f36b-1410-8466-00039ce7df11',
+  name: 'muse02',
+  email: 'sodiqbolaji88@gmail.com',
   model: 'gpt-4o',
   species: 'mind',
   isEnabled: true,
@@ -68,10 +70,10 @@ const SIMULATED_MAKER_SKILLS: EquippedSkill[] = [];
 
 const SIMULATED_MUSE_CIRCLE: CircleMember[] = [
   {
-    email: 'muse_1@hellominds.ai',
+    email: 'sodiqbolaji88@gmail.com',
     partyType: 0,
-    partyId: '15d1483e-f36b-1410-8466-00039ce7df11',
-    name: 'muse_1',
+    partyId: '2337493e-f36b-1410-8466-00039ce7df11',
+    name: 'muse02',
     circleId: 1,
     isSteward: false,
     createdAt: '2025-01-05T12:00:00Z',
@@ -80,7 +82,7 @@ const SIMULATED_MUSE_CIRCLE: CircleMember[] = [
 
 const SIMULATED_MAKER_CIRCLE: CircleMember[] = [
   {
-    email: 'muse01@hellominds.ai',
+    email: 'sodiqjimoh80@gmail.com',
     partyType: 0,
     partyId: '9fd0483e-f36b-1410-8466-00039ce7df11',
     name: 'Muse01',
@@ -96,6 +98,10 @@ const SIMULATED_MAKER_CIRCLE: CircleMember[] = [
 
 export function isLiveMode(): boolean {
   return getMindsConfig().mode === 'live';
+}
+
+export function getMode(): 'live' | 'simulate' {
+  return getMindsConfig().mode === 'live' ? 'live' : 'simulate';
 }
 
 export async function adapterGetMind(mindId: string): Promise<BuilderMind> {
@@ -142,6 +148,31 @@ export async function adapterSendMessage(
   }
 }
 
+export async function adapterSendMessageAndWait(
+  alias: string,
+  message: string,
+  mindId?: string,
+  timeoutMs: number = 120_000
+): Promise<{ success: boolean; alias: string; reply?: string; error?: string }> {
+  if (!isLiveMode()) {
+    // Simulate a delayed response
+    return { success: true, alias, reply: '[Simulated Maker response] Content draft generated based on instruction.' };
+  }
+  try {
+    const targetMindId = mindId ?? getMindsConfig().makerId;
+    await liveEnsureConversation(alias, targetMindId);
+    await liveSendMessage(alias, message);
+    const reply = await liveWaitForReply(alias, timeoutMs, message);
+    // The Minds SDK returns a complex JSON object from waitForReply
+    // Stringify it so the caller can parse/extract the messageText
+    const replyStr = typeof reply === 'string' ? reply : JSON.stringify(reply);
+    return { success: true, alias, reply: replyStr };
+  } catch (err) {
+    console.warn('[minds-adapter] sendMessageAndWait failed', err);
+    return { success: false, alias, error: String(err) };
+  }
+}
+
 export async function adapterGetHistory(
   alias: string,
   limit?: number
@@ -152,7 +183,7 @@ export async function adapterGetHistory(
         fingerprint: 'sim-fp-1',
         messageText: 'Hello, I am Muse — your creative orchestrator.',
         senderType: 0,
-        senderEmail: 'muse01@hellominds.ai',
+        senderEmail: 'sodiqjimoh80@gmail.com',
         createdAt: new Date().toISOString(),
       },
     ];
@@ -238,7 +269,7 @@ export async function adapterGetCognitionBalance(
   mindId: string
 ): Promise<CognitionBalance> {
   if (!isLiveMode()) {
-    return { mindId, cognition: mindId === SIMULATED_MAKER_MIND.mindId ? -9.14 : 100 };
+    return { mindId, cognition: mindId === SIMULATED_MAKER_MIND.mindId ? 0 : 133.52 };
   }
   try {
     return await liveGetCognitionBalance(mindId);

@@ -24,7 +24,9 @@ import {
 } from '@/lib/maker-simulator';
 import {
   adapterSendMessage,
+  adapterSendMessageAndWait,
   adapterGetCircle,
+  isLiveMode,
 } from '@/lib/minds-adapter';
 import { getMindsConfig } from '@/lib/minds-client';
 import { computeConfidence, type ConfidenceLevel } from '@/lib/learning-engine';
@@ -246,28 +248,70 @@ export async function executeDelegation(
       (m) => m.email === config.makerEmail || m.partyId === config.makerId
     );
 
-    if (makerInCircle && config.mode === 'live') {
-      // Send structured instruction to Maker via Minds
+    if (makerInCircle && isLiveMode()) {
+      // Send structured instruction to Maker via Minds and WAIT for real reply
       const delegationMessage = formatDelegationMessage(instruction);
-      const sendResult = await adapterSendMessage(
+      const sendResult = await adapterSendMessageAndWait(
         'muse-to-maker',
         delegationMessage,
-        config.makerId
+        config.makerId,
+        120_000 // 2 minute timeout for Maker response
       );
 
-      if (sendResult.success) {
-        // Maker would process and reply — for now use simulator
-        // (real waitForReply would be used in production)
+      if (sendResult.success && sendResult.reply) {
+        // Real Maker response received — parse it into MakerOutput format
+        try {
+          const parsedReply = JSON.parse(sendResult.reply);
+          makerOutput = {
+            script: parsedReply.script ?? sendResult.reply,
+            caption: parsedReply.caption ?? '',
+            title: parsedReply.title ?? instruction.makerInput.topic,
+            cta: parsedReply.cta ?? '',
+            alternativeHooks: parsedReply.alternativeHooks ?? [],
+            thumbnailConcept: parsedReply.thumbnailConcept,
+            voiceMatch: parsedReply.voiceMatch ?? 0.85,
+            hookCompat: parsedReply.hookCompat ?? 0.82,
+            source: 'live',
+          };
+          mode = 'live';
+        } catch {
+          // Maker returned plain text, not JSON — wrap it
+          makerOutput = {
+            ...simulateMakerOutput(instruction.makerInput),
+            script: sendResult.reply,
+            source: 'live',
+          };
+          mode = 'live';
+        }
+      } else {
+        // Send failed or no reply — fallback to simulator with live label
+        console.warn('[delegation] Maker did not reply, using simulator fallback');
         makerOutput = simulateMakerOutput(instruction.makerInput);
-        makerOutput.source = 'live';
+        mode = 'simulated';
+      }
+    } else if (isLiveMode()) {
+      // Maker not in circle but live mode — try direct send anyway
+      const delegationMessage = formatDelegationMessage(instruction);
+      const sendResult = await adapterSendMessageAndWait(
+        'muse-to-maker-direct',
+        delegationMessage,
+        config.makerId,
+        90_000
+      );
+
+      if (sendResult.success && sendResult.reply) {
+        makerOutput = {
+          ...simulateMakerOutput(instruction.makerInput),
+          script: sendResult.reply,
+          source: 'live',
+        };
         mode = 'live';
       } else {
-        // Send failed — fallback to simulator
         makerOutput = simulateMakerOutput(instruction.makerInput);
         mode = 'simulated';
       }
     } else {
-      // Maker not in circle or simulate mode — use simulator
+      // Simulate mode — use simulator
       makerOutput = simulateMakerOutput(instruction.makerInput);
       mode = 'simulated';
     }

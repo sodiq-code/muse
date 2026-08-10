@@ -1098,6 +1098,15 @@ export default function MuseDashboard() {
   const [demoRehearsalStatus, setDemoRehearsalStatus] = useState<any>(null);
   const [demoRehearsalRunning, setDemoRehearsalRunning] = useState(false);
 
+  // ===== REAL-TIME STATE (SSE + Polling + Chat) =====
+  const [liveEvents, setLiveEvents] = useState<Array<{ id: string; type: string; mind: string; detail: string; source: string; timestamp: string }>>([]);
+  const [sseConnected, setSseConnected] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'muse'; text: string; timestamp: string }>>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+  const [lastStatusRefresh, setLastStatusRefresh] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState('today');
+
   // Fetch creator/memory/audit data
   const fetchCreatorData = useCallback(async () => {
     try {
@@ -1329,6 +1338,100 @@ export default function MuseDashboard() {
     })();
   }, [fetchVoiceProfile, fetchPerformanceData, fetchDecisionsData, fetchRankings, fetchHonestyCheck]);
 
+  // ===== SSE EVENT STREAM — Real-time Mind activity =====
+  useEffect(() => {
+    let eventSource: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function connectSSE() {
+      try {
+        eventSource = new EventSource('/api/minds/events');
+        eventSource.onopen = () => {
+          setSseConnected(true);
+          console.log('[SSE] Connected to Minds events stream');
+        };
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'keepalive') return;
+            // Add to live events feed (keep last 20)
+            setLiveEvents((prev) => {
+              const newEvent = {
+                id: data.id ?? `evt-${Date.now()}`,
+                type: data.type ?? 'unknown',
+                mind: data.mind ?? 'unknown',
+                detail: data.detail ?? '',
+                source: data.source ?? 'unknown',
+                timestamp: data.timestamp ?? new Date().toISOString(),
+              };
+              return [newEvent, ...prev].slice(0, 20);
+            });
+          } catch { /* ignore parse errors */ }
+        };
+        eventSource.onerror = () => {
+          setSseConnected(false);
+          eventSource?.close();
+          // Reconnect after 10 seconds
+          reconnectTimer = setTimeout(connectSSE, 10_000);
+        };
+      } catch (err) {
+        console.warn('[SSE] Failed to connect', err);
+        reconnectTimer = setTimeout(connectSSE, 15_000);
+      }
+    }
+
+    connectSSE();
+
+    return () => {
+      eventSource?.close();
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+    };
+  }, []);
+
+  // ===== AUTO-POLLING — Refresh Minds status every 30s =====
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const [statusRes] = await Promise.all([
+          fetch('/api/minds/status').then((r) => r.json()).catch(() => null),
+        ]);
+        if (statusRes) {
+          setStatus(statusRes);
+          setLastStatusRefresh(new Date());
+        }
+      } catch { /* silently fail */ }
+    }, 30_000); // every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ===== CHAT HANDLER — Talk to Muse =====
+  const handleChatSend = useCallback(async () => {
+    if (!chatInput.trim() || chatLoading) return;
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    setChatMessages((prev) => [...prev, { role: 'user', text: userMessage, timestamp: new Date().toISOString() }]);
+    setChatLoading(true);
+
+    try {
+      const res = await fetch('/api/minds/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage }),
+      });
+      const data = await res.json();
+      if (data.success && data.reply) {
+        setChatMessages((prev) => [...prev, { role: 'muse', text: data.reply, timestamp: new Date().toISOString() }]);
+      } else {
+        setChatMessages((prev) => [...prev, { role: 'muse', text: data.error ?? 'Muse could not respond. Try again.', timestamp: new Date().toISOString() }]);
+      }
+    } catch {
+      setChatMessages((prev) => [...prev, { role: 'muse', text: 'Connection error. Please try again.', timestamp: new Date().toISOString() }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }, [chatInput, chatLoading]);
+
   // Build test rows from validation data
   const tests: ValidationTest[] = validation
     ? [
@@ -1406,6 +1509,12 @@ export default function MuseDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {sseConnected && (
+              <Badge variant="outline" className="gap-1 bg-emerald-50 text-emerald-700 border-emerald-200">
+                <Zap className="size-3" />
+                SSE Live
+              </Badge>
+            )}
             {loading ? (
               <Badge variant="secondary" className="gap-1">
                 <Server className="size-3 animate-pulse" />
@@ -1426,6 +1535,18 @@ export default function MuseDashboard() {
               <Badge variant="outline" className="gap-1">
                 <Users className="size-3" />
                 {validation.config.creatorName}
+              </Badge>
+            )}
+            {status?.muse?.balance && (
+              <Badge variant="outline" className="gap-1 text-[10px]">
+                <Zap className="size-3 text-amber-500" />
+                Muse: {status.muse.balance.cognition?.toFixed(1) ?? '?'}⚡
+              </Badge>
+            )}
+            {status?.maker?.balance && (
+              <Badge variant="outline" className="gap-1 text-[10px]">
+                <Zap className="size-3 text-amber-500" />
+                Maker: {status.maker.balance.cognition?.toFixed(1) ?? '?'}⚡
               </Badge>
             )}
           </div>
@@ -1663,6 +1784,82 @@ export default function MuseDashboard() {
             )}
 
             {!todayScreenLoading && !todayScreenData && null}
+
+            {/* ===== LIVE ACTIVITY FEED ===== */}
+            <Card className="border-emerald-200 bg-emerald-50/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Activity className="size-4 text-emerald-600" />
+                  Live Activity
+                  {sseConnected && <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-700 border-emerald-300">LIVE</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
+                  {liveEvents.length === 0 ? (
+                    <p className="text-muted-foreground italic">Waiting for Minds activity…</p>
+                  ) : (
+                    liveEvents.slice(0, 5).map((evt) => (
+                      <div key={evt.id} className="flex items-start gap-2 py-0.5">
+                        <span className={`shrink-0 mt-0.5 size-1.5 rounded-full ${evt.source === 'live' ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                        <span className="text-muted-foreground font-medium shrink-0">{evt.mind}</span>
+                        <span className="text-foreground truncate">{evt.detail}</span>
+                        <span className="text-muted-foreground ml-auto shrink-0">{new Date(evt.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* ===== TALK TO MUSE — Live Chat ===== */}
+            <Card className="border-violet-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <MessageCircle className="size-4 text-violet-600" />
+                  Talk to Muse
+                  {status?.mode === 'live' && <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-violet-100 text-violet-700 border-violet-300">LIVE MIND</Badge>}
+                </CardTitle>
+                <CardDescription className="text-xs">Ask about hooks, memory, recommendations, or anything</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-48 overflow-y-auto space-y-2 mb-3">
+                  {chatMessages.length === 0 && (
+                    <div className="text-xs text-muted-foreground italic text-center py-4">
+                      Try: &ldquo;What hook should I use?&rdquo; or &ldquo;Show me my memory&rdquo;
+                    </div>
+                  )}
+                  {chatMessages.map((msg, idx) => (
+                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-lg px-3 py-2 text-xs ${msg.role === 'user' ? 'bg-violet-100 text-violet-900' : 'bg-muted text-foreground'}`}>
+                        {msg.role === 'muse' && <span className="font-semibold text-violet-600 text-[10px] block mb-0.5">MUSE</span>}
+                        <span className="whitespace-pre-wrap">{msg.text}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-muted rounded-lg px-3 py-2 text-xs text-muted-foreground animate-pulse">
+                        Muse is thinking…
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+                    placeholder="Ask Muse anything…"
+                    className="text-xs h-9"
+                    disabled={chatLoading}
+                  />
+                  <Button onClick={handleChatSend} disabled={chatLoading || !chatInput.trim()} size="sm" className="h-9 px-3">
+                    <Send className="size-3.5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* ===== MEMORY SCREEN TAB (Day 12) ===== */}
