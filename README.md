@@ -11,6 +11,9 @@
 [![Minds SDK](https://img.shields.io/badge/Minds_SDK-0.1.3-purple)](https://www.npmjs.com/package/@animocabrands/minds-client-lib)
 [![Prisma](https://img.shields.io/badge/Prisma-6-teal?logo=prisma)](https://www.prisma.io/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-cyan?logo=tailwindcss)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
+**→ [Watch the Demo Video](https://youtu.be/VnYF-AQzKMo)**
 
 </div>
 
@@ -147,28 +150,6 @@ Every creator's profile is unique — MUSE amplifies individual voice, never rep
 | Listicle | "5 things every dev should know about AI" | Scannability drives consumption |
 | Analogy | "AI agents are like interns..." | Simplification drives understanding |
 | Personal | "I almost quit creating last month" | Vulnerability drives connection |
-
----
-
-## 🧪 Demo
-
-**The overnight miracle** — Jules goes offline at 22:00. MUSE wakes, analyses signals, recalls strongest hook patterns, delegates to Maker, evaluates output, updates memory. At 06:00:
-
-> *"Good morning. I worked while you were offline."*
-
-Jules asks: *"Why did you choose this hook?"*
-
-MUSE: *"Because you used this pattern 8 times. Those posts averaged 72% retention vs. your 61% baseline. You approved similar framing twice."*
-
-**The judge sees recall, not generation.**
-
-### Interactive Demo Flow
-
-1. **Today Tab** — Live SSE events streaming, chat with Muse (real AI responses)
-2. **Memory Tab** — Accumulated creative intelligence across 4 domains
-3. **Learning Tab** — Run the learning loop, watch confidence scores update
-4. **Overnight Tab** — Click "Run Overnight Now", watch the cycle execute with morning brief
-5. **Control Tab** — Approve/reject pending drafts, toggle autonomy settings, browse audit log
 
 ---
 
