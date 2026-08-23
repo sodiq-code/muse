@@ -6,6 +6,8 @@
 
 **The product is not AI-generated content. The product is accumulated creative intelligence.**
 
+[![CI](https://github.com/sodiq-code/muse/actions/workflows/ci.yml/badge.svg)](https://github.com/sodiq-code/muse/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/test_functions-27-brightgreen)](./scripts/count-test-functions.sh)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Minds SDK](https://img.shields.io/badge/Minds_SDK-0.1.3-purple)](https://www.npmjs.com/package/@animocabrands/minds-client-lib)
@@ -63,11 +65,11 @@ NEXT ACTION
 
 | Agent | Role | Minds Features |
 |-------|------|---------------|
-| **Muse** | Orchestrator — holds creator identity, persistent memory, strategic decisions, overnight autonomy. Wakes at 23:00, analyses signals, delegates to Maker, evaluates, updates memory, prepares 06:00 brief. | Soul, LTM, STM, Alarm Clock |
+| **Muse** | Orchestrator — holds creator identity, persistent memory, strategic decisions, overnight autonomy. **On-demand** overnight cycle (manual "Run Overnight Now" today; see [Overnight Alarm — Implementation Proof](#overnight-alarm--implementation-proof)). Analyses signals, delegates to Maker, evaluates, updates memory, prepares morning brief. | Soul, LTM, STM, `passive-autonomous-soul` skill |
 | **Maker** | Creative executor — receives structured instructions `{creator, topic, audience, voice, historicalWinners, hookRecommendation}`. Returns draft. Muse owns the long-term memory — Maker does not. | Skills, STM, Circles |
 | **Guardian** | Community & safety — classifies comments, flags risks, surfaces audience questions, feeds intelligence back to Muse. | Circles, LTM |
 
-**Overnight Work** — Approval-gated: Muse prepares autonomously, creator reviews with one tap. Every action produces an audit event.
+**Overnight Work** — Approval-gated: Muse prepares a candidate draft (never publishes without human Approve), creator reviews with one tap. Every action produces an `AuditEvent`. The cycle is triggered **manually** today via the Run Overnight Now button — automatic 23:00 wake-up is **not** yet wired (full proof in the [Overnight Alarm](#overnight-alarm--implementation-proof) section).
 
 ---
 
@@ -75,14 +77,14 @@ NEXT ACTION
 
 Remove Minds and MUSE ceases to function. The dependency is structural, not decorative:
 
-| Minds Feature | What MUSE Loses Without It |
-|---|---|
-| **Soul** | No persistent agent identity — becomes a stateless chatbot |
-| **LTM** | No cross-session memory — every session starts from zero |
-| **STM** | Cannot track delegation → evaluation → approval flow |
-| **Circles** | Three disconnected agents, no delegation possible |
-| **Skills** | Advisory-only, cannot act |
-| **Alarm Clock** | No overnight work — the core differentiator disappears |
+| Minds Feature | What MUSE Loses Without It | Used by MUSE today? |
+|---|---|---|
+| **Soul** | No persistent agent identity — becomes a stateless chatbot | ✅ yes |
+| **LTM** | No cross-session memory — every session starts from zero | ✅ yes (DB-backed `MemoryEvent`) |
+| **STM** | Cannot track delegation → evaluation → approval flow | ✅ yes |
+| **Circles** | Three disconnected agents, no delegation possible | ✅ yes (`adapterAddCircleMembers`) |
+| **Skills** | Advisory-only, cannot act | ✅ yes (`equipSkills` — `passive-autonomous-soul`) |
+| **Alarm Clock** | No overnight work — the core differentiator disappears | ❌ **not wired** — no SDK method exists; overnight is triggered by a manual button today (see proof above) |
 
 ---
 
@@ -96,25 +98,53 @@ Remove Minds and MUSE ceases to function. The dependency is structural, not deco
 | UI components (shadcn/ui) | **48** |
 | Dashboard screens | **5** |
 | Total TypeScript files | **146** |
+| **CI/CD test functions** | **[27](./scripts/count-test-functions.sh)** — see [CI/CD & Testing](#cicd--testing) |
 
 ### Feature Matrix
 
-| Feature | Implementation | Status |
-|---------|---------------|--------|
-| **Dual-Account Minds Architecture** | Muse01 + muse02 via separate API keys, Circle delegation | ✅ LIVE |
-| **Persistent Memory (LTM)** | MemoryEvents across 4 domains (Identity, Voice, Audience, Performance), DB-persisted | ✅ LIVE |
-| **5-Step Learning Loop** | OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND with confidence scoring | ✅ LIVE |
-| **Live Chat with Muse** | Real AI responses via Minds SDK `waitForReply` | ✅ LIVE |
-| **Voice Profile** | 7 dimensions — Directness 91, Technical Depth 88, Storytelling 72, Humor 34, Hype 8 | ✅ LIVE |
-| **Hook Pattern Taxonomy** | 8 types: contrarian_claim, question, story, statistic, tutorial, listicle, analogy, personal | ✅ LIVE |
-| **Overnight Cycle** | Wake at 23:00 → Draft → Brief at 06:00, "Run Overnight Now" button | ✅ LIVE |
-| **Approval Gates** | Pending → Approve/Reject with reason, DB-persisted, expiry logic | ✅ LIVE |
-| **SSE Real-Time Events** | Streaming from `/api/minds/events`, toast notifications, auto-reconnect | ✅ LIVE |
-| **30s Auto-Polling** | Dashboard data refreshes every 30 seconds | ✅ Working |
-| **Statistical Confidence** | Sample-size gates, confidence decay, evidence-classified recommendations | ✅ Working |
-| **Audit Trail** | Time/actor filters, expandable JSON detail, CSV export | ✅ Working |
-| **Content Ingestion** | Bulk ingest, hook classification, metrics, performance summary | ✅ Working |
-| **Delegation via Circles** | Muse → Maker with structured context, voice match evaluation | ✅ LIVE |
+Every row below is backed by a concrete artifact in the repo (file:line or file:function), not a status badge. **Proof, not promises** — click through to verify.
+
+| Feature | Implementation | Proof (where it lives in the code) |
+|---------|---------------|------------------------------------|
+| **Dual-Account Minds Architecture** | Muse01 + muse02 via separate API keys, Circle delegation | `src/lib/minds-client.ts:28-66` — `MINDS_BUILDER_API_KEY` + `MINDS_MAKER_API_KEY`, `getMuseClient()` / `getMakerClient()`; `src/lib/minds-adapter.ts:281-326` `adapterGetCircle` / `adapterAddCircleMembers` |
+| **Persistent Memory (LTM)** | MemoryEvents across domains, DB-persisted | `prisma/schema.prisma:123` `model MemoryEvent { category, key, value, confidence, source }`; `src/app/api/creator/memory/route.ts`; `src/app/api/dashboard/memory/route.ts` |
+| **5-Step Learning Loop** | OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND with confidence scoring | `src/lib/learning-engine-service.ts:3` (loop header), `:27` `EvidenceType` (`observed\|correlation\|recommendation\|insufficient\|statistical`), `:211-283` honesty checks; `src/app/api/learning/run/route.ts` |
+| **Live Chat with Muse** | Real AI responses via Minds SDK `waitForReply` | `src/app/api/minds/chat/route.ts:10,106` `adapterSendMessageAndWait`; `src/lib/minds-adapter.ts:180` wraps `liveWaitForReply` |
+| **Voice Profile** | 7 dimensions — Directness 91, Technical Depth 88, Storytelling 72, Humor 34, Hype 8 | `src/lib/voice-profiler.ts:54` `JULES_VOICE_PROFILE` (seed values), `:457` `analyzeVoice()`, `:494` `computeVoiceMatch()` |
+| **Hook Pattern Taxonomy** | 8 types: contrarian_claim, question, story, statistic, tutorial, listicle, analogy, personal | `src/lib/hook-classifier.ts:12-19` `HookPattern` union, `:262` `ALL_PATTERNS`, `:277` `classifyHook()` |
+| **Overnight Cycle** | Manual "Run Overnight Now" → full draft pipeline. ⚠️ See [Overnight Alarm — Implementation Proof](#overnight-alarm--implementation-proof) below — it is **not** a Minds Alarm Clock and is **not** auto-triggered. | `src/app/api/autonomy/run-overnight/route.ts` (POST), `src/lib/overnight-scheduler-service.ts:170` `runOvernightCycle()`, button at `src/app/page.tsx:2614` `onClick={runOvernightCycleAction}` |
+| **Approval Gates** | Pending → Approve/Reject with reason, DB-persisted, expiry logic | `prisma/schema.prisma` `model Approval`; `src/lib/overnight-scheduler-service.ts:740` `approveAction`, `:837` `rejectAction`, `:990` `expireStaleApprovals`; `src/app/api/autonomy/{approve,reject,expire}/route.ts` |
+| **SSE Real-Time Events** | Streaming from `/api/minds/events`, toast notifications, auto-reconnect | `src/app/api/minds/events/route.ts:18,60,91` `ReadableStream` + `text/event-stream` + `controller.enqueue`; `src/hooks/use-minds-events.ts` `EventSource` reconnect |
+| **30s Auto-Polling** | Dashboard data refreshes every 30 seconds | `src/app/page.tsx:1465-1479` `setInterval(..., 30_000)` → `refreshAllDashboardData()` |
+| **Statistical Confidence** | Sample-size gates, evidence-classified recommendations | `src/lib/learning-engine-service.ts:27` `EvidenceType`, `:177` `sampleSize`, `:260-279` "too few data points" + causation guards; `src/lib/hook-comparison.ts` |
+| **Audit Trail** | Time/actor filters, expandable JSON detail, CSV export | `src/app/api/audit/export/route.ts:35` (`format === 'csv'`), `src/app/api/audit/filtered/route.ts`, `src/lib/overnight-scheduler-service.ts:1234` `getFilteredAuditTrail`, `:1149` `getAuditStats` |
+| **Content Ingestion** | Bulk ingest, hook classification, metrics, performance summary | `src/lib/ingestion-pipeline.ts:3,54` `bulkIngestContent` → `classifyHook`; `src/app/api/content/ingest/route.ts:42` |
+| **Delegation via Circles** | Muse → Maker with structured context, voice match evaluation | `src/app/api/delegation/send/route.ts:52` (POST execute), `src/app/api/delegation/beat/route.ts`; `src/lib/delegation-service.ts`, `src/lib/delegation-beat-service.ts` |
+| **CI/CD + Unit Tests** | GitHub Actions: lint → typecheck → test → secret-guard → build; 27 test functions | `.github/workflows/ci.yml`; `tests/{hook-classifier,voice-profiler,utils}.test.ts`; `scripts/count-test-functions.sh` → `27` |
+
+### Overnight Alarm — Implementation Proof
+
+This section exists to be **explicit and honest** about what the "overnight alarm" actually is, because the README and code comments previously implied an automatic, Minds-platform-driven wake-up. That implication is **not** how the code behaves today.
+
+**Claim 1 — "It is a Minds Alarm Clock component." → FALSE.**
+
+The Minds SDK client (`src/lib/minds-client.ts`) exposes **no** `alarmClock`, `setAlarm`, or `scheduleWake` method. The full method surface is: `getMind`, `listMinds`, `createConversation`, `sendMessage`, `getHistory`, `waitForReply`, `listEquippedSkills`, `equipSkills`, `getCircle`, `addCircleMembers`, `getCognitionBalance`, `getCognitionUsage`, `ensureConversation`. The only thing ever *equipped* on Muse is the `passive-autonomous-soul` **skill** (`src/lib/minds-adapter.ts:64`), via `equipSkills()` — a skill is not an alarm clock. The string `"Alarm Clock"` appears **only** in comments and this README, never as an SDK call.
+
+**Claim 2 — "It triggers automatically at 23:00." → FALSE.**
+
+There is **no** cron job, **no** server-side scheduler, and **no** time-of-day check anywhere in the codebase. The single `setInterval` in the app (`src/app/page.tsx:1479`) refreshes dashboard *data* every 30 s — it does not start the overnight cycle. The cycle runs **only** when a human clicks the **"Run Overnight Now"** button (`src/app/page.tsx:2614` → `runOvernightCycleAction` → `POST /api/autonomy/run-overnight` → `runOvernightCycle(creatorId)` in `src/lib/overnight-scheduler-service.ts:170`).
+
+> ⚠️ The audit record written at `overnight-scheduler-service.ts:201` stamps `trigger: 'scheduled'`, but that string is **hardcoded**, not produced by a real scheduler. It is misleading and is flagged here so judges/auditors are not deceived.
+
+**What the overnight pipeline genuinely does once triggered (manually):**
+`runOvernightCycle()` executes the full DB-backed loop — review signals → delegate to Maker (`runDelegationBeat`) → Maker drafts → Muse evaluates (voice match + hook compatibility) → store candidate draft (unpublished) → emit `AuditEvent` rows → prepare morning brief. Approval gate is non-negotiable: nothing publishes without a human Approve.
+
+**To make "automatic 23:00 wake-up" a true statement, one of these is required (none exist today):**
+1. A Minds-platform Alarm Clock API (not currently in the SDK), or
+2. A server-side cron / Vercel Cron Job that `POST`s `/api/autonomy/run-overnight` at 23:00, or
+3. A long-running mini-service with a timer that fires `runOvernightCycle` at the scheduled time.
+
+Until one of those lands, the honest description is: **"Overnight cycle — on-demand via the Run Overnight Now button; scheduled wake-up is not yet wired."**
 
 ### Dashboard Screens
 
@@ -170,12 +200,63 @@ bun run dev
 
 ### Environment Variables
 
+A complete, documented template lives at **[`.env.example`](./.env.example)**. Copy it and fill in real values:
+
+```bash
+cp .env.example .env
+```
+
 ```env
-MINDS_API_KEY_MUSE=your-muse-api-key
-MINDS_MUSE_ID=your-muse-mind-id
-MINDS_API_KEY_MAKER=your-maker-api-key
-MINDS_MAKER_ID=your-maker-mind-id
+# Minimal local-dev set (see .env.example for the full list incl. Turso + dual Minds accounts)
 DATABASE_URL=file:./dev.db
+MINDS_MODE=live                 # or "simulate" for deterministic local mock data
+MINDS_BUILDER_API_KEY=your-muse-api-key
+MINDS_MUSE_ID=your-muse-mind-id
+MINDS_MAKER_API_KEY=your-maker-api-key
+MINDS_MAKER_ID=your-maker-mind-id
+```
+
+> 🔒 **Security**: `.env` is git-ignored and **must never be committed**. If secrets are ever pushed, rotate them immediately and purge the history (see the CI `secret-guard` step below). Production deployments should inject these via the hosting platform's secret manager (e.g. Vercel project env vars), never via files.
+
+---
+
+## 🔁 CI/CD & Testing
+
+A GitHub Actions pipeline runs on every push to `main` and on every pull request (see **[`.github/workflows/ci.yml`](./.github/workflows/ci.yml)**):
+
+| Stage | Command | Purpose |
+|-------|---------|---------|
+| install | `bun install --frozen-lockfile` | Reproducible deps |
+| lint | `bun run lint` | ESLint + Next.js rules |
+| typecheck | `bunx tsc --noEmit` | Strict TS, no emit |
+| test | `bunx vitest run` | Unit tests |
+| count | `bash scripts/count-test-functions.sh` | Surfaces the test-function count to the job summary |
+| secret-guard | `git ls-files \| grep '^\.env'` | **Fails the build if a real `.env` is ever tracked again** |
+| build | `bun run build` | Production build |
+
+### Test-function count: **27**
+
+Counted by [`scripts/count-test-functions.sh`](./scripts/count-test-functions.sh) and re-verified locally:
+
+```bash
+bun run test:count   # → 27
+bun run test         # → 3 files, 27 tests passed
+```
+
+| Test file | Functions | Covers |
+|-----------|-----------|--------|
+| `tests/hook-classifier.test.ts` | 11 | 8-pattern taxonomy, `classifyHook` / `classifyHooks`, confidence bounds |
+| `tests/voice-profiler.test.ts` | 11 | Seed profile, `computeVoiceMatch` (perfect + divergent), `analyzeVoice`, color thresholds |
+| `tests/utils.test.ts` | 5 | `cn()` class merging, tailwind-merge dedup, falsy handling |
+
+Run locally:
+
+```bash
+bun install
+bun run test         # run once
+bun run test:watch   # watch mode
+bun run lint         # eslint
+bun run typecheck    # tsc --noEmit
 ```
 
 ---

@@ -28,8 +28,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
-.env*
+# env files — NEVER commit real secrets. Only the .env.example template is tracked.
+.env
+.env.*
+!.env.example
 
 # vercel
 .vercel
@@ -71,9 +73,11 @@ worklog.md
 # Unused directories
 /download/
 /examples/
-/scripts/
-/tests/
 /upload/
+
+# NOTE: /scripts/ and /tests/ are NOW tracked — they hold the CI test-function
+# counter (scripts/count-test-functions.sh) and the vitest unit suite (tests/*.test.ts).
+# Do NOT re-add them to the ignore list.
 
 # Database (runtime, not schema)
 *.db
