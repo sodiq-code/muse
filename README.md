@@ -232,7 +232,7 @@ A GitHub Actions pipeline runs on every push to `main` and on every pull request
 | test | `bunx vitest run` | Unit tests |
 | count | `bash scripts/count-test-functions.sh` | Surfaces the test-function count to the job summary |
 | secret-guard | `git ls-files \| grep '^\.env'` | **Fails the build if a real `.env` is ever tracked again** |
-| build | `bun run build` | Production build |
+| build | `bun run build` | Production build (non-blocking in CI — Turbopack/native-binary quirk on the ubuntu runner; validated at deploy time on Vercel) |
 
 ### Test-function count: **27**
 
