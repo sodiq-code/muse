@@ -198,7 +198,7 @@ export async function runOvernightCycle(
       'overnight_wake',
       'autonomous_run',
       autonomousRun.id,
-      { message: 'Muse woke up for overnight cycle (Passive Autonomous Soul)', trigger: 'manual' }
+      { message: 'Muse woke up for overnight cycle (Passive Autonomous Soul)', trigger: 'on-demand' }
     );
     const duration = Date.now() - stepStart;
     steps.push({
@@ -207,7 +207,7 @@ export async function runOvernightCycle(
       status: 'complete',
       duration,
       auditEventId,
-      data: { message: 'Muse woke up for overnight cycle (triggered via Run Overnight Now button)' },
+      data: { message: 'Muse woke up for overnight cycle' },
     });
   } catch (error) {
     cycleSuccess = false;

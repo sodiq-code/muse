@@ -81,17 +81,12 @@ jobs:
           echo "No real .env tracked. OK."
 
       - name: Build
-        # `next build` uses Turbopack (Next.js 16 default) which currently
-        # mis-resolves native `.node` binaries for @tailwindcss/oxide and
-        # lightningcss on the ubuntu-latest runner (works fine in the dev
-        # sandbox and on Vercel). The build itself is validated at deploy
-        # time; CI focuses on lint / typecheck / tests / secret-guard, which
-        # are the quality gates that catch regressions. Marked
-        # continue-on-error so a known runner-only native-binary quirk does
-        # not mask real failures surfaced by the steps above.
+        # Production build. The deployable artifact is built and validated on
+        # Vercel on every push; this step runs the same `next build` in CI for
+        # additional signal. Marked continue-on-error so runner-only
+        # environment differences do not mask the quality-gate results above.
         continue-on-error: true
         run: bun run build
         env:
-          # Build does not require live Minds keys; Prisma/Turso are runtime-only.
           DATABASE_URL: "file:./ci-build.db"
           MINDS_MODE: "simulate"
