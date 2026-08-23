@@ -105,21 +105,21 @@ Every row below is backed by a concrete artifact in the repo (file:line or file:
 
 | Feature | Implementation | Proof (where it lives in the code) |
 |---------|---------------|------------------------------------|
-| **Dual-Account Minds Architecture** | Muse01 + muse02 via separate API keys, Circle delegation | `src/lib/minds-client.ts:28-66` — `MINDS_BUILDER_API_KEY` + `MINDS_MAKER_API_KEY`, `getMuseClient()` / `getMakerClient()`; `src/lib/minds-adapter.ts:281-326` `adapterGetCircle` / `adapterAddCircleMembers` |
-| **Persistent Memory (LTM)** | MemoryEvents across domains, DB-persisted | `prisma/schema.prisma:123` `model MemoryEvent { category, key, value, confidence, source }`; `src/app/api/creator/memory/route.ts`; `src/app/api/dashboard/memory/route.ts` |
-| **5-Step Learning Loop** | OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND with confidence scoring | `src/lib/learning-engine-service.ts:3` (loop header), `:27` `EvidenceType` (`observed\|correlation\|recommendation\|insufficient\|statistical`), `:211-283` honesty checks; `src/app/api/learning/run/route.ts` |
-| **Live Chat with Muse** | Real AI responses via Minds SDK `waitForReply` | `src/app/api/minds/chat/route.ts:10,106` `adapterSendMessageAndWait`; `src/lib/minds-adapter.ts:180` wraps `liveWaitForReply` |
-| **Voice Profile** | 7 dimensions — Directness 91, Technical Depth 88, Storytelling 72, Humor 34, Hype 8 | `src/lib/voice-profiler.ts:54` `JULES_VOICE_PROFILE` (seed values), `:457` `analyzeVoice()`, `:494` `computeVoiceMatch()` |
-| **Hook Pattern Taxonomy** | 8 types: contrarian_claim, question, story, statistic, tutorial, listicle, analogy, personal | `src/lib/hook-classifier.ts:12-19` `HookPattern` union, `:262` `ALL_PATTERNS`, `:277` `classifyHook()` |
-| **Overnight Cycle** | On-demand autonomous pipeline: Muse reviews performance signals → delegates to Maker via Circle → Maker produces draft → Muse evaluates (voice match + hook compatibility) → stores candidate draft → prepares morning brief. Triggered from the dashboard and fully audit-logged. | `src/app/api/autonomy/run-overnight/route.ts` (POST), `src/lib/overnight-scheduler-service.ts:170` `runOvernightCycle()`, button at `src/app/page.tsx:2614` `onClick={runOvernightCycleAction}` |
-| **Approval Gates** | Pending → Approve/Reject with reason, DB-persisted, expiry logic | `prisma/schema.prisma` `model Approval`; `src/lib/overnight-scheduler-service.ts:740` `approveAction`, `:837` `rejectAction`, `:990` `expireStaleApprovals`; `src/app/api/autonomy/{approve,reject,expire}/route.ts` |
-| **SSE Real-Time Events** | Streaming from `/api/minds/events`, toast notifications, auto-reconnect | `src/app/api/minds/events/route.ts:18,60,91` `ReadableStream` + `text/event-stream` + `controller.enqueue`; `src/hooks/use-minds-events.ts` `EventSource` reconnect |
-| **30s Auto-Polling** | Dashboard data refreshes every 30 seconds | `src/app/page.tsx:1465-1479` `setInterval(..., 30_000)` → `refreshAllDashboardData()` |
-| **Statistical Confidence** | Sample-size gates, evidence-classified recommendations | `src/lib/learning-engine-service.ts:27` `EvidenceType`, `:177` `sampleSize`, `:260-279` "too few data points" + causation guards; `src/lib/hook-comparison.ts` |
-| **Audit Trail** | Time/actor filters, expandable JSON detail, CSV export | `src/app/api/audit/export/route.ts:35` (`format === 'csv'`), `src/app/api/audit/filtered/route.ts`, `src/lib/overnight-scheduler-service.ts:1234` `getFilteredAuditTrail`, `:1149` `getAuditStats` |
-| **Content Ingestion** | Bulk ingest, hook classification, metrics, performance summary | `src/lib/ingestion-pipeline.ts:3,54` `bulkIngestContent` → `classifyHook`; `src/app/api/content/ingest/route.ts:42` |
-| **Delegation via Circles** | Muse → Maker with structured context, voice match evaluation | `src/app/api/delegation/send/route.ts:52` (POST execute), `src/app/api/delegation/beat/route.ts`; `src/lib/delegation-service.ts`, `src/lib/delegation-beat-service.ts` |
-| **CI/CD + Unit Tests** | GitHub Actions: lint → typecheck → test → secret-guard → build; 27 test functions | `.github/workflows/ci.yml`; `tests/{hook-classifier,voice-profiler,utils}.test.ts`; `scripts/count-test-functions.sh` → `27` |
+| **Dual-Account Minds Architecture** | Muse01 + muse02 via separate API keys, Circle delegation | `src/lib/minds-client.ts:28-66`, `src/lib/minds-adapter.ts:281-326` |
+| **Persistent Memory (LTM)** | MemoryEvents across domains, DB-persisted | `prisma/schema.prisma:123` `model MemoryEvent`, `src/app/api/creator/memory/route.ts` |
+| **5-Step Learning Loop** | OBSERVE → COMPARE → INFER → UPDATE → RECOMMEND with confidence scoring | `src/lib/learning-engine-service.ts:3,27,211-283`, `src/app/api/learning/run/route.ts` |
+| **Live Chat with Muse** | Real AI responses via Minds SDK `waitForReply` | `src/app/api/minds/chat/route.ts:106`, `src/lib/minds-adapter.ts:180` |
+| **Voice Profile** | 7 dimensions — Directness 91, Technical Depth 88, Storytelling 72, Humor 34, Hype 8 | `src/lib/voice-profiler.ts:54` `JULES_VOICE_PROFILE`, `:457` `analyzeVoice()`, `:494` `computeVoiceMatch()` |
+| **Hook Pattern Taxonomy** | 8 types: contrarian_claim, question, story, statistic, tutorial, listicle, analogy, personal | `src/lib/hook-classifier.ts:12-19,262,277` |
+| **Overnight Cycle** | On-demand pipeline: review signals → delegate to Maker → draft → evaluate → store → morning brief. Dashboard-triggered, fully audit-logged. | `src/app/api/autonomy/run-overnight/route.ts`, `src/lib/overnight-scheduler-service.ts:170`, `src/app/page.tsx:2614` |
+| **Approval Gates** | Pending → Approve/Reject with reason, DB-persisted, expiry logic | `prisma/schema.prisma` `model Approval`, `src/lib/overnight-scheduler-service.ts:740,837,990` |
+| **SSE Real-Time Events** | Streaming from `/api/minds/events`, toast notifications, auto-reconnect | `src/app/api/minds/events/route.ts:18,60,91`, `src/hooks/use-minds-events.ts` |
+| **30s Auto-Polling** | Dashboard data refreshes every 30 seconds | `src/app/page.tsx:1479` `setInterval(..., 30_000)` |
+| **Statistical Confidence** | Sample-size gates, evidence-classified recommendations | `src/lib/learning-engine-service.ts:27,177,260-279`, `src/lib/hook-comparison.ts` |
+| **Audit Trail** | Time/actor filters, expandable JSON detail, CSV export | `src/app/api/audit/export/route.ts:35`, `src/lib/overnight-scheduler-service.ts:1149,1234` |
+| **Content Ingestion** | Bulk ingest, hook classification, metrics, performance summary | `src/lib/ingestion-pipeline.ts:3,54`, `src/app/api/content/ingest/route.ts:42` |
+| **Delegation via Circles** | Muse → Maker with structured context, voice match evaluation | `src/app/api/delegation/send/route.ts:52`, `src/lib/delegation-beat-service.ts` |
+| **CI/CD + Unit Tests** | GitHub Actions: lint → typecheck → test → secret-guard → build; 27 test functions | `.github/workflows/ci.yml`, `tests/*.test.ts`, `scripts/count-test-functions.sh` |
 
 ### Dashboard Screens
 
