@@ -84,6 +84,13 @@ jobs:
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
 
+      - name: Generate Prisma client + push schema for E2E
+        run: |
+          bunx prisma generate
+          bunx prisma db push --accept-data-loss
+        env:
+          DATABASE_URL: "file:./ci-e2e.db"
+
       - name: Run E2E tests (Playwright)
         run: bunx playwright test
         env:

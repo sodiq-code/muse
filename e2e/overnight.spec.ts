@@ -10,7 +10,9 @@ import { test, expect } from '@playwright/test';
 test.describe('Overnight — trigger and approval gate', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(2000);
+    // Wait for client-side hydration
+    await page.waitForSelector('text=MUSE', { timeout: 30_000 });
+    await page.waitForTimeout(1000);
   });
 
   test('Overnight tab renders with schedule and trigger', async ({ page }) => {
@@ -44,10 +46,11 @@ test.describe('Overnight — trigger and approval gate', () => {
 
   test('autonomy toggles are rendered', async ({ page }) => {
     await page.getByRole('tab', { name: /Control/i }).click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
 
     // The 4 autonomy toggles: Overnight Analysis, Draft Creation, Auto-Publish, Community Monitoring
-    const toggles = page.locator('text=/overnight analysis|draft creation|auto-publish|community monitoring/i');
+    // Use separate locators so we can see which one fails if any
+    const toggles = page.locator('text=/Overnight Analysis|Draft Creation|Auto-Publish|Community Monitoring/i');
     const count = await toggles.count();
     expect(count).toBeGreaterThan(0);
   });

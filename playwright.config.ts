@@ -18,7 +18,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
 
   use: {
-    baseURL: process.env.MUSE_E2E_BASE_URL ?? 'http://localhost:3000',
+    baseURL: process.env.MUSE_E2E_BASE_URL ?? 'http://localhost:3456',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     headless: true,
@@ -31,12 +31,10 @@ export default defineConfig({
     },
   ],
 
-  webServer: process.env.CI
-    ? undefined
-    : {
-        command: 'bun run dev',
-        url: 'http://localhost:3000',
-        reuseExistingServer: true,
-        timeout: 60_000,
-      },
+  webServer: {
+    command: 'bun run dev:e2e',
+    url: 'http://localhost:3456',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
 });
