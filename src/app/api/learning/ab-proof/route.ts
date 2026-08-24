@@ -169,10 +169,10 @@ export async function GET() {
     const m = museResult.status === 'fulfilled' ? museResult.value : { response: MOCK_MUSE_RESPONSE, mode: 'simulated' as const, latency: 0 };
 
     baselineResponse = b.response;
-    baselineMode = b.mode;
+    baselineMode = b.mode as 'live' | 'simulated';
     baselineLatency = b.latency;
     museResponse = m.response;
-    museMode = m.mode;
+    museMode = m.mode as 'live' | 'simulated';
     museLatency = m.latency;
   } else {
     // SIMULATE: deterministic mock responses (with realistic latency)
