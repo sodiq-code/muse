@@ -7,7 +7,7 @@
 //
 // Overnight Blueprint:
 //   22:00  Creator goes offline (detected via inactivity)
-//   23:00  Muse wakes up (Alarm Clock Skill)
+//   23:00  Muse overnight cycle begins (dashboard-triggered)
 //          → Reviews recent performance signals
 //          → Checks community sentiment
 //   23:30  Muse delegates to Maker (via Circle)

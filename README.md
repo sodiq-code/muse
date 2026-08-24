@@ -51,10 +51,10 @@ CREATOR ("I'm going offline.")
     ↓
 MUSE — Orchestrator Mind
   Identity + Memory + State + Autonomy
-    ↓           ↓
-MAKER          GUARDIAN
-Creation       Community
-& Voice        & Safety
+    ↓
+MAKER
+Creation
+& Voice
     ↓
 LEARNING ENGINE — Observe → Compare → Infer → Update → Recommend
     ↓
@@ -67,7 +67,6 @@ NEXT ACTION
 |-------|------|---------------|
 | **Muse** | Orchestrator — holds creator identity, persistent memory, strategic decisions, and overnight autonomy. Runs the full overnight pipeline: reviews signals, delegates to Maker, evaluates output, updates memory, and prepares the morning brief. | Soul, LTM, STM, Skills |
 | **Maker** | Creative executor — receives structured instructions `{creator, topic, audience, voice, historicalWinners, hookRecommendation}`. Returns draft. Muse owns the long-term memory — Maker does not. | Skills, STM, Circles |
-| **Guardian** | Community & safety — classifies comments, flags risks, surfaces audience questions, feeds intelligence back to Muse. | Circles, LTM |
 
 **Overnight Work** — Approval-gated: Muse prepares a candidate draft (never publishes without human Approve), the creator reviews with one tap, and every action produces an `AuditEvent` for full traceability.
 
@@ -82,7 +81,7 @@ Remove Minds and MUSE ceases to function. The dependency is structural, not deco
 | **Soul** | No persistent agent identity — becomes a stateless chatbot |
 | **LTM** | No cross-session memory — every session starts from zero |
 | **STM** | Cannot track delegation → evaluation → approval flow |
-| **Circles** | Three disconnected agents, no delegation possible |
+| **Circles** | Two disconnected agents, no delegation possible |
 | **Skills** | Advisory-only, cannot act |
 
 ---
@@ -111,9 +110,9 @@ Every row below is backed by a concrete artifact in the repo (file:line or file:
 | **Live Chat with Muse** | Real AI responses via Minds SDK `waitForReply` | `src/app/api/minds/chat/route.ts:106`, `src/lib/minds-adapter.ts:180` |
 | **Voice Profile** | 7 dimensions — Directness 91, Technical Depth 88, Storytelling 72, Humor 34, Hype 8 | `src/lib/voice-profiler.ts:54` `JULES_VOICE_PROFILE`, `:457` `analyzeVoice()`, `:494` `computeVoiceMatch()` |
 | **Hook Pattern Taxonomy** | 8 types: contrarian_claim, question, story, statistic, tutorial, listicle, analogy, personal | `src/lib/hook-classifier.ts:12-19,262,277` |
-| **Overnight Cycle** | On-demand pipeline: review signals → delegate to Maker → draft → evaluate → store → morning brief. Dashboard-triggered, fully audit-logged. | `src/app/api/autonomy/run-overnight/route.ts`, `src/lib/overnight-scheduler-service.ts:170`, `src/app/page.tsx:2614` |
+| **Overnight Cycle** | On-demand pipeline: review signals → delegate to Maker → draft → evaluate → store → morning brief. Dashboard-triggered (manual today; automatic scheduling on roadmap pending Minds platform support). Fully audit-logged. | `src/app/api/autonomy/run-overnight/route.ts`, `src/lib/overnight-scheduler-service.ts:170`, `src/app/page.tsx:2614` |
 | **Approval Gates** | Pending → Approve/Reject with reason, DB-persisted, expiry logic | `prisma/schema.prisma` `model Approval`, `src/lib/overnight-scheduler-service.ts:740,837,990` |
-| **SSE Real-Time Events** | Streaming from `/api/minds/events`, toast notifications, auto-reconnect | `src/app/api/minds/events/route.ts:18,60,91`, `src/hooks/use-minds-events.ts` |
+| **SSE Real-Time Events** | Live poll-based event stream from Minds conversation history + cognition status, toast notifications, auto-reconnect | `src/app/api/minds/events/route.ts`, `src/hooks/use-minds-events.ts` |
 | **30s Auto-Polling** | Dashboard data refreshes every 30 seconds | `src/app/page.tsx:1479` `setInterval(..., 30_000)` |
 | **Statistical Confidence** | Sample-size gates, evidence-classified recommendations | `src/lib/learning-engine-service.ts:27,177,260-279`, `src/lib/hook-comparison.ts` |
 | **Audit Trail** | Time/actor filters, expandable JSON detail, CSV export | `src/app/api/audit/export/route.ts:35`, `src/lib/overnight-scheduler-service.ts:1149,1234` |

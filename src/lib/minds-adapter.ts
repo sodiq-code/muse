@@ -80,25 +80,43 @@ const SIMULATED_MAKER_SKILLS: EquippedSkill[] = [];
 
 const SIMULATED_MUSE_CIRCLE: CircleMember[] = [
   {
+    email: 'sodiqjimoh80@gmail.com',
+    partyType: 1,
+    partyId: '8fd0483e-f36b-1410-8466-00039ce7df11',
+    name: 'Muse01',
+    circleId: -2146577074,
+    isSteward: true,
+    createdAt: '2026-08-08T15:56:35.29',
+  },
+  {
     email: 'sodiqbolaji88@gmail.com',
-    partyType: 0,
-    partyId: '2337493e-f36b-1410-8466-00039ce7df11',
+    partyType: 1,
+    partyId: 'eb36493e-f36b-1410-8466-00039ce7df11',
     name: 'muse02',
-    circleId: 1,
+    circleId: -2146571480,
     isSteward: false,
-    createdAt: '2025-01-05T12:00:00Z',
+    createdAt: '2026-08-24T00:36:48.8682444',
+  },
+  {
+    email: 'muse_1@hellominds.ai',
+    partyType: 0,
+    partyId: '15d1483e-f36b-1410-8466-00039ce7df11',
+    name: 'muse_1',
+    circleId: -2146577066,
+    isSteward: false,
+    createdAt: '2026-08-08T17:44:04.9172102',
   },
 ];
 
 const SIMULATED_MAKER_CIRCLE: CircleMember[] = [
   {
     email: 'sodiqjimoh80@gmail.com',
-    partyType: 0,
-    partyId: '9fd0483e-f36b-1410-8466-00039ce7df11',
+    partyType: 1,
+    partyId: '8fd0483e-f36b-1410-8466-00039ce7df11',
     name: 'Muse01',
-    circleId: 1,
+    circleId: -2146577074,
     isSteward: false,
-    createdAt: '2025-01-05T12:00:00Z',
+    createdAt: '2026-08-08T15:56:35.29',
   },
 ];
 
