@@ -82,3 +82,4 @@ worklog.md
 # Database (runtime, not schema)
 *.db
 *.db-journal
+test-results/
