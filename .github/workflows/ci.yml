@@ -7,7 +7,8 @@
 #   3. typecheck — tsc --noEmit
 #   4. test      — vitest run + count of test functions (surfaced to README)
 #   5. secret-guard — fail if a real .env (not .env.example) is tracked in git
-#   6. build     — next build
+#   6. e2e       — playwright browser tests (3 specs, chromium)
+#   7. build     — next build
 #
 # The test-function count is written to the job summary
 # (`.github/workflows/ci.yml` → $GITHUB_STEP_SUMMARY) and is the same number
@@ -79,6 +80,15 @@ jobs:
             exit 1
           fi
           echo "No real .env tracked. OK."
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run E2E tests (Playwright)
+        run: bunx playwright test
+        env:
+          MINDS_MODE: "simulate"
+          DATABASE_URL: "file:./ci-e2e.db"
 
       - name: Build
         # Production build. The deployable artifact is built and validated on

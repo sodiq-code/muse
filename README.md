@@ -115,10 +115,11 @@ Every row below is backed by a concrete artifact in the repo (file:line or file:
 | **SSE Real-Time Events** | Live poll-based event stream from Minds conversation history + cognition status, toast notifications, auto-reconnect | `src/app/api/minds/events/route.ts`, `src/hooks/use-minds-events.ts` |
 | **30s Auto-Polling** | Dashboard data refreshes every 30 seconds | `src/app/page.tsx:1479` `setInterval(..., 30_000)` |
 | **Statistical Confidence** | Sample-size gates, evidence-classified recommendations | `src/lib/learning-engine-service.ts:27,177,260-279`, `src/lib/hook-comparison.ts` |
+| **A/B Proof: Memory Value** | Stateless vs. memory-backed recommendation comparison — same question, two paths, measured difference | `src/app/api/learning/ab-proof/route.ts` |
 | **Audit Trail** | Time/actor filters, expandable JSON detail, CSV export | `src/app/api/audit/export/route.ts:35`, `src/lib/overnight-scheduler-service.ts:1149,1234` |
 | **Content Ingestion** | Bulk ingest, hook classification, metrics, performance summary | `src/lib/ingestion-pipeline.ts:3,54`, `src/app/api/content/ingest/route.ts:42` |
 | **Delegation via Circles** | Muse → Maker with structured context, voice match evaluation | `src/app/api/delegation/send/route.ts:52`, `src/lib/delegation-beat-service.ts` |
-| **CI/CD + Unit Tests** | GitHub Actions: lint → typecheck → test → secret-guard → build; 27 test functions | `.github/workflows/ci.yml`, `tests/*.test.ts`, `scripts/count-test-functions.sh` |
+| **CI/CD + Unit Tests** | GitHub Actions: lint → typecheck → test → secret-guard → E2E → build; 27 unit tests + Playwright E2E | `.github/workflows/ci.yml`, `tests/*.test.ts`, `e2e/*.spec.ts`, `scripts/count-test-functions.sh` |
 
 ### Dashboard Screens
 
@@ -203,9 +204,10 @@ A GitHub Actions pipeline runs on every push to `main` and on every pull request
 | install | `bun install --frozen-lockfile` | Reproducible deps |
 | lint | `bun run lint` | ESLint + Next.js rules |
 | typecheck | `bunx tsc --noEmit` | Strict TypeScript |
-| test | `bunx vitest run` | Unit test suite |
+| test | `bunx vitest run` | Unit test suite (27 functions) |
 | count | `bash scripts/count-test-functions.sh` | Surfaces the test-function count to the job summary |
 | secret-guard | `git ls-files \| grep '^\.env'` | Blocks any real `.env` from being tracked |
+| e2e | `bunx playwright test` | Browser-level E2E tests (3 specs, Chromium) |
 | build | `bun run build` | Production build |
 
 ### Test-function count: **27**
@@ -223,11 +225,20 @@ bun run test         # → 3 files, 27 tests passed
 | `tests/voice-profiler.test.ts` | 11 | Seed profile, `computeVoiceMatch` (perfect + divergent), `analyzeVoice`, color thresholds |
 | `tests/utils.test.ts` | 5 | `cn()` class merging, tailwind-merge dedup, falsy handling |
 
+### E2E tests (Playwright)
+
+| Spec file | Covers |
+|-----------|--------|
+| `e2e/dashboard.spec.ts` | Dashboard loads, 5 tabs navigate, status badge renders, Today screen content |
+| `e2e/chat.spec.ts` | Chat input visible, typing works, message send produces a response |
+| `e2e/overnight.spec.ts` | Overnight tab renders, Run Overnight button visible, Mind Theatre section, Control tab toggles |
+
 Run locally:
 
 ```bash
 bun install
-bun run test         # run once
+bun run test         # unit tests (27 functions)
+bun run e2e          # Playwright E2E (3 specs, Chromium)
 bun run test:watch   # watch mode
 bun run lint         # eslint
 bun run typecheck    # tsc --noEmit
