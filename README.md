@@ -110,7 +110,7 @@ Every row below is backed by a concrete artifact in the repo (file:line or file:
 | **Live Chat with Muse** | Real AI responses via Minds SDK `waitForReply` | `src/app/api/minds/chat/route.ts:106`, `src/lib/minds-adapter.ts:180` |
 | **Voice Profile** | 7 dimensions — Directness 91, Technical Depth 88, Storytelling 72, Humor 34, Hype 8 | `src/lib/voice-profiler.ts:54` `JULES_VOICE_PROFILE`, `:457` `analyzeVoice()`, `:494` `computeVoiceMatch()` |
 | **Hook Pattern Taxonomy** | 8 types: contrarian_claim, question, story, statistic, tutorial, listicle, analogy, personal | `src/lib/hook-classifier.ts:12-19,262,277` |
-| **Overnight Cycle** | On-demand pipeline: review signals → delegate to Maker → draft → evaluate → store → morning brief. Dashboard-triggered (manual today; automatic scheduling on roadmap pending Minds platform support). Fully audit-logged. | `src/app/api/autonomy/run-overnight/route.ts`, `src/lib/overnight-scheduler-service.ts:170`, `src/app/page.tsx:2614` |
+| **Overnight Cycle** | Full pipeline: review signals → delegate to Maker → generate draft → evaluate voice match → store candidate → prepare morning brief. Approval-gated, fully audit-logged. | `src/app/api/autonomy/run-overnight/route.ts`, `src/lib/overnight-scheduler-service.ts:170`, `src/app/page.tsx:2614` |
 | **Approval Gates** | Pending → Approve/Reject with reason, DB-persisted, expiry logic | `prisma/schema.prisma` `model Approval`, `src/lib/overnight-scheduler-service.ts:740,837,990` |
 | **SSE Real-Time Events** | Live poll-based event stream from Minds conversation history + cognition status, toast notifications, auto-reconnect | `src/app/api/minds/events/route.ts`, `src/hooks/use-minds-events.ts` |
 | **30s Auto-Polling** | Dashboard data refreshes every 30 seconds | `src/app/page.tsx:1479` `setInterval(..., 30_000)` |
@@ -127,7 +127,7 @@ Every row below is backed by a concrete artifact in the repo (file:line or file:
 | **Today** | Greeting, overnight brief, top signals, pending approvals (approve/reject/modify), live activity feed, chat with Muse |
 | **Memory** | Creator identity, voice radar (7 dimensions), winning hooks ranked by confidence, memory events |
 | **Learning** | Learning timeline with confidence transitions, hook rankings, honesty checks, "Run Loop" button |
-| **Overnight** | Schedule (23:00→00:00→06:00), Mind Theatre phase timeline, overnight output with scores, "Run Overnight Now" |
+| **Overnight** | Mind Theatre phase timeline, overnight output with voice-match scores, draft approval queue, "Run Overnight Now" trigger |
 | **Control** | Autonomy settings (4 toggles), approval queue with approve/reject + reason, audit log with filters + export |
 
 ---
