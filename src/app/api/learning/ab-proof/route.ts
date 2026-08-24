@@ -139,56 +139,41 @@ export async function GET() {
   let museLatency = 0;
 
   if (live) {
-    // LIVE: run both through the real Mind
+    // LIVE: run both through the real Mind IN PARALLEL to minimize total latency
     const baselineAlias = `ab-proof-baseline-${Date.now()}`;
     const museAlias = `ab-proof-muse-${Date.now()}`;
+    const memoryPrompt = buildMemoryBackedPrompt(creatorName, voiceProfile, hookRankings, recentWinners);
 
-    // Baseline (stateless)
-    const baselineStart = Date.now();
-    try {
-      const result = await adapterSendMessageAndWait(
-        baselineAlias,
-        BASELINE_PROMPT,
-        config.museId,
-        60_000,
-      );
-      baselineLatency = Date.now() - baselineStart;
-      if (result.success && result.reply) {
-        baselineResponse = extractMessageText(result.reply);
-        baselineMode = 'live';
-      } else {
-        baselineResponse = MOCK_BASELINE_RESPONSE;
-        baselineMode = 'simulated';
-      }
-    } catch {
-      baselineLatency = Date.now() - baselineStart;
-      baselineResponse = MOCK_BASELINE_RESPONSE;
-      baselineMode = 'simulated';
-    }
+    const [baselineResult, museResult] = await Promise.allSettled([
+      (async () => {
+        const start = Date.now();
+        try {
+          const result = await adapterSendMessageAndWait(baselineAlias, BASELINE_PROMPT, config.museId, 60_000);
+          return { response: result.success && result.reply ? extractMessageText(result.reply) : MOCK_BASELINE_RESPONSE, mode: result.success && result.reply ? 'live' : 'simulated' as const, latency: Date.now() - start };
+        } catch {
+          return { response: MOCK_BASELINE_RESPONSE, mode: 'simulated' as const, latency: Date.now() - start };
+        }
+      })(),
+      (async () => {
+        const start = Date.now();
+        try {
+          const result = await adapterSendMessageAndWait(museAlias, memoryPrompt, config.museId, 90_000);
+          return { response: result.success && result.reply ? extractMessageText(result.reply) : MOCK_MUSE_RESPONSE, mode: result.success && result.reply ? 'live' : 'simulated' as const, latency: Date.now() - start };
+        } catch {
+          return { response: MOCK_MUSE_RESPONSE, mode: 'simulated' as const, latency: Date.now() - start };
+        }
+      })(),
+    ]);
 
-    // Muse (memory-backed)
-    const museStart = Date.now();
-    try {
-      const memoryPrompt = buildMemoryBackedPrompt(creatorName, voiceProfile, hookRankings, recentWinners);
-      const result = await adapterSendMessageAndWait(
-        museAlias,
-        memoryPrompt,
-        config.museId,
-        90_000,
-      );
-      museLatency = Date.now() - museStart;
-      if (result.success && result.reply) {
-        museResponse = extractMessageText(result.reply);
-        museMode = 'live';
-      } else {
-        museResponse = MOCK_MUSE_RESPONSE;
-        museMode = 'simulated';
-      }
-    } catch {
-      museLatency = Date.now() - museStart;
-      museResponse = MOCK_MUSE_RESPONSE;
-      museMode = 'simulated';
-    }
+    const b = baselineResult.status === 'fulfilled' ? baselineResult.value : { response: MOCK_BASELINE_RESPONSE, mode: 'simulated' as const, latency: 0 };
+    const m = museResult.status === 'fulfilled' ? museResult.value : { response: MOCK_MUSE_RESPONSE, mode: 'simulated' as const, latency: 0 };
+
+    baselineResponse = b.response;
+    baselineMode = b.mode;
+    baselineLatency = b.latency;
+    museResponse = m.response;
+    museMode = m.mode;
+    museLatency = m.latency;
   } else {
     // SIMULATE: deterministic mock responses (with realistic latency)
     baselineResponse = MOCK_BASELINE_RESPONSE;
